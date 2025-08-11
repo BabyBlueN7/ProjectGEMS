@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Share Taxi App</title>
+  <style>
+    body {
+      background-color: #002C6A;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: #001B44;
+    }
+    .logo {
+      height: 120px;
+      display: block;
+      margin: 0 auto;
+    }
+    .content {
+      padding: 40px 20px 80px 20px;
+      text-align: center;
+    }
+    .live-taxi-count {
+      font-size: 2.5em;
+      font-weight: bold;
+      background: #FFD600;
+      color: #002C6A;
+      border-radius: 8px;
+      padding: 15px 40px;
+      margin: 30px auto 30px auto;
+      display: inline-block;
+    }
+    .main-btn {
+      display: block;
+      width: 200px;
+      margin: 20px auto;
+      padding: 15px;
+      font-size: 1.1em;
+      background: #FFD600;
+      color: #002C6A;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+    .main-btn:hover {
+      background: #FFC400;
+    }
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: #001B44;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      height: 60px;
+      border-top: 2px solid #003C8C;
+      z-index: 10;
+    }
+    .nav-btn {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 1.1em;
+      cursor: pointer;
+      padding: 10px 20px;
+      transition: color 0.2s;
+    }
+    .nav-btn.active, .nav-btn:hover {
+      color: #FFD600;
+    }
+    .booked-taxi-section {
+      position: fixed;
+      bottom: 60px;
+      left: 0;
+      width: 100%;
+      background: #003C8C;
+      color: #FFD600;
+      padding: 10px 0;
+      text-align: center;
+      z-index: 9;
+      border-top: 1px solid #FFD600;
+      border-bottom: 1px solid #FFD600;
+      font-size: 1.1em;
+      min-height: 40px;
+    }
+    .booked-taxi-list {
+      max-height: 80px;
+      overflow-y: auto;
+      margin: 0 auto;
+      padding: 0 10px;
+      text-align: left;
+      display: inline-block;
+      width: 90%;
+    }
+    form {
+      margin: 0 auto;
+      color: #002C6A;
+      background: #fff;
+      border-radius: 10px;
+      padding: 20px;
+      max-width: 350px;
+    }
+    form label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    form input {
+      width: 100%;
+      padding: 8px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="Logo.jpeg" alt="Share Taxi Logo" class="logo">
+  </div>
+  <div class="content" id="homePage">
+    <span style="font-size:1.2em;">Live Available Taxis</span>
+    <div class="live-taxi-count" id="liveTaxiCount">--</div>
+    <button class="main-btn" onclick="showBookTaxi()">Book Taxi</button>
+  </div>
+  <div class="content" id="bookTaxiPage" style="display:none;">
+    <h2>Available Taxis</h2>
+    <div id="availableTaxis"></div>
+    <button class="main-btn" onclick="goHome()">Back to Home</button>
+  </div>
+  <div class="content" id="profilePage" style="display:none;">
+    <h2>Register to App</h2>
+    <form id="registerForm">
+      <label for="regName">Name:</label>
+      <input type="text" id="regName" name="regName" required>
+      <label for="regEmail">Email:</label>
+      <input type="email" id="regEmail" name="regEmail" required>
+      <label for="regPhone">Phone:</label>
+      <input type="tel" id="regPhone" name="regPhone" required>
+      <label for="regPassword">Password:</label>
+      <input type="password" id="regPassword" name="regPassword" required>
+      <button type="submit" class="main-btn" style="width:100%;">Register</button>
+      <div id="registerMsg" style="margin-top:10px;color:green;"></div>
+    </form>
+    <button class="main-btn" onclick="goHome()">Back to Home</button>
+  </div>
+  <div class="booked-taxi-section" id="bookedTaxiSection" style="display:none;">
+    <span style="font-weight:bold;">Booked Taxis:</span>
+    <div class="booked-taxi-list" id="bookedTaxiList"></div>
+  </div>
+  <div class="bottom-nav">
+    <button class="nav-btn active" id="homeBtn" onclick="goHome()">Home</button>
+    <button class="nav-btn" id="bookedBtn" onclick="showBookedTaxis()">Booked</button>
+    <button class="nav-btn" id="profileBtn" onclick="showProfile()">Profile</button>
+  </div>
+  <script>
+    function goHome() {
+      document.getElementById('homePage').style.display = '';
+      document.getElementById('bookTaxiPage').style.display = 'none';
+      document.getElementById('profilePage').style.display = 'none';
+      document.getElementById('bookedTaxiSection').style.display = 'none';
+      document.getElementById('homeBtn').classList.add('active');
+      document.getElementById('profileBtn').classList.remove('active');
+      document.getElementById('bookedBtn').classList.remove('active');
+    }
+    function showBookTaxi() {
+      document.getElementById('homePage').style.display = 'none';
+      document.getElementById('bookTaxiPage').style.display = '';
+      document.getElementById('profilePage').style.display = 'none';
+      document.getElementById('bookedTaxiSection').style.display = 'none';
+      document.getElementById('homeBtn').classList.remove('active');
+      document.getElementById('profileBtn').classList.remove('active');
+      document.getElementById('bookedBtn').classList.remove('active');
+      loadAvailableTaxis();
+    }
+    function showProfile() {
+      document.getElementById('homePage').style.display = 'none';
+      document.getElementById('bookTaxiPage').style.display = 'none';
+      document.getElementById('profilePage').style.display = '';
+      document.getElementById('bookedTaxiSection').style.display = 'none';
+      document.getElementById('homeBtn').classList.remove('active');
+      document.getElementById('profileBtn').classList.add('active');
+      document.getElementById('bookedBtn').classList.remove('active');
+    }
+    function showBookedTaxis() {
+      document.getElementById('homePage').style.display = 'none';
+      document.getElementById('bookTaxiPage').style.display = 'none';
+      document.getElementById('profilePage').style.display = 'none';
+      document.getElementById('bookedTaxiSection').style.display = '';
+      document.getElementById('homeBtn').classList.remove('active');
+      document.getElementById('profileBtn').classList.remove('active');
+      document.getElementById('bookedBtn').classList.add('active');
+      renderBookedTaxis();
+    }
+
+    function updateLiveTaxiCount(count) {
+      document.getElementById('liveTaxiCount').innerText = count;
+    }
+
+    function startLiveTaxiUpdates() {
+      setInterval(() => {
+        updateLiveTaxiCount(Math.floor(Math.random() * 20) + 1);
+      }, 3000);
+    }
+
+    // Simulate available taxis with take off time
+    function loadAvailableTaxis() {
+      const taxis = [
+        { id: 1, driver: "Amit", car: "Maruti Swift", seats: 3, takeoff: "09:30 AM" },
+        { id: 2, driver: "Priya", car: "Hyundai i10", seats: 2, takeoff: "10:00 AM" },
+        { id: 3, driver: "Rahul", car: "Honda City", seats: 4, takeoff: "10:30 AM" }
+      ];
+      let html = '<ul style="list-style:none;padding:0;">';
+      taxis.forEach(taxi => {
+        html += `<li style="background:#003C8C;color:#fff;margin:10px 0;padding:15px;border-radius:8px;">
+          <b>Driver:</b> ${taxi.driver} <br>
+          <b>Car:</b> ${taxi.car} <br>
+          <b>Seats Available:</b> ${taxi.seats} <br>
+          <b>Take Off Time:</b> <span style="color:#FFD600">${taxi.takeoff}</span>
+          <br><button class="main-btn" style="margin-top:10px;" onclick="bookTaxi('${taxi.driver}','${taxi.car}','${taxi.takeoff}')">Book Now</button>
+        </li>`;
+      });
+      html += '</ul>';
+      document.getElementById('availableTaxis').innerHTML = html;
+    }
+
+    let bookedTaxis = [];
+
+    function bookTaxi(driver, car, takeoff) {
+      const now = new Date();
+      const time = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      bookedTaxis.push({ driver, car, takeoff, bookedAt: time });
+      alert('Taxi booked!');
+      renderBookedTaxis();
+    }
+
+    function renderBookedTaxis() {
+      const list = document.getElementById('bookedTaxiList');
+      if (bookedTaxis.length === 0) {
+        list.innerHTML = "<span style='opacity:0.7;'>No taxis booked yet.</span>";
+      } else {
+        let html = "<ul style='list-style:none;padding:0;margin:0;'>";
+        bookedTaxis.forEach((taxi) => {
+          html += `<li style="margin-bottom:6px;">
+            <b>${taxi.car}</b> by ${taxi.driver}
+            <br>
+            <span style="color:#FFD600;">Take Off: ${taxi.takeoff}</span>
+            <span style="float:right;">Booked: ${taxi.bookedAt}</span>
+          </li>`;
+        });
+        html += "</ul>";
+        list.innerHTML = html;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      var regForm = document.getElementById('registerForm');
+      if (regForm) {
+        regForm.onsubmit = function(e) {
+          e.preventDefault();
+          document.getElementById('registerMsg').innerText = "Registration successful!";
+          regForm.reset();
+        };
+      }
+    });
+
+    window.onload = function() {
+      updateLiveTaxiCount('--');
+      startLiveTaxiUpdates();
+    }
+  </script>
+</body>
+</html>
