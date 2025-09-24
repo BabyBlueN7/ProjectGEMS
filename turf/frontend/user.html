@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Turf List</title>
+  <style>
+    body { font-family: Arial; background: #f9fafb; margin: 0; padding: 0; }
+    header { background: #2563eb; color: #fff; padding: 16px; text-align: center; }
+    .controls { padding: 20px; text-align: center; }
+    select { padding: 8px; font-size: 16px; border-radius: 6px; }
+    .turf-list { padding: 20px; }
+    .turf { background: #fff; padding: 16px; margin: 12px 0; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); cursor: pointer; }
+    .turf:hover { background: #eef4ff; }
+    .location { font-size: 14px; color: #555; }
+    .price { font-weight: bold; color: #10b981; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>TURFS</h1>
+  </header>
+
+  <div class="controls">
+    <label for="district">Select District:</label>
+    <select id="district" onchange="loadTurfsByDistrict()">
+      <option value="">-- Choose District --</option>
+      <option value="Malappuram">Malappuram</option>
+      <option value="Kannur">Kannur</option>
+      <option value="Kozhikode">Kozhikode</option>
+    </select>
+  </div>
+
+  <main class="turf-list" id="turfList">
+    <p>Select a district to view turfs.</p>
+  </main>
+
+  <script>
+    async function loadTurfsByDistrict() {
+      const district = document.getElementById("district").value;
+      const list = document.getElementById("turfList");
+
+      if (!district) {
+        list.innerHTML = "<p>Select a district to view turfs.</p>";
+        return;
+      }
+
+      try {
+        console.log("Fetching turfs for district:", district);
+        
+        // Fixed: Use proper string concatenation instead of template literal with backslash
+        const res = await fetch(`http://localhost:4001/turfs/by-district/${encodeURIComponent(district)}`);
+        
+        if (!res.ok) throw new Error("Network response was not ok");
+        const turfs = await res.json();
+        console.log("Received turfs:", turfs);
+
+        list.innerHTML = "";
+
+        if (turfs.length === 0) {
+          list.innerHTML = "<p>No turfs found in this district.</p>";
+          return;
+        }
+
+        turfs.forEach(turf => {
+          const div = document.createElement("div");
+          div.className = "turf";
+          div.innerHTML = `
+            <h3>${turf.name}</h3>
+            <p class="location">${turf.location}</p>
+            <p>${turf.sport}</p>
+            <p class="price">₹${turf.price}/hr</p>
+          `;
+          div.onclick = () => {
+            // Fixed: Use proper template literal syntax
+            window.location.href = `turf-slots.html?id=${turf.id}`;
+          };
+          list.appendChild(div);
+        });
+      } catch (err) {
+        console.error("Error loading turfs:", err);
+        list.innerHTML = "<p>Failed to load turfs. Check console for details.</p>";
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Canteen Owner Dashboard</title>
+  <style>
+    body { font-family: Arial; background: #f9fafb; margin: 0; padding: 0; }
+    header { background: #f59e0b; color: #fff; padding: 16px; text-align: center; }
+    main { padding: 20px; }
+    form { background: #fff; padding: 16px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    label { display: block; margin: 8px 0 4px; }
+    input, select { width: 100%; padding: 8px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #ccc; }
+    button { background: #2563eb; color: #fff; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; }
+    button:hover { background: #1e4fd6; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Canteen Owner Dashboard</h1>
+  </header>
+  <main>
+    <h2>Add Menu Item</h2>
+    <form id="menuForm">
+      <label for="item">Food Item</label>
+      <input type="text" id="item" required />
+
+      <label for="price">Price (₹)</label>
+      <input type="number" id="price" required />
+
+      <label for="available">Available</label>
+      <select id="available">
+        <option value="1">Yes</option>
+        <option value="0">No</option>
+      </select>
+
+      <label for="college">College ID</label>
+      <input type="number" id="college" required />
+
+      <button type="submit">Add Item</button>
+    </form>
+  </main>
+
+  <script>
+    document.getElementById("menuForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const item = {
+        item: document.getElementById("item").value,
+        price: parseInt(document.getElementById("price").value),
+        available: parseInt(document.getElementById("available").value),
+        college_id: parseInt(document.getElementById("college").value)
+      };
+
+      try {
+        const res = await fetch("http://localhost:4002/menu", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(item)
+        });
+        const data = await res.json();
+        alert(`Menu item "${data.item}" added successfully ✅`);
+        e.target.reset();
+      } catch (err) {
+        console.error("Error adding menu item:", err);
+        alert("Failed to add menu item ❌");
+      }
+    });
+  </script>
+</body>
+</html>

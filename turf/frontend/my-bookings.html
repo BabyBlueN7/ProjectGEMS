@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Turf Bookings</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9fafb;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #2563eb;
+      color: #fff;
+      padding: 16px;
+      text-align: center;
+    }
+    main {
+      padding: 20px;
+    }
+    .booking {
+      background: #fff;
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .status {
+      font-weight: bold;
+      color: #10b981;
+    }
+    .empty {
+      color: #ef4444;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>My Bookings</h1>
+  </header>
+  <main>
+    <h2>Upcoming Turf Slots</h2>
+    <div id="bookings"></div>
+  </main>
+
+  <script>
+    // For now, hardcode a test customer_id = 1
+    const customerId = 1;
+
+    async function loadBookings() {
+      const container = document.getElementById("bookings");
+      container.innerHTML = "<p>Loading...</p>";
+
+      try {
+        const res = await fetch(`http://localhost:4001/bookings/${customerId}`);
+        const bookings = await res.json();
+
+        container.innerHTML = "";
+
+        if (bookings.length === 0) {
+          container.innerHTML = "<p class='empty'>No bookings yet.</p>";
+          return;
+        }
+
+        bookings.forEach(b => {
+          container.innerHTML += `
+            <div class="booking">
+              <p><strong>Turf ID:</strong> ${b.turf_id}</p>
+              <p><strong>Slot:</strong> ${b.slot_start} - ${b.slot_end}</p>
+              <p class="status">Status: ${b.status}</p>
+            </div>
+          `;
+        });
+      } catch (err) {
+        console.error("Error loading bookings:", err);
+        container.innerHTML = "<p class='empty'>Failed to load bookings.</p>";
+      }
+    }
+
+    loadBookings();
+  </script>
+</body>
+</html>

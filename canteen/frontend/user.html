@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Canteen Dashboard</title>
+  <style>
+    body { font-family: Arial; background: #f9fafb; margin: 0; padding: 0; }
+    header { background : #f59e0b; color: #fff; padding: 16px; text-align: center; }
+    main { padding: 20px; }
+    .item { background: #fff; padding: 12px; margin: 8px 0; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+    button { background: #2563eb; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+    button:hover { background: #1e4fd6; }
+    .closed { color: red; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>College Canteen</h1>
+  </header>
+  <main>
+    <h2>Today’s Menu</h2>
+    <div id="menu"></div>
+  </main>
+
+  <script>
+    const openTime = "09:00";   // 9 AM
+    const closeTime = "15:30";  // 3:30 PM
+
+    // Hardcoded for now (later replace with logged-in student info)
+    const customerId = 1;
+    const collegeId = 1;
+
+    function isOpenNow() {
+      const now = new Date();
+      const current = now.getHours() * 60 + now.getMinutes();
+
+      const [oh, om] = openTime.split(":").map(Number);
+      const [ch, cm] = closeTime.split(":").map(Number);
+
+      const openMinutes = oh * 60 + om;
+      const closeMinutes = ch * 60 + cm;
+
+      return current >= openMinutes && current <= closeMinutes;
+    }
+
+    async function placeOrder(itemId) {
+      try {
+        const res = await fetch("http://localhost:4002/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            customer_id: customerId,
+            item_id: itemId,
+            quantity: 1
+          })
+        });
+        const data = await res.json();
+        alert(`Order placed ✅ (Order ID: ${data.id})`);
+      } catch (err) {
+        console.error("Failed to place order:", err);
+        alert("Failed to place order ❌");
+      }
+    }
+
+    async function renderMenu() {
+      const container = document.getElementById("menu");
+      container.innerHTML = "";
+
+      if (!isOpenNow()) {
+        container.innerHTML = `<p class="closed">Canteen is closed. Open from ${openTime} to ${closeTime}.</p>`;
+        return;
+      }
+
+      try {
+        const res = await fetch(`http://localhost:4002/menu/today/${collegeId}`);
+        const items = await res.json();
+
+        if (items.length === 0) {
+          container.innerHTML = "<p>No items available today.</p>";
+          return;
+        }
+
+        items.forEach(item => {
+          const div = document.createElement("div");
+          div.className = "item";
+          div.innerHTML = `
+            <span>${item.item}</span>
+            <span>₹${item.price}</span>
+            <button>Order</button>
+          `;
+          div.querySelector("button").addEventListener("click", () => placeOrder(item.id));
+          container.appendChild(div);
+        });
+      } catch (err) {
+        console.error("Failed to load menu:", err);
+        container.innerHTML = "<p>Failed to load menu. Please try again later.</p>";
+      }
+    }
+
+    renderMenu();
+  </script>
+</body>
+</html>

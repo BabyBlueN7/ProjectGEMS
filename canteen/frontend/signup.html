@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Canteen Student Sign Up</title>
+  <style>
+    body { font-family: Arial; background: #f6f7fb; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    .box { background: #fff; padding: 28px; width: 340px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+    h2 { text-align: center; margin: 0 0 18px; }
+    input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #cdd4da; border-radius: 8px; }
+    button { width: 100%; padding: 10px; margin-top: 10px; background: #10b981; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+    button:hover { background: #0f9a70; }
+    .links { text-align: center; margin-top: 12px; font-size: 14px; }
+    .links a { color: #2563eb; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2>Student Sign Up</h2>
+    <input type="text" id="name" placeholder="Name" />
+    <input type="text" id="admission" placeholder="Admission Number" />
+    <input type="password" id="password" placeholder="Password" />
+    <button onclick="signup()">Create Account</button>
+    <div class="links">
+      <p>Already have an account? <a href="login.html">Login</a></p>
+    </div>
+  </div>
+
+  <script>
+    async function signup() {
+      const name = document.getElementById("name").value;
+      const admission_no = document.getElementById("admission").value;
+      const password = document.getElementById("password").value;
+
+      const res = await fetch("http://localhost:4002/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, admission_no, password, role: "student", college_id: null })
+      });
+
+      const data = await res.json();
+      if (data.error) alert(data.error);
+      else {
+        alert("Student account created!");
+        window.location.href = "user.html";
+      }
+    }
+  </script>
+</body>
+</html>

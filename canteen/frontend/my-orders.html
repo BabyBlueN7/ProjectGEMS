@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Canteen Orders</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9fafb;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: #f59e0b;
+      color: #fff;
+      padding: 16px;
+      text-align: center;
+    }
+    main {
+      padding: 20px;
+    }
+    .order {
+      background: #fff;
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .status {
+      font-weight: bold;
+      color: #2563eb;
+    }
+    .empty {
+      color: #ef4444;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>My Orders</h1>
+  </header>
+  <main>
+    <h2>Recent Food Orders</h2>
+    <div id="orders"></div>
+  </main>
+
+  <script>
+    // For now, hardcode a test customer_id = 1
+    const customerId = 1;
+
+    async function loadOrders() {
+      const container = document.getElementById("orders");
+      container.innerHTML = "<p>Loading...</p>";
+
+      try {
+        const res = await fetch(`http://localhost:4002/orders/${customerId}`);
+        const orders = await res.json();
+
+        container.innerHTML = "";
+
+        if (orders.length === 0) {
+          container.innerHTML = "<p class='empty'>No orders yet.</p>";
+          return;
+        }
+
+        orders.forEach(o => {
+          container.innerHTML += `
+            <div class="order">
+              <p><strong>Order ID:</strong> ${o.id}</p>
+              <p><strong>Item ID:</strong> ${o.item_id}</p>
+              <p><strong>Quantity:</strong> ${o.quantity}</p>
+              <p class="status">Status: ${o.status}</p>
+            </div>
+          `;
+        });
+      } catch (err) {
+        console.error("Error loading orders:", err);
+        container.innerHTML = "<p class='empty'>Failed to load orders.</p>";
+      }
+    }
+
+    loadOrders();
+  </script>
+</body>
+</html>
