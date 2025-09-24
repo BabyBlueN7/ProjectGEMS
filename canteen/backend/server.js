@@ -1,7 +1,9 @@
 const express = require("express");
 const sqlite3 = require("sqlite3").verbose();
+const cors = require("cors");
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 // Root test
@@ -28,14 +30,22 @@ db.serialize(() => {
     UNIQUE(college_id, role)
   )`);
 
-  // Menu table (supports college_id)
-  db.run(`CREATE TABLE IF NOT EXISTS menu (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    item TEXT,
-    price INTEGER,
-    available INTEGER DEFAULT 1,
-    college_id INTEGER
-  )`);
+  // Menu table (no college_id here anymore)
+db.run(`CREATE TABLE IF NOT EXISTS menu (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  item TEXT,
+  price INTEGER,
+  available INTEGER DEFAULT 1
+)`);
+
+  // Link table: which menu items belong to which colleges
+db.run(`CREATE TABLE IF NOT EXISTS college_menu (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  college_id INTEGER,
+  menu_id INTEGER,
+  FOREIGN KEY (college_id) REFERENCES colleges(id),
+  FOREIGN KEY (menu_id) REFERENCES menu(id)
+)`);
 
   // Orders table
   db.run(`CREATE TABLE IF NOT EXISTS orders (
@@ -46,16 +56,31 @@ db.serialize(() => {
     status TEXT DEFAULT 'pending'
   )`);
 
-  // Auto-insert sample menu if empty
+  // Auto-insert sample college + menu if empty
+  db.get("SELECT COUNT(*) as count FROM colleges", (err, row) => {
+    if (row.count === 0) {
+      db.run("INSERT INTO colleges (name) VALUES (?)", ["My College"]);
+      console.log("Sample college inserted ✅");
+    }
+  });
+
   db.get("SELECT COUNT(*) as count FROM menu", (err, row) => {
     if (row.count === 0) {
-      const stmt = db.prepare("INSERT INTO menu (item, price, available, college_id) VALUES (?,?,?,?)");
-      stmt.run("Masala Dosa", 40, 1, 1);
-      stmt.run("Veg Biriyani", 60, 1, 1);
-      stmt.run("Tea", 10, 1, 1);
-      stmt.run("Coffee", 15, 0, 1); // unavailable
+      const stmt = db.prepare("INSERT INTO menu (item, price, available) VALUES (?,?,?)");
+      stmt.run("Masala Dosa", 40, 1);
+      stmt.run("Veg Biriyani", 60, 1);
+      stmt.run("Tea", 10, 1);
+      stmt.run("Coffee", 15, 0);
       stmt.finalize();
       console.log("Sample menu inserted ✅");
+
+      // Link all items to college_id = 1
+      db.all("SELECT id FROM menu", [], (err, rows) => {
+        rows.forEach(r => {
+          db.run("INSERT INTO college_menu (college_id, menu_id) VALUES (?,?)", [1, r.id]);
+        });
+        console.log("Linked sample menu to college 1 ✅");
+      });
     }
   });
 });
@@ -66,7 +91,10 @@ db.serialize(() => {
 app.get("/menu/today/:college_id", (req, res) => {
   const college_id = req.params.college_id;
   db.all(
-    "SELECT * FROM menu WHERE available=1 AND college_id=?",
+    `SELECT m.id, m.item, m.price, m.available
+     FROM menu m
+     JOIN college_menu cm ON m.id = cm.menu_id
+     WHERE cm.college_id = ? AND m.available = 1`,
     [college_id],
     (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
@@ -75,15 +103,28 @@ app.get("/menu/today/:college_id", (req, res) => {
   );
 });
 
-// Add new menu item (owner)
+// Add new menu item and link it to a college
 app.post("/menu", (req, res) => {
   const { item, price, available, college_id } = req.body;
+
+  // Step 1: Insert into menu
   db.run(
-    "INSERT INTO menu (item, price, available, college_id) VALUES (?,?,?,?)",
-    [item, price, available, college_id],
+    "INSERT INTO menu (item, price, available) VALUES (?,?,?)",
+    [item, price, available],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
-      res.json({ id: this.lastID, item, price, available, college_id });
+
+      const menuId = this.lastID;
+
+      // Step 2: Link to college in college_menu
+      db.run(
+        "INSERT INTO college_menu (college_id, menu_id) VALUES (?,?)",
+        [college_id, menuId],
+        function (err2) {
+          if (err2) return res.status(500).json({ error: err2.message });
+          res.json({ id: menuId, item, price, available, college_id });
+        }
+      );
     }
   );
 });

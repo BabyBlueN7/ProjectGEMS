@@ -73,7 +73,8 @@
 
       try {
         const res = await fetch(`http://localhost:4002/menu/today/${collegeId}`);
-        const items = await res.json();
+const items = await res.json();
+console.log("Fetched items:", items);  // 👈 add this
 
         if (items.length === 0) {
           container.innerHTML = "<p>No items available today.</p>";
