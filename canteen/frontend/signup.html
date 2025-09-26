@@ -7,7 +7,7 @@
     body { font-family: Arial; background: #f6f7fb; display: flex; justify-content: center; align-items: center; height: 100vh; }
     .box { background: #fff; padding: 28px; width: 340px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
     h2 { text-align: center; margin: 0 0 18px; }
-    input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #cdd4da; border-radius: 8px; }
+    input, select { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #cdd4da; border-radius: 8px; }
     button { width: 100%; padding: 10px; margin-top: 10px; background: #10b981; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
     button:hover { background: #0f9a70; }
     .links { text-align: center; margin-top: 12px; font-size: 14px; }
@@ -20,6 +20,12 @@
     <input type="text" id="name" placeholder="Name" />
     <input type="text" id="admission" placeholder="Admission Number" />
     <input type="password" id="password" placeholder="Password" />
+    
+    <!-- College selection (now populated dynamically) -->
+    <select id="college">
+      <option value="">Loading colleges...</option>
+    </select>
+
     <button onclick="signup()">Create Account</button>
     <div class="links">
       <p>Already have an account? <a href="login.html">Login</a></p>
@@ -27,22 +33,66 @@
   </div>
 
   <script>
+    // Load colleges dynamically
+    async function loadColleges() {
+      try {
+        const res = await fetch("http://localhost:4002/colleges");
+        const colleges = await res.json();
+        const select = document.getElementById("college");
+        select.innerHTML = ""; // clear placeholder
+
+        if (colleges.length === 0) {
+          const opt = document.createElement("option");
+          opt.value = "";
+          opt.textContent = "No colleges available";
+          select.appendChild(opt);
+          return;
+        }
+
+        colleges.forEach(c => {
+          const opt = document.createElement("option");
+          opt.value = c.id;
+          opt.textContent = c.name;
+          select.appendChild(opt);
+        });
+      } catch (err) {
+        console.error("Error loading colleges:", err);
+        const select = document.getElementById("college");
+        select.innerHTML = "<option value=''>Error loading colleges</option>";
+      }
+    }
+
+    // Call on page load
+    loadColleges();
+
     async function signup() {
-      const name = document.getElementById("name").value;
-      const admission_no = document.getElementById("admission").value;
-      const password = document.getElementById("password").value;
+      const name = document.getElementById("name").value.trim();
+      const admission_no = document.getElementById("admission").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const college_id = document.getElementById("college").value;
 
-      const res = await fetch("http://localhost:4002/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, admission_no, password, role: "student", college_id: null })
-      });
+      if (!name || !admission_no || !password || !college_id) {
+        alert("Please fill all fields and select a college");
+        return;
+      }
 
-      const data = await res.json();
-      if (data.error) alert(data.error);
-      else {
-        alert("Student account created!");
-        window.location.href = "user.html";
+      try {
+        const res = await fetch("http://localhost:4002/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, admission_no, password, role: "student", college_id })
+        });
+
+        const data = await res.json();
+        if (data.error) {
+          alert("Signup failed: " + data.error);
+        } else {
+          alert("Student account created ✅");
+          window.location.href = "login.html";
+        }
+      } catch (err) {
+        console.error("Signup error:", err);
+        alert("Something went wrong. Try again.");
       }
     }
   </script>

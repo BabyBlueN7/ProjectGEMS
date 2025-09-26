@@ -27,25 +27,25 @@ db.serialize(() => {
     password TEXT,
     role TEXT CHECK(role IN ('student', 'owner')),
     college_id INTEGER,
-    UNIQUE(college_id, role)
+    UNIQUE(admission_no, role)
   )`);
 
   // Menu table (no college_id here anymore)
-db.run(`CREATE TABLE IF NOT EXISTS menu (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  item TEXT,
-  price INTEGER,
-  available INTEGER DEFAULT 1
-)`);
+  db.run(`CREATE TABLE IF NOT EXISTS menu (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    item TEXT,
+    price INTEGER,
+    available INTEGER DEFAULT 1
+  )`);
 
   // Link table: which menu items belong to which colleges
-db.run(`CREATE TABLE IF NOT EXISTS college_menu (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  college_id INTEGER,
-  menu_id INTEGER,
-  FOREIGN KEY (college_id) REFERENCES colleges(id),
-  FOREIGN KEY (menu_id) REFERENCES menu(id)
-)`);
+  db.run(`CREATE TABLE IF NOT EXISTS college_menu (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    college_id INTEGER,
+    menu_id INTEGER,
+    FOREIGN KEY (college_id) REFERENCES colleges(id),
+    FOREIGN KEY (menu_id) REFERENCES menu(id)
+  )`);
 
   // Orders table
   db.run(`CREATE TABLE IF NOT EXISTS orders (
@@ -87,6 +87,43 @@ db.run(`CREATE TABLE IF NOT EXISTS college_menu (
 
 // --- Routes ---
 
+// ✅ Signup route for student or owner
+app.post("/signup", (req, res) => {
+  const { name, admission_no, password, role, college_id } = req.body;
+
+  db.run(
+    "INSERT INTO users (name, admission_no, password, role, college_id) VALUES (?,?,?,?,?)",
+    [name, admission_no, password, role, college_id],
+    function (err) {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.json({
+        id: this.lastID,
+        name,
+        admission_no,
+        role,
+        college_id
+      });
+    }
+  );
+});
+
+// Login route for student or owner
+app.post("/login", (req, res) => {
+  const { admission_no, password, role } = req.body;
+  console.log("Login attempt:", admission_no, password, role); // 👈 debug
+  db.get(
+    "SELECT * FROM users WHERE admission_no=? AND password=? AND role=?",
+    [admission_no, password, role],
+    (err, user) => {
+      if (err) return res.status(500).json({ error: err.message });
+      if (!user) return res.status(401).json({ error: "Invalid credentials" });
+      res.json(user);
+    }
+  );
+});
+
 // Get today's menu for a specific college
 app.get("/menu/today/:college_id", (req, res) => {
   const college_id = req.params.college_id;
@@ -107,7 +144,6 @@ app.get("/menu/today/:college_id", (req, res) => {
 app.post("/menu", (req, res) => {
   const { item, price, available, college_id } = req.body;
 
-  // Step 1: Insert into menu
   db.run(
     "INSERT INTO menu (item, price, available) VALUES (?,?,?)",
     [item, price, available],
@@ -116,7 +152,6 @@ app.post("/menu", (req, res) => {
 
       const menuId = this.lastID;
 
-      // Step 2: Link to college in college_menu
       db.run(
         "INSERT INTO college_menu (college_id, menu_id) VALUES (?,?)",
         [college_id, menuId],
@@ -142,10 +177,25 @@ app.post("/orders", (req, res) => {
   );
 });
 
-// Get all orders for a student
+// Get all orders for a student with item details
 app.get("/orders/:customer_id", (req, res) => {
   const customer_id = req.params.customer_id;
-  db.all("SELECT * FROM orders WHERE customer_id=?", [customer_id], (err, rows) => {
+  db.all(
+    `SELECT o.id, m.item, m.price, o.quantity, o.status
+     FROM orders o
+     JOIN menu m ON o.item_id = m.id
+     WHERE o.customer_id = ?`,
+    [customer_id],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(rows);
+    }
+  );
+});
+
+// Get all colleges
+app.get("/colleges", (req, res) => {
+  db.all("SELECT * FROM colleges", [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
