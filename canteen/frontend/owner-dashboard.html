@@ -7,11 +7,16 @@
     body { font-family: Arial; background: #f9fafb; margin: 0; padding: 0; }
     header { background: #f59e0b; color: #fff; padding: 16px; text-align: center; }
     main { padding: 20px; }
-    form { background: #fff; padding: 16px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    form, .orders { background: #fff; padding: 16px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
     label { display: block; margin: 8px 0 4px; }
     input, select { width: 100%; padding: 8px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #ccc; }
-    button { background: #2563eb; color: #fff; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; }
+    button { background: #2563eb; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; margin-right: 6px; }
     button:hover { background: #1e4fd6; }
+    .order { border-bottom: 1px solid #eee; padding: 10px 0; }
+    .status { font-weight: bold; }
+    .delivered { color: green; }
+    .canceled { color: red; }
+    .pending { color: orange; }
   </style>
 </head>
 <body>
@@ -19,6 +24,7 @@
     <h1>Canteen Owner Dashboard</h1>
   </header>
   <main>
+    <!-- Add Menu Item -->
     <h2>Add Menu Item</h2>
     <form id="menuForm">
       <label for="item">Food Item</label>
@@ -33,14 +39,21 @@
         <option value="0">No</option>
       </select>
 
-      <label for="college">College ID</label>
-      <input type="number" id="college" required />
-
       <button type="submit">Add Item</button>
     </form>
+
+    <!-- Orders Section -->
+    <h2>Student Orders</h2>
+    <div class="orders" id="owner-orders">
+      <p>Loading orders...</p>
+    </div>
   </main>
 
   <script>
+    const user = JSON.parse(localStorage.getItem("user")); // owner info
+    const collegeId = user?.college_id;
+
+    // Add Menu Item
     document.getElementById("menuForm").addEventListener("submit", async (e) => {
       e.preventDefault();
 
@@ -48,7 +61,7 @@
         item: document.getElementById("item").value,
         price: parseInt(document.getElementById("price").value),
         available: parseInt(document.getElementById("available").value),
-        college_id: parseInt(document.getElementById("college").value)
+        college_id: collegeId
       };
 
       try {
@@ -65,6 +78,54 @@
         alert("Failed to add menu item ❌");
       }
     });
+
+    // Load Orders
+    async function loadOwnerOrders() {
+      try {
+        const res = await fetch(`http://localhost:4002/owner/orders/${collegeId}`);
+        const orders = await res.json();
+
+        const container = document.getElementById("owner-orders");
+        container.innerHTML = "";
+
+        if (orders.length === 0) {
+          container.innerHTML = "<p>No orders yet.</p>";
+          return;
+        }
+
+        orders.forEach(o => {
+          container.innerHTML += `
+            <div class="order">
+              <p><b>${o.item}</b> × ${o.quantity} — ordered by ${o.student_name}</p>
+              <p>Status: <span class="status ${o.status}">${o.status}</span></p>
+              <button onclick="updateStatus(${o.id}, 'delivered')">Confirm Delivered</button>
+              <button onclick="updateStatus(${o.id}, 'canceled')">Cancel</button>
+            </div>
+          `;
+        });
+      } catch (err) {
+        console.error("Error loading orders:", err);
+        document.getElementById("owner-orders").innerHTML = "<p>Failed to load orders ❌</p>";
+      }
+    }
+
+    // Update Order Status
+    async function updateStatus(orderId, status) {
+      try {
+        await fetch(`http://localhost:4002/orders/${orderId}/status`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status })
+        });
+        loadOwnerOrders(); // refresh list
+      } catch (err) {
+        console.error("Error updating status:", err);
+        alert("Failed to update order ❌");
+      }
+    }
+
+    // Initial load
+    loadOwnerOrders();
   </script>
 </body>
 </html>

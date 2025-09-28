@@ -7,45 +7,68 @@
     body { font-family: Arial; background: #f9fafb; margin: 0; padding: 0; }
     header { background: #2563eb; color: #fff; padding: 16px; text-align: center; }
     main { padding: 20px; }
-    form { background: #fff; padding: 16px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); }
+    form, .section { background: #fff; padding: 16px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
     label { display: block; margin: 8px 0 4px; }
     input, select { width: 100%; padding: 8px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #ccc; }
-    button { background: #10b981; color: #fff; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; }
+    button { background: #10b981; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; margin-right: 6px; }
     button:hover { background: #0f9a70; }
+    .turf, .booking { border-bottom: 1px solid #eee; padding: 10px 0; }
+    .status { font-weight: bold; }
+    .pending { color: orange; }
+    .confirmed { color: green; }
+    .canceled { color: red; }
   </style>
 </head>
 <body>
   <header>
     <h1>Turf Owner Dashboard</h1>
   </header>
-  <main>
-    <h2>Add New Turf</h2>
-    <form id="turfForm">
-      <label for="name">Turf Name</label>
-      <input type="text" id="name" required />
+  <main id="dashboard">
+    <!-- My Turfs -->
+    <div class="section" id="turfs-section">
+      <h2>My Turfs</h2>
+      <div id="my-turfs">Loading...</div>
+    </div>
 
-      <label for="location">Location</label>
-      <input type="text" id="location" required />
+    <!-- Bookings -->
+    <div class="section" id="bookings-section">
+      <h2>Bookings</h2>
+      <div id="owner-bookings">Loading...</div>
+    </div>
 
-      <label for="district">District</label>
-      <input type="text" id="district" required />
+    <!-- Add Turf (will be moved depending on condition) -->
+    <div class="section" id="add-turf-section">
+      <h2>Add New Turf</h2>
+      <form id="turfForm">
+        <label for="name">Turf Name</label>
+        <input type="text" id="name" required />
 
-      <label for="sport">Sport</label>
-      <select id="sport">
-        <option value="Football 5s">Football 5s</option>
-        <option value="Football 7s">Football 7s</option>
-        <option value="Football 10s">Football 10s</option>
-        <option value="Cricket">Cricket</option>
-      </select>
+        <label for="location">Location</label>
+        <input type="text" id="location" required />
 
-      <label for="price">Price per Hour (₹)</label>
-      <input type="number" id="price" required />
+        <label for="district">District</label>
+        <input type="text" id="district" required />
 
-      <button type="submit">Add Turf</button>
-    </form>
+        <label for="sport">Sport</label>
+        <select id="sport">
+          <option value="Football 5s">Football 5s</option>
+          <option value="Football 7s">Football 7s</option>
+          <option value="Football 10s">Football 10s</option>
+          <option value="Cricket">Cricket</option>
+        </select>
+
+        <label for="price">Price per Hour (₹)</label>
+        <input type="number" id="price" required />
+
+        <button type="submit">Add Turf</button>
+      </form>
+    </div>
   </main>
 
   <script>
+    const user = JSON.parse(localStorage.getItem("user")); // owner info
+
+    // Add Turf
     document.getElementById("turfForm").addEventListener("submit", async (e) => {
       e.preventDefault();
 
@@ -54,7 +77,8 @@
         location: document.getElementById("location").value,
         district: document.getElementById("district").value,
         sport: document.getElementById("sport").value,
-        price: parseInt(document.getElementById("price").value)
+        price: parseInt(document.getElementById("price").value),
+        owner_id: user.id
       };
 
       try {
@@ -66,11 +90,87 @@
         const data = await res.json();
         alert(`Turf "${data.name}" added successfully ✅`);
         e.target.reset();
+        loadTurfs();
       } catch (err) {
         console.error("Error adding turf:", err);
         alert("Failed to add turf ❌");
       }
     });
+
+    // Load My Turfs
+    async function loadTurfs() {
+      try {
+        const res = await fetch(`http://localhost:4001/turfs/owner/${user.id}`);
+        const turfs = await res.json();
+        const container = document.getElementById("my-turfs");
+        const dashboard = document.getElementById("dashboard");
+        const addTurfSection = document.getElementById("add-turf-section");
+
+        if (turfs.length === 0) {
+          // First-time owner: show Add Turf at top
+          container.innerHTML = "<p>No turfs added yet. Please add your first turf below.</p>";
+          dashboard.insertBefore(addTurfSection, dashboard.firstChild);
+        } else {
+          // Returning owner: show turfs and move Add Turf to bottom
+          container.innerHTML = turfs.map(t => `
+            <div class="turf">
+              <b>${t.name}</b> — ${t.sport} — ₹${t.price}
+            </div>
+          `).join("");
+          dashboard.appendChild(addTurfSection);
+        }
+      } catch (err) {
+        console.error("Error loading turfs:", err);
+        document.getElementById("my-turfs").innerHTML = "<p>Failed to load turfs ❌</p>";
+      }
+    }
+
+    // Load Bookings
+    async function loadBookings() {
+      try {
+        const res = await fetch(`http://localhost:4001/owner/bookings/${user.id}`);
+        const bookings = await res.json();
+        const container = document.getElementById("owner-bookings");
+        container.innerHTML = bookings.length
+          ? bookings.map(b => `
+            <div class="booking">
+              <p><b>${b.customer_name}</b> booked ${b.turf_name} (${b.slot_start} - ${b.slot_end})</p>
+              <p class="status ${b.status}">Status: ${b.status}</p>
+              <button onclick="updateBookingStatus(${b.id}, 'confirmed')">Confirm</button>
+              <button onclick="updateBookingStatus(${b.id}, 'canceled')">Cancel</button>
+            </div>
+          `).join("")
+          : "<p>No bookings yet.</p>";
+      } catch (err) {
+        console.error("Error loading bookings:", err);
+      }
+    }
+
+    // Update Booking Status
+    async function updateBookingStatus(bookingId, status) {
+      try {
+        await fetch(`http://localhost:4001/bookings/${bookingId}/status`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status })
+        });
+
+        if (status === "canceled") {
+          alert("Booking canceled. Refund will be processed 💸");
+        } else {
+          alert("Booking confirmed ✅");
+        }
+
+        loadBookings(); // refresh list
+      } catch (err) {
+        console.error("Error updating booking status:", err);
+        alert("Failed to update booking ❌");
+      }
+    }
+
+    // Initial load
+    loadTurfs();
+    loadBookings();
   </script>
 </body>
 </html>

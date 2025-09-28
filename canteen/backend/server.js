@@ -30,7 +30,7 @@ db.serialize(() => {
     UNIQUE(admission_no, role)
   )`);
 
-  // Menu table (no college_id here anymore)
+  // Menu table
   db.run(`CREATE TABLE IF NOT EXISTS menu (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     item TEXT,
@@ -112,7 +112,6 @@ app.post("/signup", (req, res) => {
 // Login route for student or owner
 app.post("/login", (req, res) => {
   const { admission_no, password, role } = req.body;
-  console.log("Login attempt:", admission_no, password, role); // 👈 debug
   db.get(
     "SELECT * FROM users WHERE admission_no=? AND password=? AND role=?",
     [admission_no, password, role],
@@ -199,6 +198,37 @@ app.get("/colleges", (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
+});
+
+// ✅ Owner: Get all orders for their college
+app.get("/owner/orders/:college_id", (req, res) => {
+  const college_id = req.params.college_id;
+  db.all(
+    `SELECT o.id, u.name as student_name, m.item, o.quantity, o.status
+     FROM orders o
+     JOIN users u ON o.customer_id = u.id
+     JOIN menu m ON o.item_id = m.id
+     JOIN college_menu cm ON m.id = cm.menu_id
+     WHERE cm.college_id = ?`,
+    [college_id],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(rows);
+    }
+  );
+});
+
+// ✅ Owner: Update order status (delivered / canceled)
+app.put("/orders/:id/status", (req, res) => {
+  const { status } = req.body; // "delivered" or "canceled"
+  db.run(
+    "UPDATE orders SET status=? WHERE id=?",
+    [status, req.params.id],
+    function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ updated: this.changes });
+    }
+  );
 });
 
 // --- Start server ---

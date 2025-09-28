@@ -20,7 +20,7 @@ db.serialize(() => {
     role TEXT CHECK(role IN ('customer', 'owner'))
   )`);
 
-  // Turfs table with district
+  // Turfs table with owner_id
   db.run(`CREATE TABLE IF NOT EXISTS turfs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
@@ -29,17 +29,19 @@ db.serialize(() => {
     sport TEXT,
     price INTEGER,
     start_time TEXT DEFAULT '05:00',
-    end_time TEXT DEFAULT '24:00'
+    end_time TEXT DEFAULT '24:00',
+    owner_id INTEGER
   )`);
 
-  // Bookings table
+  // Bookings table with mode column
   db.run(`CREATE TABLE IF NOT EXISTS bookings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     turf_id INTEGER,
     slot_start TEXT,
     slot_end TEXT,
     customer_id INTEGER,
-    status TEXT DEFAULT 'booked'
+    status TEXT DEFAULT 'booked',
+    mode TEXT DEFAULT 'single' -- "single" or "stranger"
   )`);
 
   // Auto-insert sample turfs if empty
@@ -82,7 +84,7 @@ app.post("/signup", (req, res) => {
   );
 });
 
-// Login route
+// Login route (works for both customer & owner)
 app.post("/login", (req, res) => {
   const { email, password } = req.body;
 
@@ -126,7 +128,7 @@ app.get("/turfs/:id/slots", (req, res) => {
     const [eh] = turf.end_time.split(":").map(Number);
 
     // Fetch booked slots for this turf
-    db.all("SELECT slot_start, slot_end FROM bookings WHERE turf_id=?", [id], (err, booked) => {
+    db.all("SELECT slot_start, slot_end FROM bookings WHERE turf_id=? AND status='booked'", [id], (err, booked) => {
       const bookedSet = new Set(booked.map(b => `${b.slot_start}-${b.slot_end}`));
 
       for (let h = sh; h < eh; h++) {
@@ -148,39 +150,113 @@ app.get("/turfs/:id/slots", (req, res) => {
 
 // --- Turf Creation Route (Owner adds new turf) ---
 app.post("/turfs", (req, res) => {
-  const { name, location, district, sport, price } = req.body;
+  const { name, location, district, sport, price, owner_id } = req.body;
   db.run(
-    "INSERT INTO turfs (name, location, district, sport, price) VALUES (?,?,?,?,?)",
-    [name, location, district, sport, price],
+    "INSERT INTO turfs (name, location, district, sport, price, owner_id) VALUES (?,?,?,?,?,?)",
+    [name, location, district, sport, price, owner_id],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
-      res.json({ id: this.lastID, name, location, district, sport, price });
+      res.json({ id: this.lastID, name, location, district, sport, price, owner_id });
     }
   );
 });
 
 // --- Booking Routes ---
+
+// Create booking (handles auto-cancel for stranger mode)
 app.post("/bookings", (req, res) => {
-  const { turf_id, slot_start, slot_end, customer_id } = req.body;
+  const { turf_id, slot_start, slot_end, customer_id, mode } = req.body;
+
   db.run(
-    "INSERT INTO bookings (turf_id, slot_start, slot_end, customer_id) VALUES (?,?,?,?)",
-    [turf_id, slot_start, slot_end, customer_id],
+    "INSERT INTO bookings (turf_id, slot_start, slot_end, customer_id, mode) VALUES (?,?,?,?,?)",
+    [turf_id, slot_start, slot_end, customer_id, mode || "single"],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
-      res.json({ id: this.lastID, turf_id, slot_start, slot_end, customer_id });
+
+      const bookingId = this.lastID;
+
+      // If this is a single booking, cancel all stranger bookings for same slot
+      if (mode === "single") {
+        db.run(
+          "UPDATE bookings SET status='canceled' WHERE turf_id=? AND slot_start=? AND slot_end=? AND mode='stranger' AND status='booked'",
+          [turf_id, slot_start, slot_end],
+          function (err2) {
+            if (err2) console.error("Error auto-canceling stranger bookings:", err2);
+            if (this.changes > 0) {
+              console.log(`Refund triggered for ${this.changes} stranger bookings 💸`);
+            }
+          }
+        );
+      }
+
+      res.json({ id: bookingId, turf_id, slot_start, slot_end, customer_id, mode });
     }
   );
 });
 
+// Get bookings for a customer with turf details
 app.get("/bookings/:customer_id", (req, res) => {
   const customer_id = req.params.customer_id;
-  db.all("SELECT * FROM bookings WHERE customer_id=?", [customer_id], (err, rows) => {
+  db.all(
+    `SELECT b.id, t.name as turf_name, t.location, t.sport, t.price,
+            b.slot_start, b.slot_end, b.status, b.mode
+     FROM bookings b
+     JOIN turfs t ON b.turf_id = t.id
+     WHERE b.customer_id = ?`,
+    [customer_id],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(rows);
+    }
+  );
+});
+
+// --- Owner Routes ---
+
+// Get turfs owned by an owner
+app.get("/turfs/owner/:owner_id", (req, res) => {
+  db.all("SELECT * FROM turfs WHERE owner_id=?", [req.params.owner_id], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
 });
 
+// Get bookings for all turfs owned by an owner
+app.get("/owner/bookings/:owner_id", (req, res) => {
+  db.all(
+    `SELECT b.id, u.name as customer_name, t.name as turf_name, 
+            b.slot_start, b.slot_end, b.status, b.mode
+     FROM bookings b
+     JOIN users u ON b.customer_id = u.id
+     JOIN turfs t ON b.turf_id = t.id
+     WHERE t.owner_id = ?`,
+    [req.params.owner_id],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(rows);
+    }
+  );
+});
+
+// --- Booking Status Update (Owner action) ---
+app.put("/bookings/:id/status", (req, res) => {
+  const { status } = req.body; // expected: "confirmed" or "canceled"
+  db.run(
+    "UPDATE bookings SET status=? WHERE id=?",
+    [status, req.params.id],
+    function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+
+      if (status === "canceled") {
+        console.log(`Refund triggered for booking ${req.params.id} 💸`);
+      }
+
+      res.json({ updated: this.changes });
+    }
+  );
+});
+
 // --- Start server ---
-app.listen(4001, () =>
-  console.log("Turf backend running on http://localhost:4001")
-);
+app.listen(4001, () => {
+  console.log("Turf backend running on http://localhost:4001");
+});

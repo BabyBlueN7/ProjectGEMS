@@ -28,8 +28,10 @@
     }
     .status {
       font-weight: bold;
-      color: #2563eb;
     }
+    .pending { color: orange; }
+    .delivered { color: green; }
+    .canceled { color: red; }
     .empty {
       color: #ef4444;
       font-weight: bold;
@@ -46,8 +48,8 @@
   </main>
 
   <script>
-    // For now, hardcode a test customer_id = 1
-    const customerId = 1;
+    const user = JSON.parse(localStorage.getItem("user")); // logged-in student
+    const customerId = user?.id;
 
     async function loadOrders() {
       const container = document.getElementById("orders");
@@ -68,9 +70,9 @@
           container.innerHTML += `
             <div class="order">
               <p><strong>Order ID:</strong> ${o.id}</p>
-              <p><strong>Item ID:</strong> ${o.item_id}</p>
+              <p><strong>Item:</strong> ${o.item} (₹${o.price})</p>
               <p><strong>Quantity:</strong> ${o.quantity}</p>
-              <p class="status">Status: ${o.status}</p>
+              <p class="status ${o.status}">Status: ${o.status}</p>
             </div>
           `;
         });
