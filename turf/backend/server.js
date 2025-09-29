@@ -141,7 +141,7 @@ app.get("/turfs/:id/slots", (req, res) => {
           price: turf.price,
           available: !bookedSet.has(key)
         });
-      }
+      } 
 
       res.json({ turf, slots });
     });
