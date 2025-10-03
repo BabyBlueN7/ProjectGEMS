@@ -256,6 +256,19 @@ app.put("/bookings/:id/status", (req, res) => {
   );
 });
 
+// Update turf details
+app.put("/turfs/:id", (req, res) => {
+  const { location, district, sport, price } = req.body;
+  db.run(
+    "UPDATE turfs SET location=?, district=?, sport=?, price=? WHERE id=?",
+    [location, district, sport, price, req.params.id],
+    function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ updated: this.changes });
+    }
+  );
+});
+
 // --- Start server ---
 app.listen(4001, () => {
   console.log("Turf backend running on http://localhost:4001");

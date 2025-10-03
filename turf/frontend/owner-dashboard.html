@@ -17,6 +17,7 @@
     .pending { color: orange; }
     .confirmed { color: green; }
     .canceled { color: red; }
+    .edit-form { background:#f3f4f6; padding:10px; border-radius:6px; margin-top:8px; }
   </style>
 </head>
 <body>
@@ -107,14 +108,13 @@
         const addTurfSection = document.getElementById("add-turf-section");
 
         if (turfs.length === 0) {
-          // First-time owner: show Add Turf at top
           container.innerHTML = "<p>No turfs added yet. Please add your first turf below.</p>";
           dashboard.insertBefore(addTurfSection, dashboard.firstChild);
         } else {
-          // Returning owner: show turfs and move Add Turf to bottom
           container.innerHTML = turfs.map(t => `
             <div class="turf">
               <b>${t.name}</b> — ${t.sport} — ₹${t.price}
+              <button onclick="showEditForm(${t.id}, '${t.name}', '${t.location}', '${t.district}', '${t.sport}', ${t.price})">Edit</button>
             </div>
           `).join("");
           dashboard.appendChild(addTurfSection);
@@ -122,6 +122,51 @@
       } catch (err) {
         console.error("Error loading turfs:", err);
         document.getElementById("my-turfs").innerHTML = "<p>Failed to load turfs ❌</p>";
+      }
+    }
+
+    // Show Edit Form
+    function showEditForm(id, name, location, district, sport, price) {
+      const container = document.getElementById("my-turfs");
+      const formId = `editForm-${id}`;
+      if (document.getElementById(formId)) return; // prevent duplicates
+
+      container.innerHTML += `
+        <form id="${formId}" class="edit-form">
+          <h4>Edit Turf: ${name}</h4>
+          <label>Location</label>
+          <input type="text" id="edit-location-${id}" value="${location}" required />
+          <label>District</label>
+          <input type="text" id="edit-district-${id}" value="${district}" required />
+          <label>Sport</label>
+          <input type="text" id="edit-sport-${id}" value="${sport}" required />
+          <label>Price (₹)</label>
+          <input type="number" id="edit-price-${id}" value="${price}" required />
+          <button type="button" onclick="updateTurf(${id})">Save</button>
+        </form>
+      `;
+    }
+
+    // Update Turf
+    async function updateTurf(id) {
+      const updated = {
+        location: document.getElementById(`edit-location-${id}`).value,
+        district: document.getElementById(`edit-district-${id}`).value,
+        sport: document.getElementById(`edit-sport-${id}`).value,
+        price: parseInt(document.getElementById(`edit-price-${id}`).value)
+      };
+
+      try {
+        await fetch(`http://localhost:4001/turfs/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updated)
+        });
+        alert("Turf updated successfully ✅");
+        loadTurfs();
+      } catch (err) {
+        console.error("Error updating turf:", err);
+        alert("Failed to update turf ❌");
       }
     }
 

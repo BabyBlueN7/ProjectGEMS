@@ -28,7 +28,15 @@
     }
     .status {
       font-weight: bold;
-      color: #10b981;
+    }
+    .booked, .pending {
+      color: orange;
+    }
+    .confirmed {
+      color: green;
+    }
+    .canceled {
+      color: red;
     }
     .empty {
       color: #ef4444;
@@ -46,8 +54,8 @@
   </main>
 
   <script>
-    // For now, hardcode a test customer_id = 1
-    const customerId = 1;
+    const user = JSON.parse(localStorage.getItem("user"));
+    const customerId = user?.id || 1;
 
     async function loadBookings() {
       const container = document.getElementById("bookings");
@@ -67,15 +75,17 @@
         bookings.forEach(b => {
           container.innerHTML += `
             <div class="booking">
-              <p><strong>Turf ID:</strong> ${b.turf_id}</p>
+              <p><strong>Turf:</strong> ${b.turf_name} (${b.sport})</p>
+              <p><strong>Location:</strong> ${b.location}</p>
               <p><strong>Slot:</strong> ${b.slot_start} - ${b.slot_end}</p>
-              <p class="status">Status: ${b.status}</p>
+              <p><strong>Price:</strong> ₹${b.price}</p>
+              <p class="status ${b.status}">Status: ${b.status}</p>
             </div>
           `;
         });
       } catch (err) {
         console.error("Error loading bookings:", err);
-        container.innerHTML = "<p class='empty'>Failed to load bookings.</p>";
+        container.innerHTML = "<p class='empty'>Failed to load bookings ❌</p>";
       }
     }
 
