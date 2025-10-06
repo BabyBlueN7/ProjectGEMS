@@ -113,10 +113,12 @@
         } else {
           container.innerHTML = turfs.map(t => `
             <div class="turf">
-              <b>${t.name}</b> — ${t.sport} — ₹${t.price}
-              <button onclick="showEditForm(${t.id}, '${t.name}', '${t.location}', '${t.district}', '${t.sport}', ${t.price})">Edit</button>
-            </div>
-          `).join("");
+    <b>${t.name}</b> — ${t.sport} — ₹${t.price}
+    <button onclick="showEditForm(${t.id}, '${t.name}', '${t.location}', '${t.district}', '${t.sport}', ${t.price})">Edit</button>
+    <button onclick="deleteTurf(${t.id})" style="background:#ef4444;">Delete</button>
+  </div>
+`).join("");
+
           dashboard.appendChild(addTurfSection);
         }
       } catch (err) {
@@ -169,7 +171,18 @@
         alert("Failed to update turf ❌");
       }
     }
-
+    // Delete Turf
+    async function deleteTurf(id) {
+  if (!confirm("Are you sure you want to delete this turf?")) return;
+  try {
+    await fetch(`http://localhost:4001/turfs/${id}`, { method: "DELETE" });
+    alert("Turf deleted successfully 🗑️");
+    loadTurfs();
+  } catch (err) {
+    console.error("Error deleting turf:", err);
+    alert("Failed to delete turf ❌");
+  }
+}
     // Load Bookings
     async function loadBookings() {
       try {

@@ -7,16 +7,18 @@
     body { font-family: Arial; background: #f9fafb; margin: 0; padding: 0; }
     header { background: #f59e0b; color: #fff; padding: 16px; text-align: center; }
     main { padding: 20px; }
-    form, .orders { background: #fff; padding: 16px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    form, .orders, .menu-section { background: #fff; padding: 16px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
     label { display: block; margin: 8px 0 4px; }
     input, select { width: 100%; padding: 8px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #ccc; }
-    button { background: #2563eb; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; margin-right: 6px; }
+    button { background: #2563eb; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-right: 6px; }
     button:hover { background: #1e4fd6; }
-    .order { border-bottom: 1px solid #eee; padding: 10px 0; }
+    .order, .menu-item { border-bottom: 1px solid #eee; padding: 10px 0; }
     .status { font-weight: bold; }
     .delivered { color: green; }
     .canceled { color: red; }
     .pending { color: orange; }
+    .out { color: red; font-weight: bold; }
+    .in { color: green; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -41,6 +43,12 @@
 
       <button type="submit">Add Item</button>
     </form>
+
+    <!-- Manage Menu -->
+    <h2>Manage Menu</h2>
+    <div class="menu-section" id="menu-list">
+      <p>Loading menu...</p>
+    </div>
 
     <!-- Orders Section -->
     <h2>Student Orders</h2>
@@ -73,11 +81,85 @@
         const data = await res.json();
         alert(`Menu item "${data.item}" added successfully ✅`);
         e.target.reset();
+        loadMenu();
       } catch (err) {
         console.error("Error adding menu item:", err);
         alert("Failed to add menu item ❌");
       }
     });
+
+    // Load Menu Items
+    async function loadMenu() {
+      try {
+        const res = await fetch(`http://localhost:4002/menu/all/${collegeId}`);
+        const menu = await res.json();
+        const container = document.getElementById("menu-list");
+        container.innerHTML = "";
+
+        if (menu.length === 0) {
+          container.innerHTML = "<p>No menu items yet.</p>";
+          return;
+        }
+
+        menu.forEach(m => {
+          container.innerHTML += `
+            <div class="menu-item">
+              <b>${m.item}</b> — ₹${m.price} 
+              <span class="${m.available ? 'in' : 'out'}">(${m.available ? 'Available' : 'Out of Stock'})</span>
+              <button onclick="showEditForm(${m.id}, '${m.item}', ${m.price}, ${m.available})">Edit</button>
+            </div>
+          `;
+        });
+      } catch (err) {
+        console.error("Error loading menu:", err);
+        document.getElementById("menu-list").innerHTML = "<p>Failed to load menu ❌</p>";
+      }
+    }
+
+    // Show Edit Form for Menu Item
+    function showEditForm(id, item, price, available) {
+      const container = document.getElementById("menu-list");
+      const formId = `editForm-${id}`;
+      if (document.getElementById(formId)) return;
+
+      container.innerHTML += `
+        <form id="${formId}" class="menu-item" style="background:#f3f4f6; padding:10px; border-radius:6px;">
+          <h4>Edit: ${item}</h4>
+          <label>Item</label>
+          <input type="text" id="edit-item-${id}" value="${item}" required />
+          <label>Price (₹)</label>
+          <input type="number" id="edit-price-${id}" value="${price}" required />
+          <label>Available</label>
+          <select id="edit-available-${id}">
+            <option value="1" ${available ? "selected" : ""}>Yes</option>
+            <option value="0" ${!available ? "selected" : ""}>No</option>
+          </select>
+          <button type="button" onclick="updateMenu(${id})">Save</button>
+        </form>
+      `;
+    }
+
+    // Update Menu Item
+    async function updateMenu(id) {
+      const updated = {
+        item: document.getElementById(`edit-item-${id}`).value,
+        price: parseInt(document.getElementById(`edit-price-${id}`).value),
+        available: parseInt(document.getElementById(`edit-available-${id}`).value)
+      };
+
+      try {
+        await fetch(`http://localhost:4002/menu/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updated)
+        });
+        alert("Menu updated successfully ✅");
+        loadMenu();
+      } catch (err) {
+        console.error("Error updating menu:", err);
+        alert("Failed to update menu ❌");
+      }
+    }
 
     // Load Orders
     async function loadOwnerOrders() {
@@ -98,7 +180,9 @@
             <div class="order">
               <p><b>${o.item}</b> × ${o.quantity} — ordered by ${o.student_name}</p>
               <p>Status: <span class="status ${o.status}">${o.status}</span></p>
-              <button onclick="updateStatus(${o.id}, 'delivered')">Confirm Delivered</button>
+              <button onclick="updateStatus(${o.id}, 'preparing')">Preparing</button>
+              <button onclick="updateStatus(${o.id}, 'ready')">Ready</button>
+              <button onclick="updateStatus(${o.id}, 'delivered')">Delivered</button>
               <button onclick="updateStatus(${o.id}, 'canceled')">Cancel</button>
             </div>
           `;
@@ -117,7 +201,7 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status })
         });
-        loadOwnerOrders(); // refresh list
+        loadOwnerOrders();
       } catch (err) {
         console.error("Error updating status:", err);
         alert("Failed to update order ❌");
@@ -125,6 +209,7 @@
     }
 
     // Initial load
+    loadMenu();
     loadOwnerOrders();
   </script>
 </body>

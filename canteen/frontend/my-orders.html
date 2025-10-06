@@ -26,15 +26,27 @@
       border-radius: 6px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     }
-    .status {
-      font-weight: bold;
-    }
+    .status { font-weight: bold; }
     .pending { color: orange; }
+    .preparing { color: blue; }
+    .ready { color: purple; }
     .delivered { color: green; }
     .canceled { color: red; }
     .empty {
       color: #ef4444;
       font-weight: bold;
+    }
+    button.cancel-btn {
+      background: #ef4444;
+      color: #fff;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 6px;
+    }
+    button.cancel-btn:hover {
+      background: #dc2626;
     }
   </style>
 </head>
@@ -73,12 +85,30 @@
               <p><strong>Item:</strong> ${o.item} (₹${o.price})</p>
               <p><strong>Quantity:</strong> ${o.quantity}</p>
               <p class="status ${o.status}">Status: ${o.status}</p>
+              ${o.status === "pending" || o.status === "preparing" ? 
+                `<button class="cancel-btn" onclick="cancelOrder(${o.id})">Cancel Order</button>` : ""}
             </div>
           `;
         });
       } catch (err) {
         console.error("Error loading orders:", err);
         container.innerHTML = "<p class='empty'>Failed to load orders.</p>";
+      }
+    }
+
+    async function cancelOrder(orderId) {
+      if (!confirm("Cancel this order?")) return;
+      try {
+        await fetch(`http://localhost:4002/orders/${orderId}/status`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "canceled" })
+        });
+        alert("Order canceled. Refund will be processed 💸");
+        loadOrders();
+      } catch (err) {
+        console.error("Error canceling order:", err);
+        alert("Failed to cancel order ❌");
       }
     }
 

@@ -231,5 +231,13 @@ app.put("/orders/:id/status", (req, res) => {
   );
 });
 
+// Update order status (student cancel or owner update)
+app.put("/orders/:id/status", (req, res) => {
+  const { status } = req.body; // pending, preparing, ready, delivered, canceled
+  db.run("UPDATE orders SET status=? WHERE id=?", [status, req.params.id], function (err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ updated: this.changes });
+  });
+});
 // --- Start server ---
 app.listen(4002, () => console.log("Canteen backend running on http://localhost:4002"));

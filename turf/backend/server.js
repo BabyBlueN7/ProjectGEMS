@@ -269,6 +269,14 @@ app.put("/turfs/:id", (req, res) => {
   );
 });
 
+// Delete a turf
+app.delete("/turfs/:id", (req, res) => {
+  db.run("DELETE FROM turfs WHERE id=?", [req.params.id], function (err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ deleted: this.changes });
+  });
+});
+
 // --- Start server ---
 app.listen(4001, () => {
   console.log("Turf backend running on http://localhost:4001");
