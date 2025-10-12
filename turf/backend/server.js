@@ -150,13 +150,13 @@ app.get("/turfs/:id/slots", (req, res) => {
 
 // --- Turf Creation Route (Owner adds new turf) ---
 app.post("/turfs", (req, res) => {
-  const { name, location, district, sport, price, owner_id } = req.body;
+  const { name, location, district, sport, price, owner_id, min_target_players, max_stranger_players } = req.body;
   db.run(
-    "INSERT INTO turfs (name, location, district, sport, price, owner_id) VALUES (?,?,?,?,?,?)",
-    [name, location, district, sport, price, owner_id],
+    "INSERT INTO turfs (name, location, district, sport, price, owner_id, min_target_players, max_stranger_players) VALUES (?,?,?,?,?,?,?,?)",
+    [name, location, district, sport, price, owner_id, min_target_players || 0, max_stranger_players || 0],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
-      res.json({ id: this.lastID, name, location, district, sport, price, owner_id });
+      res.json({ id: this.lastID, name, location, district, sport, price, owner_id, min_target_players, max_stranger_players });
     }
   );
 });
@@ -177,17 +177,27 @@ app.post("/bookings", (req, res) => {
 
       // If this is a single booking, cancel all stranger bookings for same slot
       if (mode === "single") {
+  db.get(
+    `SELECT COUNT(*) as joined, t.min_target_players 
+     FROM bookings b 
+     JOIN turfs t ON b.turf_id = t.id 
+     WHERE b.turf_id=? AND b.slot_start=? AND b.slot_end=? AND b.mode='stranger' AND b.status='booked'`,
+    [turf_id, slot_start, slot_end],
+    (err2, row) => {
+      if (err2) return res.status(500).json({ error: err2.message });
+
+      if (row.joined < row.min_target_players) {
+        // Cancel strangers
         db.run(
           "UPDATE bookings SET status='canceled' WHERE turf_id=? AND slot_start=? AND slot_end=? AND mode='stranger' AND status='booked'",
-          [turf_id, slot_start, slot_end],
-          function (err2) {
-            if (err2) console.error("Error auto-canceling stranger bookings:", err2);
-            if (this.changes > 0) {
-              console.log(`Refund triggered for ${this.changes} stranger bookings 💸`);
-            }
-          }
+          [turf_id, slot_start, slot_end]
         );
+      } else {
+        return res.status(400).json({ error: "Stranger play already locked in" });
       }
+    }
+  );
+}
 
       res.json({ id: bookingId, turf_id, slot_start, slot_end, customer_id, mode });
     }
@@ -258,10 +268,10 @@ app.put("/bookings/:id/status", (req, res) => {
 
 // Update turf details
 app.put("/turfs/:id", (req, res) => {
-  const { location, district, sport, price } = req.body;
+  const { location, district, sport, price, min_target_players, max_stranger_players } = req.body;
   db.run(
-    "UPDATE turfs SET location=?, district=?, sport=?, price=? WHERE id=?",
-    [location, district, sport, price, req.params.id],
+    "UPDATE turfs SET location=?, district=?, sport=?, price=?, min_target_players=?, max_stranger_players=? WHERE id=?",
+    [location, district, sport, price, min_target_players, max_stranger_players, req.params.id],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ updated: this.changes });
