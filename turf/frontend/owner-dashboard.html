@@ -33,6 +33,20 @@
 
     <!-- Bookings -->
     <div class="section" id="bookings-section">
+      <label>Status Filter</label>
+<select id="statusFilter">
+  <option value="">All</option>
+  <option value="pending">Pending</option>
+  <option value="confirmed">Confirmed</option>
+  <option value="canceled">Canceled</option>
+</select>
+
+<label>Mode Filter</label>
+<select id="modeFilter">
+  <option value="">All</option>
+  <option value="single">Single</option>
+  <option value="stranger">Stranger</option>
+</select>
       <h2>Bookings</h2>
       <div id="owner-bookings">Loading...</div>
     </div>
@@ -163,21 +177,28 @@
 
     // Update Turf
     async function updateTurf(id) {
-      
+  const updated = {
+    location: document.getElementById(`edit-location-${id}`).value,
+    district: document.getElementById(`edit-district-${id}`).value,
+    sport: document.getElementById(`edit-sport-${id}`).value,
+    price: parseInt(document.getElementById(`edit-price-${id}`).value),
+    min_target_players: parseInt(document.getElementById(`edit-minTarget-${id}`).value),
+    max_stranger_players: parseInt(document.getElementById(`edit-maxPlayers-${id}`).value)
+  };
 
-      try {
-        await fetch(`http://localhost:4001/turfs/${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updated)
-        });
-        alert("Turf updated successfully ✅");
-        loadTurfs();
-      } catch (err) {
-        console.error("Error updating turf:", err);
-        alert("Failed to update turf ❌");
-      }
-    }
+  try {
+    await fetch(`http://localhost:4001/turfs/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updated)
+    });
+    alert("Turf updated successfully ✅");
+    loadTurfs();
+  } catch (err) {
+    console.error("Error updating turf:", err);
+    alert("Failed to update turf ❌");
+  }
+}
     // Delete Turf
     async function deleteTurf(id) {
   if (!confirm("Are you sure you want to delete this turf?")) return;
@@ -192,24 +213,35 @@
 }
     // Load Bookings
     async function loadBookings() {
-      try {
-        const res = await fetch(`http://localhost:4001/owner/bookings/${user.id}`);
-        const bookings = await res.json();
-        const container = document.getElementById("owner-bookings");
-        container.innerHTML = bookings.length
-          ? bookings.map(b => `
-            <div class="booking">
-              <p><b>${b.customer_name}</b> booked ${b.turf_name} (${b.slot_start} - ${b.slot_end})</p>
-              <p class="status ${b.status}">Status: ${b.status}</p>
-              <button onclick="updateBookingStatus(${b.id}, 'confirmed')">Confirm</button>
-              <button onclick="updateBookingStatus(${b.id}, 'canceled')">Cancel</button>
-            </div>
-          `).join("")
-          : "<p>No bookings yet.</p>";
-      } catch (err) {
-        console.error("Error loading bookings:", err);
-      }
-    }
+  try {
+    const res = await fetch(`http://localhost:4001/owner/bookings/${user.id}`);
+    let bookings = await res.json();
+
+    // Apply filters
+    const statusFilter = document.getElementById("statusFilter").value;
+    const modeFilter = document.getElementById("modeFilter").value;
+
+    if (statusFilter) bookings = bookings.filter(b => b.status === statusFilter);
+    if (modeFilter) bookings = bookings.filter(b => b.mode === modeFilter);
+
+    // Sort by slot_start (earliest first)
+    bookings.sort((a, b) => new Date(a.slot_start) - new Date(b.slot_start));
+
+    const container = document.getElementById("owner-bookings");
+    container.innerHTML = bookings.length
+      ? bookings.map(b => `
+        <div class="booking">
+          <p><b>${b.customer_name}</b> booked ${b.turf_name} (${b.slot_start} - ${b.slot_end})</p>
+          <p class="status ${b.status}">Status: ${b.status}</p>
+          <button onclick="updateBookingStatus(${b.id}, 'confirmed')">Confirm</button>
+          <button onclick="updateBookingStatus(${b.id}, 'canceled')">Cancel</button>
+        </div>
+      `).join("")
+      : "<p>No bookings yet.</p>";
+  } catch (err) {
+    console.error("Error loading bookings:", err);
+  }
+}
 
     // Update Booking Status
     async function updateBookingStatus(bookingId, status) {
@@ -232,6 +264,9 @@
         alert("Failed to update booking ❌");
       }
     }
+
+document.getElementById("statusFilter").addEventListener("change", loadBookings);
+document.getElementById("modeFilter").addEventListener("change", loadBookings);
 
     // Initial load
     loadTurfs();

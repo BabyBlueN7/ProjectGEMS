@@ -48,6 +48,50 @@
     button.cancel-btn:hover {
       background: #dc2626;
     }
+
+    /* Tracker styles */
+    .tracker {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+    .step {
+      flex: 1;
+      text-align: center;
+      font-size: 12px;
+      position: relative;
+    }
+    .step::before {
+      content: "";
+      display: block;
+      margin: 0 auto 6px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #d1d5db; /* gray */
+    }
+    .step.active::before {
+      background: #2563eb; /* blue */
+    }
+    .step.done::before {
+      background: #10b981; /* green */
+    }
+    .step::after {
+      content: "";
+      position: absolute;
+      top: 7px;
+      left: 50%;
+      width: 100%;
+      height: 2px;
+      background: #d1d5db;
+      z-index: -1;
+    }
+    .step:last-child::after {
+      display: none;
+    }
+    .step.done + .step::after {
+      background: #10b981;
+    }
   </style>
 </head>
 <body>
@@ -62,6 +106,19 @@
   <script>
     const user = JSON.parse(localStorage.getItem("user")); // logged-in student
     const customerId = user?.id;
+
+    function renderTracker(status) {
+      const steps = ["pending", "preparing", "ready", "delivered"];
+      return `
+        <div class="tracker">
+          ${steps.map(s => `
+            <div class="step ${status === s ? 'active' : (steps.indexOf(s) < steps.indexOf(status) ? 'done' : '')}">
+              ${s.charAt(0).toUpperCase() + s.slice(1)}
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
 
     async function loadOrders() {
       const container = document.getElementById("orders");
@@ -85,6 +142,7 @@
               <p><strong>Item:</strong> ${o.item} (₹${o.price})</p>
               <p><strong>Quantity:</strong> ${o.quantity}</p>
               <p class="status ${o.status}">Status: ${o.status}</p>
+              ${o.status !== "canceled" ? renderTracker(o.status) : ""}
               ${o.status === "pending" || o.status === "preparing" ? 
                 `<button class="cancel-btn" onclick="cancelOrder(${o.id})">Cancel Order</button>` : ""}
             </div>
