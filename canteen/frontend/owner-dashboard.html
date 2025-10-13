@@ -57,6 +57,12 @@
     </div>
   </main>
 
+  <!-- Analytics Section -->
+  <div class="section" id="analytics-section">
+  <h2>Analytics</h2>
+  <div id="analytics">Loading...</div>
+</div>
+
   <script>
     const user = JSON.parse(localStorage.getItem("user")); // owner info
     const collegeId = user?.college_id;
@@ -207,6 +213,28 @@
         alert("Failed to update order ❌");
       }
     }
+    
+    // Load Analytics
+    async function loadAnalytics() {
+  try {
+    const res = await fetch(`http://localhost:4002/owner/analytics/${user.college_id}`);
+    const data = await res.json();
+
+    document.getElementById("analytics").innerHTML = `
+      <p><b>Daily Sales:</b> ${data.daily.orders} orders — ₹${data.daily.revenue || 0}</p>
+      <p><b>Weekly Sales:</b> ${data.weekly.orders} orders — ₹${data.weekly.revenue || 0}</p>
+      <p><b>Total Collected:</b> ₹${data.collected}</p>
+      <h4>Popular Items</h4>
+      <ul>
+        ${data.popular.map(p => `<li>${p.item} — ${p.sold} sold</li>`).join("")}
+      </ul>
+    `;
+  } catch (err) {
+    console.error("Error loading analytics:", err);
+    document.getElementById("analytics").innerHTML = "<p>Failed to load analytics ❌</p>";
+  }
+}
+
 
     // Initial load
     loadMenu();

@@ -128,26 +128,32 @@ app.get("/turfs/:id/slots", (req, res) => {
     const [eh] = turf.end_time.split(":").map(Number);
 
     // Fetch booked slots for this turf
-    db.all("SELECT slot_start, slot_end FROM bookings WHERE turf_id=? AND status='booked'", [id], (err, booked) => {
-      const bookedSet = new Set(booked.map(b => `${b.slot_start}-${b.slot_end}`));
+    db.all(
+      "SELECT slot_start, slot_end FROM bookings WHERE turf_id=? AND status='booked'",
+      [id],
+      (err, booked) => {
+        if (err) return res.status(500).json({ error: err.message });
 
-      for (let h = sh; h < eh; h++) {
-        const start = `${h}:00`;
-        const end = `${h + 1}:00`;
-        const key = `${start}-${end}`;
-        slots.push({
-          start,
-          end,
-          price: turf.price,
-          available: !bookedSet.has(key)
-        });
-      } 
+        // Guard against empty results
+        const bookedSet = new Set((booked || []).map(b => `${b.slot_start}-${b.slot_end}`));
 
-      res.json({ turf, slots });
-    });
+        for (let h = sh; h < eh; h++) {
+          const start = `${String(h).padStart(2, "0")}:00`;
+          const end = `${String(h + 1).padStart(2, "0")}:00`;
+          const key = `${start}-${end}`;
+          slots.push({
+            start,
+            end,
+            price: turf.price,
+            available: !bookedSet.has(key)
+          });
+        }
+
+        res.json({ turf, slots });
+      }
+    );
   });
 });
-
 // --- Turf Creation Route (Owner adds new turf) ---
 app.post("/turfs", (req, res) => {
   const { name, location, district, sport, price, owner_id, min_target_players, max_stranger_players } = req.body;
@@ -285,6 +291,34 @@ app.delete("/turfs/:id", (req, res) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ deleted: this.changes });
   });
+});
+
+// Get stranger play progress for a turf slot
+app.get("/turfs/:id/stranger-progress/:slot_start", (req, res) => {
+  const { id, slot_start } = req.params;
+
+  // Step 1: Get turf settings (min/max stranger players)
+  db.get(
+    "SELECT max_stranger_players, min_target_players FROM turfs WHERE id=?",
+    [id],
+    (err, turf) => {
+      if (err || !turf) return res.status(404).json({ error: "Turf not found" });
+
+      // Step 2: Count how many players have already joined this slot in stranger mode
+      db.get(
+        "SELECT COUNT(*) as joined FROM bookings WHERE turf_id=? AND slot_start=? AND mode='stranger' AND status='booked'",
+        [id, slot_start],
+        (err2, row) => {
+          // Step 3: Return progress data to frontend
+          res.json({
+            joined: row.joined,                 // how many players joined
+            max: turf.max_stranger_players,     // max stranger players allowed
+            min: turf.min_target_players        // minimum needed to lock slot
+          });
+        }
+      );
+    }
+  );
 });
 
 // --- Start server ---

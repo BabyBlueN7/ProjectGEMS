@@ -25,6 +25,8 @@
       margin: 8px 0;
       border-radius: 6px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .slot-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -47,6 +49,23 @@
     }
     button:hover:not([disabled]) {
       background: #0f9a70;
+    }
+    /* Progress bar */
+    .progress {
+      background: #e5e7eb;
+      border-radius: 6px;
+      height: 12px;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      background: #2563eb;
+      height: 100%;
+      border-radius: 6px;
+    }
+    .status-text {
+      margin-top: 4px;
+      font-size: 0.9em;
     }
   </style>
 </head>
@@ -73,9 +92,13 @@
         const container = document.getElementById("slots");
         container.innerHTML = "";
 
-        data.slots.forEach(slot => {
-          container.innerHTML += `
-            <div class="slot">
+        for (const slot of data.slots) {
+          // Build slot card
+          const slotDiv = document.createElement("div");
+          slotDiv.className = "slot";
+
+          slotDiv.innerHTML = `
+            <div class="slot-header">
               <span>${slot.start} - ${slot.end}</span>
               <span class="price">₹${slot.price}</span>
               ${
@@ -83,8 +106,15 @@
                   ? `<button onclick="bookSlot('${slot.start}','${slot.end}')">Book</button>`
                   : `<button disabled>Booked</button>`
               }
-            </div>`;
-        });
+            </div>
+            <div id="progress-${slot.start.replace(/[^a-zA-Z0-9]/g,'')}"></div>
+          `;
+
+          container.appendChild(slotDiv);
+
+          // Load stranger progress for this slot
+          loadStrangerProgress(turfId, slot.start);
+        }
       } catch (err) {
         console.error("Error loading slots:", err);
         document.getElementById("slots").innerHTML = "<p>Failed to load slots.</p>";
@@ -105,10 +135,33 @@
         });
         const data = await res.json();
         alert(`Booked slot ${start} - ${end} ✅`);
-        loadSlots(); // refresh slots so the booked one disables
+        loadSlots(); // refresh slots
       } catch (err) {
         console.error("Booking failed:", err);
         alert("Booking failed. Try again.");
+      }
+    }
+
+    async function loadStrangerProgress(turfId, slotStart) {
+      try {
+        const res = await fetch(`http://localhost:4001/turfs/${turfId}/stranger-progress/${slotStart}`);
+        const data = await res.json();
+
+        const percent = (data.joined / data.max) * 100;
+        const progressHtml = `
+          <p>${data.joined}/${data.max} players joined</p>
+          <div class="progress">
+            <div class="progress-fill" style="width:${percent}%;"></div>
+          </div>
+          <p class="status-text">
+            ${data.joined >= data.min ? "✅ Slot locked in!" : "⏳ Waiting for more players"}
+          </p>
+        `;
+
+        const safeId = slotStart.replace(/[^a-zA-Z0-9]/g,'');
+        document.getElementById(`progress-${safeId}`).innerHTML = progressHtml;
+      } catch (err) {
+        console.error("Error loading stranger progress:", err);
       }
     }
 

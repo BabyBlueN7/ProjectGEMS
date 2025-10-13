@@ -166,12 +166,21 @@ app.post("/menu", (req, res) => {
 // Create a new order (student)
 app.post("/orders", (req, res) => {
   const { customer_id, item_id, quantity } = req.body;
+
   db.run(
-    "INSERT INTO orders (customer_id, item_id, quantity) VALUES (?,?,?)",
-    [customer_id, item_id, quantity],
+    "INSERT INTO orders (customer_id, item_id, quantity, status, created_at) VALUES (?,?,?,?,datetime('now'))",
+    [customer_id, item_id, quantity, "pending"],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
-      res.json({ id: this.lastID, customer_id, item_id, quantity });
+
+      res.json({
+        id: this.lastID,
+        customer_id,
+        item_id,
+        quantity,
+        status: "pending",
+        created_at: new Date().toISOString()
+      });
     }
   );
 });
@@ -239,5 +248,71 @@ app.put("/orders/:id/status", (req, res) => {
     res.json({ updated: this.changes });
   });
 });
+
+// Analytics for owner
+app.get("/owner/analytics/:college_id", (req, res) => {
+  const { college_id } = req.params;
+  const today = new Date().toISOString().split("T")[0];
+  const weekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString().split("T")[0];
+  const analytics = {};
+
+  // Daily sales
+  db.get(
+    `SELECT COUNT(*) as orders, SUM(o.quantity * m.price) as revenue
+     FROM orders o
+     JOIN menu m ON o.item_id = m.id
+     JOIN college_menu cm ON m.id = cm.menu_id
+     WHERE cm.college_id=? AND DATE(o.created_at)=? AND o.status='delivered'`,
+    [college_id, today],
+    (err, row) => {
+      analytics.daily = row || { orders: 0, revenue: 0 };
+
+      // Weekly sales
+      db.get(
+        `SELECT COUNT(*) as orders, SUM(o.quantity * m.price) as revenue
+         FROM orders o
+         JOIN menu m ON o.item_id = m.id
+         JOIN college_menu cm ON m.id = cm.menu_id
+         WHERE cm.college_id=? AND DATE(o.created_at) >= ? AND o.status='delivered'`,
+        [college_id, weekAgo],
+        (err2, row2) => {
+          analytics.weekly = row2 || { orders: 0, revenue: 0 };
+
+          // Collected money
+          db.get(
+            `SELECT SUM(o.quantity * m.price) as collected
+             FROM orders o
+             JOIN menu m ON o.item_id = m.id
+             JOIN college_menu cm ON m.id = cm.menu_id
+             WHERE cm.college_id=? AND o.status='delivered'`,
+            [college_id],
+            (err3, row3) => {
+              analytics.collected = row3?.collected || 0;
+
+              // Popular items
+              db.all(
+                `SELECT m.item, SUM(o.quantity) as sold
+                 FROM orders o
+                 JOIN menu m ON o.item_id = m.id
+                 JOIN college_menu cm ON m.id = cm.menu_id
+                 WHERE cm.college_id=? AND o.status='delivered'
+                 GROUP BY m.item
+                 ORDER BY sold DESC
+                 LIMIT 5`,
+                [college_id],
+                (err4, rows4) => {
+                  analytics.popular = rows4 || [];
+                  res.json(analytics);
+                }
+              );
+            }
+          );
+        }
+      );
+    }
+  );
+});
+
+
 // --- Start server ---
 app.listen(4002, () => console.log("Canteen backend running on http://localhost:4002"));
