@@ -27,11 +27,12 @@
     </div>
   </div>
 
-  <script>
-    async function login() {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
+ <script>
+  async function login() {
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
 
+    try {
       const res = await fetch("http://localhost:4001/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -39,12 +40,27 @@
       });
 
       const data = await res.json();
-      if (data.error) alert(data.error);
-      else {
+
+      if (res.ok && !data.error) {
+        // Save user info for later use (optional)
+        localStorage.setItem("user", JSON.stringify(data));
+
         alert("Welcome, " + data.name + " (" + data.role + ")");
-        window.location.href = "user.html";
+
+        // Redirect based on role
+        if (data.role === "owner") {
+          window.location.href = `owner-dashboard.html?id=${data.id}`;
+        } else {
+          window.location.href = `user.html?id=${data.id}`;
+        }
+      } else {
+        alert(data.error || "Login failed");
       }
+    } catch (err) {
+      console.error("Login error:", err);
+      alert("Something went wrong. Try again.");
     }
-  </script>
+  }
+</script>
 </body>
 </html>

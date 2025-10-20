@@ -183,39 +183,48 @@ app.post("/bookings", (req, res) => {
 
       // If this is a single booking, cancel all stranger bookings for same slot
       if (mode === "single") {
-  db.get(
-    `SELECT COUNT(*) as joined, t.min_target_players 
-     FROM bookings b 
-     JOIN turfs t ON b.turf_id = t.id 
-     WHERE b.turf_id=? AND b.slot_start=? AND b.slot_end=? AND b.mode='stranger' AND b.status='booked'`,
-    [turf_id, slot_start, slot_end],
-    (err2, row) => {
-      if (err2) return res.status(500).json({ error: err2.message });
+        db.get(
+          `SELECT COUNT(*) as joined, t.min_target_players 
+           FROM bookings b 
+           JOIN turfs t ON b.turf_id = t.id 
+           WHERE b.turf_id=? AND b.slot_start=? AND b.slot_end=? 
+             AND b.mode='stranger' AND b.status='booked'`,
+          [turf_id, slot_start, slot_end],
+          (err2, row) => {
+            if (err2) return res.status(500).json({ error: err2.message });
 
-      if (row.joined < row.min_target_players) {
-        // Cancel strangers
-        db.run(
-          "UPDATE bookings SET status='canceled' WHERE turf_id=? AND slot_start=? AND slot_end=? AND mode='stranger' AND status='booked'",
-          [turf_id, slot_start, slot_end]
+            if (row.joined < row.min_target_players) {
+              // Cancel strangers
+              db.run(
+                "UPDATE bookings SET status='canceled' WHERE turf_id=? AND slot_start=? AND slot_end=? AND mode='stranger' AND status='booked'",
+                [turf_id, slot_start, slot_end]
+              );
+            } else {
+              return res.status(400).json({ error: "Stranger play already locked in" });
+            }
+          }
         );
-      } else {
-        return res.status(400).json({ error: "Stranger play already locked in" });
       }
-    }
-  );
-}
 
       res.json({ id: bookingId, turf_id, slot_start, slot_end, customer_id, mode });
     }
   );
 });
 
-// Get bookings for a customer with turf details
+// Get bookings for a specific customer (My Bookings page)
 app.get("/bookings/:customer_id", (req, res) => {
-  const customer_id = req.params.customer_id;
+  const { customer_id } = req.params;
+
   db.all(
-    `SELECT b.id, t.name as turf_name, t.location, t.sport, t.price,
-            b.slot_start, b.slot_end, b.status, b.mode
+    `SELECT b.id, 
+            t.name AS turf_name, 
+            t.location, 
+            t.sport, 
+            t.price,
+            b.slot_start, 
+            b.slot_end, 
+            b.status, 
+            b.mode
      FROM bookings b
      JOIN turfs t ON b.turf_id = t.id
      WHERE b.customer_id = ?`,

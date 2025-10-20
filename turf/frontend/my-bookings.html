@@ -55,7 +55,14 @@
 
   <script>
     const user = JSON.parse(localStorage.getItem("user"));
-    const customerId = user?.id || 1;
+
+    if (!user) {
+      // If no user is logged in, redirect to login
+      alert("Please log in first.");
+      window.location.href = "login.html";
+    }
+
+    const customerId = user.id;
 
     async function loadBookings() {
       const container = document.getElementById("bookings");
@@ -63,11 +70,12 @@
 
       try {
         const res = await fetch(`http://localhost:4001/bookings/${customerId}`);
-        const bookings = await res.json();
+        if (!res.ok) throw new Error("Failed to fetch bookings");
 
+        const bookings = await res.json();
         container.innerHTML = "";
 
-        if (bookings.length === 0) {
+        if (!bookings || bookings.length === 0) {
           container.innerHTML = "<p class='empty'>No bookings yet.</p>";
           return;
         }
@@ -79,6 +87,7 @@
               <p><strong>Location:</strong> ${b.location}</p>
               <p><strong>Slot:</strong> ${b.slot_start} - ${b.slot_end}</p>
               <p><strong>Price:</strong> ₹${b.price}</p>
+              <p><strong>Mode:</strong> ${b.mode}</p>
               <p class="status ${b.status}">Status: ${b.status}</p>
             </div>
           `;
