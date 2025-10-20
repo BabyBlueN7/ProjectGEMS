@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Wallet</title>
+</head>
+<body>
+  <h1>Wallet</h1>
+  <p>Balance: ₹<span id="balance">0</span></p>
+  <input type="number" id="amount" placeholder="Enter amount" />
+  <button onclick="addMoney()">Add Money</button>
+
+  <script>
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    async function loadBalance() {
+      const res = await fetch(`http://localhost:4002/wallet/${user.id}`);
+      const data = await res.json();
+      document.getElementById("balance").innerText = data.balance;
+    }
+
+    async function addMoney() {
+      const amount = parseInt(document.getElementById("amount").value);
+      const res = await fetch("http://localhost:4002/wallet/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: user.id, amount })
+      });
+      const data = await res.json();
+      document.getElementById("balance").innerText = data.balance;
+    }
+
+    loadBalance();
+  </script>
+</body>
+</html>

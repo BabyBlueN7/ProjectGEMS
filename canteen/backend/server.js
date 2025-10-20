@@ -167,22 +167,32 @@ app.post("/menu", (req, res) => {
 app.post("/orders", (req, res) => {
   const { customer_id, item_id, quantity } = req.body;
 
-  db.run(
-    "INSERT INTO orders (customer_id, item_id, quantity, status, created_at) VALUES (?,?,?,?,datetime('now'))",
-    [customer_id, item_id, quantity, "pending"],
-    function (err) {
-      if (err) return res.status(500).json({ error: err.message });
+  db.get("SELECT price FROM menu WHERE id=?", [item_id], (err, item) => {
+    if (err || !item) return res.status(400).json({ error: "Invalid item" });
 
-      res.json({
-        id: this.lastID,
-        customer_id,
-        item_id,
-        quantity,
-        status: "pending",
-        created_at: new Date().toISOString()
-      });
-    }
-  );
+    const total = item.price * quantity;
+
+    // Check wallet balance
+    db.get("SELECT wallet_balance FROM users WHERE id=?", [customer_id], (err2, user) => {
+      if (err2 || !user) return res.status(400).json({ error: "Invalid user" });
+      if (user.wallet_balance < total) {
+        return res.status(400).json({ error: "Insufficient wallet balance" });
+      }
+
+      // Deduct wallet
+      db.run("UPDATE users SET wallet_balance = wallet_balance - ? WHERE id=?", [total, customer_id]);
+
+      // Insert order
+      db.run(
+        "INSERT INTO orders (customer_id, item_id, quantity, status) VALUES (?,?,?,?)",
+        [customer_id, item_id, quantity, "pending"],
+        function (err3) {
+          if (err3) return res.status(500).json({ error: err3.message });
+          res.json({ id: this.lastID, customer_id, item_id, quantity, total, status: "pending" });
+        }
+      );
+    });
+  });
 });
 
 // Get all orders for a student with item details
@@ -313,6 +323,30 @@ app.get("/owner/analytics/:college_id", (req, res) => {
   );
 });
 
+// Add money to wallet
+app.post("/wallet/add", (req, res) => {
+  const { user_id, amount } = req.body;
+  db.run(
+    "UPDATE users SET wallet_balance = wallet_balance + ? WHERE id=?",
+    [amount, user_id],
+    function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+      db.get("SELECT wallet_balance FROM users WHERE id=?", [user_id], (err2, row) => {
+        if (err2) return res.status(500).json({ error: err2.message });
+        res.json({ balance: row.wallet_balance });
+      });
+    }
+  );
+});
+
+// Get wallet balance
+app.get("/wallet/:user_id", (req, res) => {
+  const { user_id } = req.params;
+  db.get("SELECT wallet_balance FROM users WHERE id=?", [user_id], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ balance: row.wallet_balance });
+  });
+});
 
 // --- Start server ---
 app.listen(4002, () => console.log("Canteen backend running on http://localhost:4002"));
