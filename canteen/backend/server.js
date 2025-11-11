@@ -1,3 +1,9 @@
+function normalizeText(str) {
+  if (!str) return str;
+  const s = str.trim();
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
 const express = require("express");
 const sqlite3 = require("sqlite3").verbose();
 const cors = require("cors");
@@ -139,9 +145,14 @@ app.get("/menu/today/:college_id", (req, res) => {
   );
 });
 
-// Add new menu item and link it to a college
+// ✅ Add menu item with case normalization and college mapping
 app.post("/menu", (req, res) => {
-  const { item, price, available, college_id } = req.body;
+  let { item, price, available, college_id } = req.body;
+  item = normalizeText(item); // normalize item name
+
+  if (!item || price == null || available == null || !college_id) {
+    return res.status(400).json({ error: "Invalid menu payload" });
+  }
 
   db.run(
     "INSERT INTO menu (item, price, available) VALUES (?,?,?)",
@@ -167,30 +178,33 @@ app.post("/menu", (req, res) => {
 app.post("/orders", (req, res) => {
   const { customer_id, item_id, quantity } = req.body;
 
-  db.get("SELECT price FROM menu WHERE id=?", [item_id], (err, item) => {
-    if (err || !item) return res.status(400).json({ error: "Invalid item" });
+  if (!customer_id || !item_id || !quantity || quantity <= 0) {
+    return res.status(400).json({ error: "Invalid order payload" });
+  }
+
+  db.get("SELECT price FROM menu WHERE id=?", [item_id], (errItem, item) => {
+    if (errItem || !item) return res.status(400).json({ error: "Invalid item" });
 
     const total = item.price * quantity;
 
-    // Check wallet balance
-    db.get("SELECT wallet_balance FROM users WHERE id=?", [customer_id], (err2, user) => {
-      if (err2 || !user) return res.status(400).json({ error: "Invalid user" });
-      if (user.wallet_balance < total) {
+    db.get("SELECT wallet_ballence FROM users WHERE id=?", [customer_id], (errUser, user) => {
+      if (errUser || !user) return res.status(400).json({ error: "Invalid user" });
+      if (user.wallet_ballence < total) {
         return res.status(400).json({ error: "Insufficient wallet balance" });
       }
 
-      // Deduct wallet
-      db.run("UPDATE users SET wallet_balance = wallet_balance - ? WHERE id=?", [total, customer_id]);
+      db.run("UPDATE users SET wallet_ballence = wallet_ballence - ? WHERE id=?", [total, customer_id], (errDeduct) => {
+        if (errDeduct) return res.status(500).json({ error: errDeduct.message });
 
-      // Insert order
-      db.run(
-        "INSERT INTO orders (customer_id, item_id, quantity, status) VALUES (?,?,?,?)",
-        [customer_id, item_id, quantity, "pending"],
-        function (err3) {
-          if (err3) return res.status(500).json({ error: err3.message });
-          res.json({ id: this.lastID, customer_id, item_id, quantity, total, status: "pending" });
-        }
-      );
+        db.run(
+          "INSERT INTO orders (customer_id, item_id, quantity, status, created_at) VALUES (?,?,?,?,datetime('now'))",
+          [customer_id, item_id, quantity, "pending"],
+          function (errOrder) {
+            if (errOrder) return res.status(500).json({ error: errOrder.message });
+            res.json({ id: this.lastID, customer_id, item_id, quantity, total, status: "pending" });
+          }
+        );
+      });
     });
   });
 });
@@ -237,26 +251,47 @@ app.get("/owner/orders/:college_id", (req, res) => {
   );
 });
 
-// ✅ Owner: Update order status (delivered / canceled)
+// ✅ Update order status (delivered or canceled)
+// If status is changed to "canceled", refund the total price to the user's wallet.
+// Uses joined query to get item price from menu table.
+// Prevents double refund if already canceled.
 app.put("/orders/:id/status", (req, res) => {
-  const { status } = req.body; // "delivered" or "canceled"
-  db.run(
-    "UPDATE orders SET status=? WHERE id=?",
-    [status, req.params.id],
-    function (err) {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ updated: this.changes });
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!["pending", "canceled", "delivered"].includes(status)) {
+    return res.status(400).json({ error: "Invalid status" });
+  }
+
+  db.get(
+    `SELECT o.id, o.customer_id, o.item_id, o.quantity, o.status, m.price
+     FROM orders o JOIN menu m ON o.item_id = m.id WHERE o.id=?`,
+    [id],
+    (err, row) => {
+      if (err || !row) return res.status(404).json({ error: "Order not found" });
+
+      const wasCanceled = row.status === "canceled";
+      const willCancel = status === "canceled";
+      const total = row.price * row.quantity;
+
+      db.run("UPDATE orders SET status=? WHERE id=?", [status, id], (err2) => {
+        if (err2) return res.status(500).json({ error: err2.message });
+
+        if (willCancel && !wasCanceled) {
+          db.run(
+            "UPDATE users SET wallet_ballence = wallet_ballence + ? WHERE id=?",
+            [total, row.customer_id],
+            (err3) => {
+              if (err3) return res.status(500).json({ error: err3.message });
+              return res.json({ id: row.id, status: "canceled", refund: total });
+            }
+          );
+        } else {
+          return res.json({ id: row.id, status });
+        }
+      });
     }
   );
-});
-
-// Update order status (student cancel or owner update)
-app.put("/orders/:id/status", (req, res) => {
-  const { status } = req.body; // pending, preparing, ready, delivered, canceled
-  db.run("UPDATE orders SET status=? WHERE id=?", [status, req.params.id], function (err) {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ updated: this.changes });
-  });
 });
 
 // Analytics for owner

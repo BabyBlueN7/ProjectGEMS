@@ -1,3 +1,8 @@
+function normalizeDistrict(d) {
+  if (!d) return d;
+  return d.charAt(0).toUpperCase() + d.slice(1).toLowerCase();
+}
+
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
@@ -171,15 +176,13 @@ app.get("/turfs/:id/slots", (req, res) => {
   });
 });
 
-// Add new turf
+// ✅ Add new turf with district normalization and default player ranges
 app.post("/turfs", (req, res) => {
   let { location, district, sport, price, start_time, end_time, min_range_players, max_range_players } = req.body;
 
-  // Normalize district (capitalize first letter, rest lowercase)
-  district = district.trim();
-  district = district.charAt(0).toUpperCase() + district.slice(1).toLowerCase();
+  district = normalizeDistrict(district); // normalize district name
 
-  // If owner didn’t provide min/max, set defaults based on sport
+  // Set default player ranges based on sport
   if (!min_range_players || !max_range_players) {
     if (sport === "Football 5s") {
       min_range_players = 5;
