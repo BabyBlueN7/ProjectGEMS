@@ -50,7 +50,6 @@
     button:hover:not([disabled]) {
       background: #0f9a70;
     }
-    /* Progress bar */
     .progress {
       background: #e5e7eb;
       border-radius: 6px;
@@ -94,9 +93,9 @@
         container.innerHTML = "";
 
         for (const slot of data.slots) {
-          const percent = slot.progress.target > 0 
-            ? Math.min(100, (slot.progress.joined / slot.progress.target) * 100) 
-            : 0;
+          const joined = slot.progress.joined || 0;
+          const target = slot.progress.target || 0;
+          const percent = target > 0 ? Math.min(100, (joined / target) * 100) : 0;
 
           const slotDiv = document.createElement("div");
           slotDiv.className = "slot";
@@ -111,14 +110,14 @@
                   : `<button disabled>Booked</button>`
               }
             </div>
-            <p>${slot.progress.joined}/${slot.progress.target} players joined</p>
+            <p>${joined}/${target} players joined</p>
             <div class="progress">
               <div class="progress-fill" style="width:${percent}%;"></div>
             </div>
             <p class="status-text">
-              ${slot.progress.joined >= slot.progress.target 
-                ? "✅ Slot locked in!" 
-                : "⏳ Waiting for more players"}
+              ${joined >= target
+                ? "✅ Slot locked in!"
+                : `⏳ Waiting for more players (${target - joined} more needed)`}
             </p>
           `;
 
@@ -140,13 +139,13 @@
             slot_start: start,
             slot_end: end,
             customer_id: user.id,
-            mode: "stranger" // or "single"
+            mode: "stranger"
           })
         });
         const data = await res.json();
         if (res.ok) {
           alert(`Booked slot ${start} - ${end} ✅`);
-          loadSlots(); // refresh slots
+          loadSlots();
         } else {
           alert(data.error || "Booking failed");
         }
