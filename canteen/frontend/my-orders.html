@@ -28,6 +28,7 @@
     }
     .status { font-weight: bold; }
     .pending { color: orange; }
+    .confirmed { color: teal; }
     .preparing { color: blue; }
     .ready { color: purple; }
     .delivered { color: green; }
@@ -68,13 +69,13 @@
       width: 16px;
       height: 16px;
       border-radius: 50%;
-      background: #d1d5db; /* gray */
+      background: #d1d5db;
     }
     .step.active::before {
-      background: #2563eb; /* blue */
+      background: #2563eb;
     }
     .step.done::before {
-      background: #10b981; /* green */
+      background: #10b981;
     }
     .step::after {
       content: "";
@@ -104,11 +105,11 @@
   </main>
 
   <script>
-    const user = JSON.parse(localStorage.getItem("user")); // logged-in student
+    const user = JSON.parse(localStorage.getItem("user"));
     const customerId = user?.id;
 
     function renderTracker(status) {
-      const steps = ["pending", "preparing", "ready", "delivered"];
+      const steps = ["pending", "confirmed", "preparing", "ready", "delivered"];
       return `
         <div class="tracker">
           ${steps.map(s => `
@@ -141,9 +142,9 @@
               <p><strong>Order ID:</strong> ${o.id}</p>
               <p><strong>Item:</strong> ${o.item} (₹${o.price})</p>
               <p><strong>Quantity:</strong> ${o.quantity}</p>
-              <p class="status ${o.status}">Status: ${o.status}</p>
+              <p class="status ${o.status}">Status: ${o.status.charAt(0).toUpperCase() + o.status.slice(1)}</p>
               ${o.status !== "canceled" ? renderTracker(o.status) : ""}
-              ${o.status === "pending" || o.status === "preparing" ? 
+              ${o.status === "pending" || o.status === "confirmed" ? 
                 `<button class="cancel-btn" onclick="cancelOrder(${o.id})">Cancel Order</button>` : ""}
             </div>
           `;

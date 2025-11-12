@@ -1,7 +1,10 @@
-function normalizeDistrict(d) {
-  if (!d) return d;
-  return d.charAt(0).toUpperCase() + d.slice(1).toLowerCase();
-}
+// --- Utility Functions ---
+const {
+  normalizeText,
+  normalizeDistrict,
+  checkWallet,
+  calculateRefund
+} = require("./utils/helpers");
 
 const express = require("express");
 const bodyParser = require("body-parser");

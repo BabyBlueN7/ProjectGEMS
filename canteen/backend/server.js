@@ -1,8 +1,9 @@
-function normalizeText(str) {
-  if (!str) return str;
-  const s = str.trim();
-  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
-}
+// --- Utility Functions ---
+const {
+  normalizeText,
+  normalizeDistrict,
+  checkWallet
+} = require("./utils/helpers");
 
 const express = require("express");
 const sqlite3 = require("sqlite3").verbose();
@@ -187,13 +188,13 @@ app.post("/orders", (req, res) => {
 
     const total = item.price * quantity;
 
-    db.get("SELECT wallet_ballence FROM users WHERE id=?", [customer_id], (errUser, user) => {
+    db.get("SELECT wallet_balance FROM users WHERE id=?", [customer_id], (errUser, user) => {
       if (errUser || !user) return res.status(400).json({ error: "Invalid user" });
       if (user.wallet_ballence < total) {
         return res.status(400).json({ error: "Insufficient wallet balance" });
       }
 
-      db.run("UPDATE users SET wallet_ballence = wallet_ballence - ? WHERE id=?", [total, customer_id], (errDeduct) => {
+      db.run("UPDATE users SET wallet_balance = wallet_balance - ? WHERE id=?", [total, customer_id], (errDeduct) => {
         if (errDeduct) return res.status(500).json({ error: errDeduct.message });
 
         db.run(
@@ -259,7 +260,8 @@ app.put("/orders/:id/status", (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
 
-  if (!["pending", "canceled", "delivered"].includes(status)) {
+  // ✅ Add "confirmed" to allowed statuses
+  if (!["pending", "confirmed", "canceled", "delivered"].includes(status)) {
     return res.status(400).json({ error: "Invalid status" });
   }
 
@@ -279,7 +281,7 @@ app.put("/orders/:id/status", (req, res) => {
 
         if (willCancel && !wasCanceled) {
           db.run(
-            "UPDATE users SET wallet_ballence = wallet_ballence + ? WHERE id=?",
+            "UPDATE users SET wallet_balance = wallet_balance + ? WHERE id=?",
             [total, row.customer_id],
             (err3) => {
               if (err3) return res.status(500).json({ error: err3.message });
@@ -292,6 +294,43 @@ app.put("/orders/:id/status", (req, res) => {
       });
     }
   );
+});
+
+// ✅ Owner marks item as out of stock and cancels only unconfirmed orders
+app.put("/menu/:id/outofstock", (req, res) => {
+  const itemId = req.params.id;
+
+  // Step 1: Mark item as unavailable in the menu
+  db.run("UPDATE menu SET available = 0 WHERE id=?", [itemId], (err1) => {
+    if (err1) return res.status(500).json({ error: err1.message });
+
+    // Step 2: Get all pending or unconfirmed orders for this item
+    db.all(
+      `SELECT o.id, o.customer_id, o.quantity, o.status, m.price
+       FROM orders o JOIN menu m ON o.item_id = m.id
+       WHERE o.item_id=? AND o.status IN ('pending')`,
+      [itemId],
+      (err2, orders) => {
+        if (err2) return res.status(500).json({ error: err2.message });
+
+        let canceledCount = 0;
+
+        // Step 3: Cancel only unconfirmed orders and refund
+        orders.forEach(order => {
+          const total = order.price * order.quantity;
+
+          db.run("UPDATE orders SET status='canceled' WHERE id=?", [order.id]);
+          db.run("UPDATE users SET wallet_balance = wallet_balance + ? WHERE id=?", [total, order.customer_id]);
+          canceledCount++;
+        });
+
+        res.json({
+          message: "Item marked out of stock. Unconfirmed orders canceled and refunded.",
+          canceled: canceledCount
+        });
+      }
+    );
+  });
 });
 
 // Analytics for owner

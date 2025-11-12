@@ -14,9 +14,12 @@
     button:hover { background: #1e4fd6; }
     .order, .menu-item { border-bottom: 1px solid #eee; padding: 10px 0; }
     .status { font-weight: bold; }
+    .pending { color: orange; }
+    .confirmed { color: teal; }
+    .preparing { color: blue; }
+    .ready { color: purple; }
     .delivered { color: green; }
     .canceled { color: red; }
-    .pending { color: orange; }
     .out { color: red; font-weight: bold; }
     .in { color: green; font-weight: bold; }
   </style>
@@ -59,25 +62,23 @@
 
   <!-- Analytics Section -->
   <div class="section" id="analytics-section">
-  <h2>Analytics</h2>
-  <div id="analytics">Loading...</div>
-</div>
+    <h2>Analytics</h2>
+    <div id="analytics">Loading...</div>
+  </div>
 
   <script>
-    const user = JSON.parse(localStorage.getItem("user")); // owner info
+    const user = JSON.parse(localStorage.getItem("user"));
     const collegeId = user?.college_id;
 
     // Add Menu Item
     document.getElementById("menuForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-
       const item = {
         item: document.getElementById("item").value,
         price: parseInt(document.getElementById("price").value),
         available: parseInt(document.getElementById("available").value),
         college_id: collegeId
       };
-
       try {
         const res = await fetch("http://localhost:4002/menu", {
           method: "POST",
@@ -152,7 +153,6 @@
         price: parseInt(document.getElementById(`edit-price-${id}`).value),
         available: parseInt(document.getElementById(`edit-available-${id}`).value)
       };
-
       try {
         await fetch(`http://localhost:4002/menu/${id}`, {
           method: "PUT",
@@ -172,7 +172,6 @@
       try {
         const res = await fetch(`http://localhost:4002/owner/orders/${collegeId}`);
         const orders = await res.json();
-
         const container = document.getElementById("owner-orders");
         container.innerHTML = "";
 
@@ -185,60 +184,67 @@
           container.innerHTML += `
             <div class="order">
               <p><b>${o.item}</b> × ${o.quantity} — ordered by ${o.student_name}</p>
-              <p>Status: <span class="status ${o.status}">${o.status}</span></p>
-              <button onclick="updateStatus(${o.id}, 'preparing')">Preparing</button>
-              <button onclick="updateStatus(${o.id}, 'ready')">Ready</button>
-              <button onclick="updateStatus(${o.id}, 'delivered')">Delivered</button>
-              <button onclick="updateStatus(${o.id}, 'canceled')">Cancel</button>
+              <p>Status: <span class="status ${o.status}">${o.status.charAt(0).toUpperCase() + o.status.slice(1)}</span></p>
+              <label>Update Status:</label>
+              <select onchange="updateStatus(${o.id}, this.value)">
+                <option value="pending" ${o.status === "pending" ? "selected" : ""}>Pending</option>
+                <option value="confirmed" ${o.status === "confirmed" ? "selected" : ""}>Confirmed</option>
+                <option value="preparing" ${o.status === "preparing" ? "selected" : ""}>Preparing</option>
+                <option value="ready" ${o.status === "ready" ? "selected" : ""}>Ready</option>
+                <option value="delivered" ${o.status === "delivered" ? "selected" : ""}>Delivered</option>
+                <option value="canceled" ${o.status === "canceled" ? "selected" : ""}>Canceled</option>
+              </select>
             </div>
           `;
         });
-      } catch (err) {
-        console.error("Error loading orders:", err);
-        document.getElementById("owner-orders").innerHTML = "<p>Failed to load orders ❌</p>";
-      }
+     
+          } catch (err) {
+      console.error("Error loading orders:", err);
+      document.getElementById("owner-orders").innerHTML = "<p>Failed to load orders ❌</p>";
     }
-
-    // Update Order Status
-    async function updateStatus(orderId, status) {
-      try {
-        await fetch(`http://localhost:4002/orders/${orderId}/status`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status })
-        });
-        loadOwnerOrders();
-      } catch (err) {
-        console.error("Error updating status:", err);
-        alert("Failed to update order ❌");
-      }
-    }
-    
-    // Load Analytics
-    async function loadAnalytics() {
-  try {
-    const res = await fetch(`http://localhost:4002/owner/analytics/${user.college_id}`);
-    const data = await res.json();
-
-    document.getElementById("analytics").innerHTML = `
-      <p><b>Daily Sales:</b> ${data.daily.orders} orders — ₹${data.daily.revenue || 0}</p>
-      <p><b>Weekly Sales:</b> ${data.weekly.orders} orders — ₹${data.weekly.revenue || 0}</p>
-      <p><b>Total Collected:</b> ₹${data.collected}</p>
-      <h4>Popular Items</h4>
-      <ul>
-        ${data.popular.map(p => `<li>${p.item} — ${p.sold} sold</li>`).join("")}
-      </ul>
-    `;
-  } catch (err) {
-    console.error("Error loading analytics:", err);
-    document.getElementById("analytics").innerHTML = "<p>Failed to load analytics ❌</p>";
   }
-}
 
+  // Update Order Status
+  async function updateStatus(orderId, status) {
+    try {
+      await fetch(`http://localhost:4002/orders/${orderId}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status })
+      });
+      alert(`Order updated to ${status} ✅`);
+      loadOwnerOrders();
+    } catch (err) {
+      console.error("Error updating status:", err);
+      alert("Failed to update order ❌");
+    }
+  }
 
-    // Initial load
-    loadMenu();
-    loadOwnerOrders();
-  </script>
+  // Load Analytics
+  async function loadAnalytics() {
+    try {
+      const res = await fetch(`http://localhost:4002/owner/analytics/${user.college_id}`);
+      const data = await res.json();
+
+      document.getElementById("analytics").innerHTML = `
+        <p><b>Daily Sales:</b> ${data.daily.orders} orders — ₹${data.daily.revenue || 0}</p>
+        <p><b>Weekly Sales:</b> ${data.weekly.orders} orders — ₹${data.weekly.revenue || 0}</p>
+        <p><b>Total Collected:</b> ₹${data.collected}</p>
+        <h4>Popular Items</h4>
+        <ul>
+          ${data.popular.map(p => `<li>${p.item} — ${p.sold} sold</li>`).join("")}
+        </ul>
+      `;
+    } catch (err) {
+      console.error("Error loading analytics:", err);
+      document.getElementById("analytics").innerHTML = "<p>Failed to load analytics ❌</p>";
+    }
+  }
+
+  // Initial load
+  loadMenu();
+  loadOwnerOrders();
+  loadAnalytics();
+</script>
 </body>
 </html>
