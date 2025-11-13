@@ -42,7 +42,7 @@ db.serialize(() => {
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     item TEXT,
     price INTEGER,
-    available INTEGER DEFAULT 1
+    in_stock INTEGER DEFAULT 1
   )`);
 
   // Link table: which menu items belong to which colleges
@@ -73,7 +73,7 @@ db.serialize(() => {
 
   db.get("SELECT COUNT(*) as count FROM menu", (err, row) => {
     if (row.count === 0) {
-      const stmt = db.prepare("INSERT INTO menu (item, price, available) VALUES (?,?,?)");
+      const stmt = db.prepare("INSERT INTO menu (item, price, in_stock) VALUES (?,?,?)");
       stmt.run("Masala Dosa", 40, 1);
       stmt.run("Veg Biriyani", 60, 1);
       stmt.run("Tea", 10, 1);
@@ -134,10 +134,10 @@ app.post("/login", (req, res) => {
 app.get("/menu/today/:college_id", (req, res) => {
   const college_id = req.params.college_id;
   db.all(
-    `SELECT m.id, m.item, m.price, m.available
+    `SELECT m.id, m.item, m.price, m.in_stock
      FROM menu m
      JOIN college_menu cm ON m.id = cm.menu_id
-     WHERE cm.college_id = ? AND m.available = 1`,
+     WHERE cm.college_id = ? AND m.in_stock = 1`,
     [college_id],
     (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
@@ -148,16 +148,16 @@ app.get("/menu/today/:college_id", (req, res) => {
 
 // ✅ Add menu item with case normalization and college mapping
 app.post("/menu", (req, res) => {
-  let { item, price, available, college_id } = req.body;
+  let { item, price, in_stock, college_id } = req.body;
   item = normalizeText(item); // normalize item name
 
-  if (!item || price == null || available == null || !college_id) {
+  if (!item || price == null || in_stock == null || !college_id) {
     return res.status(400).json({ error: "Invalid menu payload" });
   }
 
   db.run(
-    "INSERT INTO menu (item, price, available) VALUES (?,?,?)",
-    [item, price, available],
+    "INSERT INTO menu (item, price, in_stock) VALUES (?,?,?)",
+    [item, price, in_stock],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
 
@@ -168,7 +168,7 @@ app.post("/menu", (req, res) => {
         [college_id, menuId],
         function (err2) {
           if (err2) return res.status(500).json({ error: err2.message });
-          res.json({ id: menuId, item, price, available, college_id });
+          res.json({ id: menuId, item, price, in_stock, college_id });
         }
       );
     }
@@ -190,7 +190,7 @@ app.post("/orders", (req, res) => {
 
     db.get("SELECT wallet_balance FROM users WHERE id=?", [customer_id], (errUser, user) => {
       if (errUser || !user) return res.status(400).json({ error: "Invalid user" });
-      if (user.wallet_ballence < total) {
+      if (user.wallet_balance < total) {
         return res.status(400).json({ error: "Insufficient wallet balance" });
       }
 
@@ -300,8 +300,8 @@ app.put("/orders/:id/status", (req, res) => {
 app.put("/menu/:id/outofstock", (req, res) => {
   const itemId = req.params.id;
 
-  // Step 1: Mark item as unavailable in the menu
-  db.run("UPDATE menu SET available = 0 WHERE id=?", [itemId], (err1) => {
+  // Step 1: Mark item as not instock in the menu
+  db.run("UPDATE menu SET in_stock = 0 WHERE id=?", [itemId], (err1) => {
     if (err1) return res.status(500).json({ error: err1.message });
 
     // Step 2: Get all pending or unconfirmed orders for this item

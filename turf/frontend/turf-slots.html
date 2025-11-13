@@ -10,11 +10,26 @@
       margin: 0;
       padding: 0;
     }
-    header {
+    header h1 {
+      margin: 0;
+      padding: 16px;
       background: #2563eb;
       color: #fff;
-      padding: 16px;
       text-align: center;
+    }
+    nav {
+      background: #fff;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    nav a {
+      text-decoration: none;
+      color: #2563eb;
+      font-weight: bold;
+      margin-left: 12px;
     }
     main {
       padding: 20px;
@@ -71,7 +86,17 @@
 <body>
   <header>
     <h1 id="turfName">Turf Slots</h1>
+    <nav>
+      <span>Welcome, Player</span>
+      <div>
+        <span id="wallet" style="font-weight:bold; color:#10b981; margin-right: 20px;"></span>
+        <a href="wallet.html">Add Money</a>
+        <a href="my-bookings.html">My Bookings</a>
+        <a href="login.html">Logout</a>
+      </div>
+    </nav>
   </header>
+
   <main>
     <h2>Available Slots</h2>
     <div id="slots"></div>
@@ -81,6 +106,17 @@
     const params = new URLSearchParams(window.location.search);
     const turfId = params.get("id");
     const user = JSON.parse(localStorage.getItem("user"));
+
+    async function loadWallet() {
+      try {
+        const res = await fetch(`http://localhost:4001/wallet/${user.id}`);
+        const data = await res.json();
+        document.getElementById("wallet").textContent = `Wallet: ₹${data.balance}`;
+      } catch (err) {
+        console.error("Failed to load wallet:", err);
+        document.getElementById("wallet").textContent = "Wallet: ₹0";
+      }
+    }
 
     async function loadSlots() {
       try {
@@ -94,30 +130,32 @@
 
         for (const slot of data.slots) {
           const joined = slot.progress.joined || 0;
-          const target = slot.progress.target || 0;
-          const percent = target > 0 ? Math.min(100, (joined / target) * 100) : 0;
+          const max_stranger_players = slot.max_stranger_players || 0;
+          const percent = max_stranger_players > 0 ? Math.min(100, (joined / max_stranger_players) * 100) : 0;
 
           const slotDiv = document.createElement("div");
           slotDiv.className = "slot";
+
+          const bookButton = slot.available
+  ? `<button onclick="bookSlot('${slot.start}','${slot.end}', 'stranger')">Stranger Play</button>`
+  : `<button disabled>Booked</button>`;
 
           slotDiv.innerHTML = `
             <div class="slot-header">
               <span>${slot.start} - ${slot.end}</span>
               <span class="price">₹${slot.price}</span>
-              ${
-                slot.available
-                  ? `<button onclick="bookSlot('${slot.start}','${slot.end}')">Book</button>`
-                  : `<button disabled>Booked</button>`
-              }
+              ${bookButton}
             </div>
-            <p>${joined}/${target} players joined</p>
+            <p>${joined}/${max_stranger_players} players joined</p>
             <div class="progress">
               <div class="progress-fill" style="width:${percent}%;"></div>
             </div>
             <p class="status-text">
-              ${joined >= target
+              ${joined >= max_stranger_players
+
                 ? "✅ Slot locked in!"
-                : `⏳ Waiting for more players (${target - joined} more needed)`}
+                : `⏳ Waiting for more players (${max_stranger_players
+ - joined} more needed)`}
             </p>
           `;
 
@@ -129,32 +167,33 @@
       }
     }
 
-    async function bookSlot(start, end) {
-      try {
-        const res = await fetch("http://localhost:4001/bookings", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            turf_id: turfId,
-            slot_start: start,
-            slot_end: end,
-            customer_id: user.id,
-            mode: "stranger"
-          })
-        });
-        const data = await res.json();
-        if (res.ok) {
-          alert(`Booked slot ${start} - ${end} ✅`);
-          loadSlots();
-        } else {
-          alert(data.error || "Booking failed");
-        }
-      } catch (err) {
-        console.error("Booking failed:", err);
-        alert("Booking failed. Try again.");
-      }
+    async function bookSlot(start, end, mode = "stranger") {
+  try {
+    const res = await fetch("http://localhost:4001/bookings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        turf_id: turfId,
+        slot_start: start,
+        slot_end: end,
+        customer_id: user.id,
+        mode
+      })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert(`Booked slot ${start} - ${end} ✅`);
+      loadSlots();
+    } else {
+      alert(data.error || "Booking failed");
     }
+  } catch (err) {
+    console.error("Booking failed:", err);
+    alert("Booking failed. Try again.");
+  }
+}
 
+    loadWallet();
     loadSlots();
   </script>
 </body>

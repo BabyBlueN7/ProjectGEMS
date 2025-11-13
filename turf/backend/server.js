@@ -151,7 +151,7 @@ app.get("/turfs/:id/slots", (req, res) => {
           const key = `${r.slot_start}-${r.slot_end}`;
           progressMap[key] = {
             joined: r.joined,
-            target: turf.min_target_players
+            max_stranger_players: turf.min_players
           };
         });
 
@@ -160,7 +160,7 @@ app.get("/turfs/:id/slots", (req, res) => {
           const end = `${String(h + 1).padStart(2, "0")}:00`;
           const key = `${start}-${end}`;
 
-          const progress = progressMap[key] || { joined: 0, target: turf.min_target_players };
+          const progress = progressMap[key] || { joined: 0, max_stranger_players: turf.min_players };
 
           slots.push({
             start,
@@ -218,7 +218,7 @@ app.post("/turfs", (req, res) => {
 app.post("/bookings", (req, res) => {
   const { turf_id, slot_start, slot_end, customer_id, mode } = req.body;
 
-  db.get("SELECT price, min_target_players, max_stranger_players, owner_id FROM turfs WHERE id=?", [turf_id], (err, turf) => {
+  db.get("SELECT price, min_players, max_stranger_players, owner_id FROM turfs WHERE id=?", [turf_id], (err, turf) => {
     if (err || !turf) return res.status(400).json({ error: "Invalid turf" });
 
     db.get("SELECT wallet_balance FROM users WHERE id=?", [customer_id], (err2, user) => {
@@ -246,7 +246,7 @@ app.post("/bookings", (req, res) => {
                 (err5, strangers) => {
                   if (err5) return res.status(500).json({ error: err5.message });
 
-                  if (strangers.length < turf.min_target_players) {
+                  if (strangers.length < turf.min_players) {
                     const refundAmount = Math.floor(turf.price / turf.max_stranger_players);
                     strangers.forEach(s => {
                       db.run("UPDATE users SET wallet_balance = wallet_balance + ? WHERE id=?", [refundAmount, s.customer_id]);
@@ -273,7 +273,7 @@ app.post("/bookings", (req, res) => {
                 [turf_id, slot_start, slot_end],
                 (err6, result) => {
                   const joined = result?.[0]?.joined || 0;
-                  if (joined >= turf.min_target_players && turf.owner_id) {
+                  if (joined >= turf.min_players && turf.owner_id) {
                     const share = Math.floor(turf.price / turf.max_stranger_players);
                     db.run("UPDATE users SET wallet_balance = wallet_balance + ? WHERE id=?", [share * joined, turf.owner_id]);
                   }
@@ -360,10 +360,10 @@ app.put("/bookings/:id/status", (req, res) => {
 
 // Update turf details
 app.put("/turfs/:id", (req, res) => {
-  const { location, district, sport, price, min_target_players, max_stranger_players } = req.body;
+  const { location, district, sport, price, min_players, max_stranger_players } = req.body;
   db.run(
-    "UPDATE turfs SET location=?, district=?, sport=?, price=?, min_target_players=?, max_stranger_players=? WHERE id=?",
-    [location, district, sport, price, min_target_players, max_stranger_players, req.params.id],
+    "UPDATE turfs SET location=?, district=?, sport=?, price=?, min_players=?, max_stranger_players=? WHERE id=?",
+    [location, district, sport, price, min_players, max_stranger_players, req.params.id],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ updated: this.changes });
@@ -430,7 +430,7 @@ app.post("/bookings/:id/autocancel", (req, res) => {
       return res.json({ status: booking.status, message: "Not a pending stranger booking" });
     }
 
-    db.get("SELECT min_target_players, price, max_stranger_players FROM turfs WHERE id=?", [booking.turf_id], (err2, turf) => {
+    db.get("SELECT min_players, price, max_stranger_players FROM turfs WHERE id=?", [booking.turf_id], (err2, turf) => {
       if (err2 || !turf) return res.status(400).json({ error: "Turf not found" });
 
       db.all(
@@ -440,7 +440,7 @@ app.post("/bookings/:id/autocancel", (req, res) => {
         (err3, bookings) => {
           if (err3) return res.status(500).json({ error: err3.message });
 
-          if (bookings.length < turf.min_target_players) {
+          if (bookings.length < turf.min_players) {
             const refundAmount = Math.floor(turf.price / turf.max_stranger_players);
             bookings.forEach(b => {
               db.run("UPDATE users SET wallet_balance = wallet_balance + ? WHERE id=?", [refundAmount, b.customer_id]);
@@ -455,8 +455,6 @@ app.post("/bookings/:id/autocancel", (req, res) => {
     });
   });
 });
-
-
 
 // --- Start server ---
 app.listen(4001, () => {

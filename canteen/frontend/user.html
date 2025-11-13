@@ -22,7 +22,9 @@
 
   <nav>
     <span>Welcome, Student</span>
+    <span id="wallet" style="font-weight:bold; color:#10b981;"></span>
     <div>
+      <a href="wallet.html">Add Money</a>
       <a href="my-orders.html">My Orders</a>
       <a href="login.html">Logout</a>
     </div>
@@ -109,6 +111,13 @@
         container.innerHTML = "<p>Failed to load menu. Please try again later.</p>";
       }
     }
+    // Show wallet balance in nav
+document.addEventListener("DOMContentLoaded", () => {
+  const walletSpan = document.getElementById("wallet");
+  if (user?.wallet_balance !== undefined) {
+    walletSpan.textContent = `Wallet Balance: ₹${user.wallet_balance}`;
+  }
+});
 
     renderMenu();
   </script>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<HTML lang="en">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>Canteen Owner Dashboard</title>
@@ -7,10 +7,30 @@
     body { font-family: Arial; background: #f9fafb; margin: 0; padding: 0; }
     header { background: #f59e0b; color: #fff; padding: 16px; text-align: center; }
     main { padding: 20px; }
-    form, .orders, .menu-section { background: #fff; padding: 16px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    form, .orders, .menu-section {
+      background: #fff;
+      padding: 16px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
     label { display: block; margin: 8px 0 4px; }
-    input, select { width: 100%; padding: 8px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #ccc; }
-    button { background: #2563eb; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-right: 6px; }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-right: 6px;
+    }
     button:hover { background: #1e4fd6; }
     .order, .menu-item { border-bottom: 1px solid #eee; padding: 10px 0; }
     .status { font-weight: bold; }
@@ -38,8 +58,8 @@
       <label for="price">Price (₹)</label>
       <input type="number" id="price" required />
 
-      <label for="available">Available</label>
-      <select id="available">
+      <label for="in_stock">In Stock</label>
+      <select id="in_stock">
         <option value="1">Yes</option>
         <option value="0">No</option>
       </select>
@@ -76,7 +96,7 @@
       const item = {
         item: document.getElementById("item").value,
         price: parseInt(document.getElementById("price").value),
-        available: parseInt(document.getElementById("available").value),
+        in_stock: parseInt(document.getElementById("in_stock").value),
         college_id: collegeId
       };
       try {
@@ -112,8 +132,8 @@
           container.innerHTML += `
             <div class="menu-item">
               <b>${m.item}</b> — ₹${m.price} 
-              <span class="${m.available ? 'in' : 'out'}">(${m.available ? 'Available' : 'Out of Stock'})</span>
-              <button onclick="showEditForm(${m.id}, '${m.item}', ${m.price}, ${m.available})">Edit</button>
+              <span class="${m.in_stock ? 'in' : 'out'}">(${m.in_stock ? 'Available' : 'Out of Stock'})</span>
+              <button onclick="showEditForm(${m.id}, '${m.item}', ${m.price}, ${m.in_stock})">Edit</button>
             </div>
           `;
         });
@@ -124,7 +144,7 @@
     }
 
     // Show Edit Form for Menu Item
-    function showEditForm(id, item, price, available) {
+    function showEditForm(id, item, price, in_stock) {
       const container = document.getElementById("menu-list");
       const formId = `editForm-${id}`;
       if (document.getElementById(formId)) return;
@@ -136,10 +156,10 @@
           <input type="text" id="edit-item-${id}" value="${item}" required />
           <label>Price (₹)</label>
           <input type="number" id="edit-price-${id}" value="${price}" required />
-          <label>Available</label>
-          <select id="edit-available-${id}">
-            <option value="1" ${available ? "selected" : ""}>Yes</option>
-            <option value="0" ${!available ? "selected" : ""}>No</option>
+          <label>In Stock</label>
+          <select id="edit-in_stock-${id}">
+            <option value="1" ${in_stock ? "selected" : ""}>Yes</option>
+            <option value="0" ${!in_stock ? "selected" : ""}>No</option>
           </select>
           <button type="button" onclick="updateMenu(${id})">Save</button>
         </form>
@@ -151,7 +171,7 @@
       const updated = {
         item: document.getElementById(`edit-item-${id}`).value,
         price: parseInt(document.getElementById(`edit-price-${id}`).value),
-        available: parseInt(document.getElementById(`edit-available-${id}`).value)
+        in_stock: parseInt(document.getElementById(`edit-in_stock-${id}`).value)
       };
       try {
         await fetch(`http://localhost:4002/menu/${id}`, {
@@ -167,7 +187,7 @@
       }
     }
 
-    // Load Orders
+        // Load Orders
     async function loadOwnerOrders() {
       try {
         const res = await fetch(`http://localhost:4002/owner/orders/${collegeId}`);
@@ -197,54 +217,53 @@
             </div>
           `;
         });
-     
-          } catch (err) {
-      console.error("Error loading orders:", err);
-      document.getElementById("owner-orders").innerHTML = "<p>Failed to load orders ❌</p>";
+      } catch (err) {
+        console.error("Error loading orders:", err);
+        document.getElementById("owner-orders").innerHTML = "<p>Failed to load orders ❌</p>";
+      }
     }
-  }
 
-  // Update Order Status
-  async function updateStatus(orderId, status) {
-    try {
-      await fetch(`http://localhost:4002/orders/${orderId}/status`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status })
-      });
-      alert(`Order updated to ${status} ✅`);
-      loadOwnerOrders();
-    } catch (err) {
-      console.error("Error updating status:", err);
-      alert("Failed to update order ❌");
+    // Update Order Status
+    async function updateStatus(orderId, status) {
+      try {
+        await fetch(`http://localhost:4002/orders/${orderId}/status`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status })
+        });
+        alert(`Order updated to ${status} ✅`);
+        loadOwnerOrders();
+      } catch (err) {
+        console.error("Error updating status:", err);
+        alert("Failed to update order ❌");
+      }
     }
-  }
 
-  // Load Analytics
-  async function loadAnalytics() {
-    try {
-      const res = await fetch(`http://localhost:4002/owner/analytics/${user.college_id}`);
-      const data = await res.json();
+    // Load Analytics
+    async function loadAnalytics() {
+      try {
+        const res = await fetch(`http://localhost:4002/owner/analytics/${user.college_id}`);
+        const data = await res.json();
 
-      document.getElementById("analytics").innerHTML = `
-        <p><b>Daily Sales:</b> ${data.daily.orders} orders — ₹${data.daily.revenue || 0}</p>
-        <p><b>Weekly Sales:</b> ${data.weekly.orders} orders — ₹${data.weekly.revenue || 0}</p>
-        <p><b>Total Collected:</b> ₹${data.collected}</p>
-        <h4>Popular Items</h4>
-        <ul>
-          ${data.popular.map(p => `<li>${p.item} — ${p.sold} sold</li>`).join("")}
-        </ul>
-      `;
-    } catch (err) {
-      console.error("Error loading analytics:", err);
-      document.getElementById("analytics").innerHTML = "<p>Failed to load analytics ❌</p>";
+        document.getElementById("analytics").innerHTML = `
+          <p><b>Daily Sales:</b> ${data.daily.orders} orders — ₹${data.daily.revenue || 0}</p>
+          <p><b>Weekly Sales:</b> ${data.weekly.orders} orders — ₹${data.weekly.revenue || 0}</p>
+          <p><b>Total Collected:</b> ₹${data.collected}</p>
+          <h4>Popular Items</h4>
+          <ul>
+            ${data.popular.map(p => `<li>${p.item} — ${p.sold} sold</li>`).join("")}
+          </ul>
+        `;
+      } catch (err) {
+        console.error("Error loading analytics:", err);
+        document.getElementById("analytics").innerHTML = "<p>Failed to load analytics ❌</p>";
+      }
     }
-  }
 
-  // Initial load
-  loadMenu();
-  loadOwnerOrders();
-  loadAnalytics();
-</script>
+    // Initial load
+    loadMenu();
+    loadOwnerOrders();
+    loadAnalytics();
+  </script>
 </body>
-<HTML/>
+</html>
