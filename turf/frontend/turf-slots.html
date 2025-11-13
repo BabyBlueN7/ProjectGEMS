@@ -57,6 +57,7 @@
       padding: 6px 12px;
       border-radius: 6px;
       cursor: pointer;
+      margin-left: 8px;
     }
     button[disabled] {
       background: #ccc;
@@ -130,32 +131,33 @@
 
         for (const slot of data.slots) {
           const joined = slot.progress.joined || 0;
-          const max_stranger_players = slot.max_stranger_players || 0;
-          const percent = max_stranger_players > 0 ? Math.min(100, (joined / max_stranger_players) * 100) : 0;
+          const max = slot.max_stranger_players || 0;
+          const percent = max > 0 ? Math.min(100, (joined / max) * 100) : 0;
 
           const slotDiv = document.createElement("div");
           slotDiv.className = "slot";
 
-          const bookButton = slot.available
-  ? `<button onclick="bookSlot('${slot.start}','${slot.end}', 'stranger')">Stranger Play</button>`
-  : `<button disabled>Booked</button>`;
+          const bookButtons = slot.available
+            ? `
+              <button onclick="bookSlot('${slot.start}','${slot.end}', 'normal')">Normal Play</button>
+              <button onclick="bookSlot('${slot.start}','${slot.end}', 'stranger')">Stranger Play</button>
+            `
+            : `<button disabled>Booked</button>`;
 
           slotDiv.innerHTML = `
             <div class="slot-header">
               <span>${slot.start} - ${slot.end}</span>
               <span class="price">₹${slot.price}</span>
-              ${bookButton}
+              ${bookButtons}
             </div>
-            <p>${joined}/${max_stranger_players} players joined</p>
+            <p>${joined}/${max} players joined</p>
             <div class="progress">
               <div class="progress-fill" style="width:${percent}%;"></div>
             </div>
             <p class="status-text">
-              ${joined >= max_stranger_players
-
+              ${joined >= max
                 ? "✅ Slot locked in!"
-                : `⏳ Waiting for more players (${max_stranger_players
- - joined} more needed)`}
+                : `⏳ Waiting for more players (${max - joined} more needed)`}
             </p>
           `;
 
@@ -168,30 +170,30 @@
     }
 
     async function bookSlot(start, end, mode = "stranger") {
-  try {
-    const res = await fetch("http://localhost:4001/bookings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        turf_id: turfId,
-        slot_start: start,
-        slot_end: end,
-        customer_id: user.id,
-        mode
-      })
-    });
-    const data = await res.json();
-    if (res.ok) {
-      alert(`Booked slot ${start} - ${end} ✅`);
-      loadSlots();
-    } else {
-      alert(data.error || "Booking failed");
+      try {
+        const res = await fetch("http://localhost:4001/bookings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            turf_id: turfId,
+            slot_start: start,
+            slot_end: end,
+            customer_id: user.id,
+            mode
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          alert(`Booked slot ${start} - ${end} ✅`);
+          loadSlots();
+        } else {
+          alert(data.error || "Booking failed");
+        }
+      } catch (err) {
+        console.error("Booking failed:", err);
+        alert("Booking failed. Try again.");
+      }
     }
-  } catch (err) {
-    console.error("Booking failed:", err);
-    alert("Booking failed. Try again.");
-  }
-}
 
     loadWallet();
     loadSlots();

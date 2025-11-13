@@ -149,10 +149,7 @@ app.get("/turfs/:id/slots", (req, res) => {
         const progressMap = {};
         (rows || []).forEach(r => {
           const key = `${r.slot_start}-${r.slot_end}`;
-          progressMap[key] = {
-            joined: r.joined,
-            max_stranger_players: turf.min_players
-          };
+          progressMap[key] = { joined: r.joined };
         });
 
         for (let h = sh; h < eh; h++) {
@@ -160,18 +157,19 @@ app.get("/turfs/:id/slots", (req, res) => {
           const end = `${String(h + 1).padStart(2, "0")}:00`;
           const key = `${start}-${end}`;
 
-          const progress = progressMap[key] || { joined: 0, max_stranger_players: turf.min_players };
+          const progress = progressMap[key] || { joined: 0 };
 
           slots.push({
             start,
             end,
             price: turf.price,
             available: true,
+            max_stranger_players: turf.max_stranger_players,
             progress
           });
         }
 
-        res.json({ turf, slots });
+        res.json({ turf, slots }); // ✅ Correctly placed inside db.all callback
       }
     );
   });
