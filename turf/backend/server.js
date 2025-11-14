@@ -178,7 +178,18 @@ app.get("/turfs/:id/slots", (req, res) => {
 
 // ✅ Add new turf with district normalization and default player ranges
 app.post("/turfs", (req, res) => {
-  let { name, location, district, sport, price, start_time, end_time, min_players, max_stranger_players, owner_id } = req.body;
+  let {
+    name,
+    location,
+    district,
+    sport,
+    price,
+    start_time,
+    end_time,
+    min_players,
+    max_stranger_players,
+    owner_id
+  } = req.body;
 
   district = normalizeDistrict(district);
 
