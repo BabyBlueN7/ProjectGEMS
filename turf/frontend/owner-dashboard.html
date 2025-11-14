@@ -113,17 +113,17 @@
     district = district.charAt(0).toUpperCase() + district.slice(1).toLowerCase();
 
     const turf = {
-      location: document.getElementById("location").value,
-      district,
-      sport: document.getElementById("sport").value,
-      price: parseInt(document.getElementById("price").value),
-      start_time: document.getElementById("start_time").value,
-      end_time: document.getElementById("end_time").value,
-      min_range_players: parseInt(document.getElementById("minTarget").value),
-      max_range_players: parseInt(document.getElementById("maxPlayers").value),
-      owner_id: user.id
-    };
-
+  name: document.getElementById("name").value,
+  location: document.getElementById("location").value,
+  district,
+  sport: document.getElementById("sport").value,
+  price: parseInt(document.getElementById("price").value),
+  start_time: document.getElementById("start_time").value,
+  end_time: document.getElementById("end_time").value,
+  min_players: parseInt(document.getElementById("minTarget").value),
+max_stranger_players: parseInt(document.getElementById("maxPlayers").value),
+  owner_id: user.id
+};
     try {
       const res = await fetch("http://localhost:4001/turfs", {
         method: "POST",
@@ -154,12 +154,12 @@
         dashboard.insertBefore(addTurfSection, dashboard.firstChild);
       } else {
         container.innerHTML = turfs.map(t => `
-          <div class="turf">
-            <b>${t.location}</b> — ${t.sport} — ₹${t.price}
-            <button onclick="showEditForm(${t.id}, '${t.location}', '${t.district}', '${t.sport}', ${t.price}, ${t.min_range_players || 0}, ${t.max_range_players || 0})">Edit</button>
-            <button onclick="deleteTurf(${t.id})" style="background:#ef4444;">Delete</button>
-          </div>
-        `).join("");
+  <div class="turf">
+    <b>${t.location}</b> — ${t.sport} — ₹${t.price}
+    <button onclick="showEditForm(${t.id}, '${t.location}', '${t.district}', '${t.sport}', ${t.price}, ${t.min_players || 0}, ${t.max_stranger_players || 0})">Edit</button>
+    <button onclick="deleteTurf(${t.id})" style="background:#ef4444;">Delete</button>
+  </div>
+`).join("");
 
         dashboard.appendChild(addTurfSection);
       }
@@ -201,13 +201,13 @@
     district = district.charAt(0).toUpperCase() + district.slice(1).toLowerCase();
 
     const updated = {
-      location: document.getElementById(`edit-location-${id}`).value,
-      district,
-      sport: document.getElementById(`edit-sport-${id}`).value,
-      price: parseInt(document.getElementById(`edit-price-${id}`).value),
-      min_range_players: parseInt(document.getElementById(`edit-minTarget-${id}`).value),
-      max_range_players: parseInt(document.getElementById(`edit-maxPlayers-${id}`).value)
-    };
+  location: document.getElementById(`edit-location-${id}`).value,
+  district,
+  sport: document.getElementById(`edit-sport-${id}`).value,
+  price: parseInt(document.getElementById(`edit-price-${id}`).value),
+  min_players: parseInt(document.getElementById(`edit-minTarget-${id}`).value),
+  max_stranger_players: parseInt(document.getElementById(`edit-maxPlayers-${id}`).value)
+};
 
     try {
       await fetch(`http://localhost:4001/turfs/${id}`, {

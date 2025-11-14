@@ -160,13 +160,14 @@ app.get("/turfs/:id/slots", (req, res) => {
           const progress = progressMap[key] || { joined: 0 };
 
           slots.push({
-            start,
-            end,
-            price: turf.price,
-            available: true,
-            max_stranger_players: turf.max_stranger_players,
-            progress
-          });
+  start,
+  end,
+  price: turf.price,
+  available: true,
+  max_stranger_players: turf.max_stranger_players,
+  min_players: turf.min_players,
+  progress
+});
         }
 
         res.json({ turf, slots }); // ✅ Correctly placed inside db.all callback
@@ -177,34 +178,34 @@ app.get("/turfs/:id/slots", (req, res) => {
 
 // ✅ Add new turf with district normalization and default player ranges
 app.post("/turfs", (req, res) => {
-  let { location, district, sport, price, start_time, end_time, min_range_players, max_range_players } = req.body;
+  let { name, location, district, sport, price, start_time, end_time, min_players, max_stranger_players, owner_id } = req.body;
 
-  district = normalizeDistrict(district); // normalize district name
+  district = normalizeDistrict(district);
 
-  // Set default player ranges based on sport
-  if (!min_range_players || !max_range_players) {
+  // Set default player ranges if missing
+  if (!min_players || !max_stranger_players) {
     if (sport === "Football 5s") {
-      min_range_players = 5;
-      max_range_players = 5;
+      min_players = 5;
+      max_stranger_players = 5;
     } else if (sport === "Football 7s") {
-      min_range_players = 7;
-      max_range_players = 7;
+      min_players = 7;
+      max_stranger_players = 7;
     } else if (sport === "Football 10s") {
-      min_range_players = 10;
-      max_range_players = 10;
+      min_players = 10;
+      max_stranger_players = 10;
     } else if (sport === "Cricket") {
-      min_range_players = 11;
-      max_range_players = 11;
+      min_players = 11;
+      max_stranger_players = 11;
     } else {
-      min_range_players = 0;
-      max_range_players = 10; // fallback
+      min_players = 0;
+      max_stranger_players = 10;
     }
   }
 
   db.run(
-    `INSERT INTO turfs (location, district, sport, price, start_time, end_time, min_range_players, max_range_players) 
-     VALUES (?,?,?,?,?,?,?,?)`,
-    [location, district, sport, price, start_time, end_time, min_range_players, max_range_players],
+    `INSERT INTO turfs (name, location, district, sport, price, start_time, end_time, min_players, max_stranger_players, owner_id)
+     VALUES (?,?,?,?,?,?,?,?,?,?)`,
+    [name, location, district, sport, price, start_time, end_time, min_players, max_stranger_players, owner_id],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ id: this.lastID, message: "Turf added successfully" });

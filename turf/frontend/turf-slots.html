@@ -44,27 +44,41 @@
     .slot-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
+    }
+    .slot-header .right-buttons {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
     }
     .price {
       font-weight: bold;
       color: #10b981;
+      margin-bottom: 6px;
     }
-    button {
+    .book-btn {
       background: #10b981;
       color: #fff;
       border: none;
       padding: 6px 12px;
       border-radius: 6px;
       cursor: pointer;
-      margin-left: 8px;
+      margin-bottom: 6px;
+    }
+    .stranger-btn {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
     }
     button[disabled] {
       background: #ccc;
       cursor: not-allowed;
     }
     button:hover:not([disabled]) {
-      background: #0f9a70;
+      opacity: 0.9;
     }
     .progress {
       background: #e5e7eb;
@@ -132,33 +146,36 @@
         for (const slot of data.slots) {
           const joined = slot.progress.joined || 0;
           const max = slot.max_stranger_players || 0;
+          const min = slot.min_players || 0;
           const percent = max > 0 ? Math.min(100, (joined / max) * 100) : 0;
+
+          const waitingText = joined >= min
+            ? "✅ Slot locked in!"
+            : `⏳ Minimum ${min - joined} more needed`;
 
           const slotDiv = document.createElement("div");
           slotDiv.className = "slot";
 
           const bookButtons = slot.available
             ? `
-              <button onclick="bookSlot('${slot.start}','${slot.end}', 'normal')">Normal Play</button>
-              <button onclick="bookSlot('${slot.start}','${slot.end}', 'stranger')">Stranger Play</button>
+              <div class="right-buttons">
+                <span class="price">₹${slot.price}</span>
+                <button class="book-btn" onclick="bookSlot('${slot.start}','${slot.end}', 'normal')">Book</button>
+                <button class="stranger-btn" onclick="bookSlot('${slot.start}','${slot.end}', 'stranger')">Stranger Play Booking</button>
+              </div>
             `
             : `<button disabled>Booked</button>`;
 
           slotDiv.innerHTML = `
             <div class="slot-header">
               <span>${slot.start} - ${slot.end}</span>
-              <span class="price">₹${slot.price}</span>
               ${bookButtons}
             </div>
             <p>${joined}/${max} players joined</p>
             <div class="progress">
               <div class="progress-fill" style="width:${percent}%;"></div>
             </div>
-            <p class="status-text">
-              ${joined >= max
-                ? "✅ Slot locked in!"
-                : `⏳ Waiting for more players (${max - joined} more needed)`}
-            </p>
+            <p class="status-text">${waitingText}</p>
           `;
 
           container.appendChild(slotDiv);
