@@ -34,24 +34,24 @@
     <!-- Bookings -->
     <div class="section" id="bookings-section">
       <label>Status Filter</label>
-<select id="statusFilter">
-  <option value="">All</option>
-  <option value="pending">Pending</option>
-  <option value="confirmed">Confirmed</option>
-  <option value="canceled">Canceled</option>
-</select>
+      <select id="statusFilter">
+        <option value="">All</option>
+        <option value="pending">Pending</option>
+        <option value="confirmed">Confirmed</option>
+        <option value="canceled">Canceled</option>
+      </select>
 
-<label>Mode Filter</label>
-<select id="modeFilter">
-  <option value="">All</option>
-  <option value="single">Single</option>
-  <option value="stranger">Stranger</option>
-</select>
+      <label>Mode Filter</label>
+      <select id="modeFilter">
+        <option value="">All</option>
+        <option value="single">Single</option>
+        <option value="stranger">Stranger</option>
+      </select>
       <h2>Bookings</h2>
       <div id="owner-bookings">Loading...</div>
     </div>
 
-    <!-- Add Turf (will be moved depending on condition) -->
+    <!-- Add Turf -->
     <div class="section" id="add-turf-section">
       <h2>Add New Turf</h2>
       <form id="turfForm">
@@ -75,20 +75,24 @@
         <label for="price">Price per Hour (₹)</label>
         <input type="number" id="price" required />
 
-        <label for="minTarget">Minimum Target Players (Stranger Play)</label>
-<input type="number" id="minTarget" required />
+        <label for="start_time">Start Time</label>
+        <input type="text" id="start_time" value="05:00" required />
 
-<label for="maxPlayers">Maximum Stranger Players Allowed</label>
-<input type="number" id="maxPlayers" required />
+        <label for="end_time">End Time</label>
+        <input type="text" id="end_time" value="24:00" required />
+
+        <label for="minTarget">Minimum Target Players (Stranger Play)</label>
+        <input type="number" id="minTarget" required />
+
+        <label for="maxPlayers">Maximum Stranger Players Allowed</label>
+        <input type="number" id="maxPlayers" required />
 
         <button type="submit">Add Turf</button>
       </form>
     </div>
   </main>
-
   <script>
-    <script>
-  const user = JSON.parse(localStorage.getItem("user")); // owner info
+  const user = JSON.parse(localStorage.getItem("user"));
 
   // Auto-fill min/max players when sport changes
   document.getElementById("sport").addEventListener("change", (e) => {
@@ -109,21 +113,23 @@
     e.preventDefault();
 
     let district = document.getElementById("district").value.trim();
-    // Normalize district (capitalize first letter, rest lowercase)
     district = district.charAt(0).toUpperCase() + district.slice(1).toLowerCase();
 
     const turf = {
-  name: document.getElementById("name").value,
-  location: document.getElementById("location").value,
-  district,
-  sport: document.getElementById("sport").value,
-  price: parseInt(document.getElementById("price").value),
-  start_time: document.getElementById("start_time").value,
-  end_time: document.getElementById("end_time").value,
-  min_players: parseInt(document.getElementById("minTarget").value),
-  max_stranger_players: parseInt(document.getElementById("maxPlayers").value),
-  owner_id: user.id
-};
+      name: document.getElementById("name").value,
+      location: document.getElementById("location").value,
+      district: district,
+      sport: document.getElementById("sport").value,
+      price: parseInt(document.getElementById("price").value),
+      start_time: document.getElementById("start_time").value,
+      end_time: document.getElementById("end_time").value,
+      min_players: parseInt(document.getElementById("minTarget").value),
+      max_stranger_players: parseInt(document.getElementById("maxPlayers").value),
+      owner_id: user.id
+    };
+
+    console.log("Sending turf:", turf);
+
     try {
       const res = await fetch("http://localhost:4001/turfs", {
         method: "POST",
@@ -154,13 +160,12 @@
         dashboard.insertBefore(addTurfSection, dashboard.firstChild);
       } else {
         container.innerHTML = turfs.map(t => `
-  <div class="turf">
-    <b>${t.location}</b> — ${t.sport} — ₹${t.price}
-    <button onclick="showEditForm(${t.id}, '${t.location}', '${t.district}', '${t.sport}', ${t.price}, ${t.min_players || 0}, ${t.max_stranger_players || 0})">Edit</button>
-    <button onclick="deleteTurf(${t.id})" style="background:#ef4444;">Delete</button>
-  </div>
-`).join("");
-
+          <div class="turf">
+            <b>${t.location}</b> — ${t.sport} — ₹${t.price}
+            <button onclick="showEditForm(${t.id}, '${t.location}', '${t.district}', '${t.sport}', ${t.price}, ${t.min_players || 0}, ${t.max_stranger_players || 0})">Edit</button>
+            <button onclick="deleteTurf(${t.id})" style="background:#ef4444;">Delete</button>
+          </div>
+        `).join("");
         dashboard.appendChild(addTurfSection);
       }
     } catch (err) {
@@ -170,7 +175,7 @@
   }
 
   // Show Edit Form
-  function showEditForm(id, location, district, sport, price, minTarget=0, maxPlayers=0) {
+  function showEditForm(id, location, district, sport, price, minTarget = 0, maxPlayers = 0) {
     const container = document.getElementById("my-turfs");
     const formId = `editForm-${id}`;
     if (document.getElementById(formId)) return;
@@ -201,13 +206,13 @@
     district = district.charAt(0).toUpperCase() + district.slice(1).toLowerCase();
 
     const updated = {
-  location: document.getElementById(`edit-location-${id}`).value,
-  district,
-  sport: document.getElementById(`edit-sport-${id}`).value,
-  price: parseInt(document.getElementById(`edit-price-${id}`).value),
-  min_players: parseInt(document.getElementById(`edit-minTarget-${id}`).value),
-  max_stranger_players: parseInt(document.getElementById(`edit-maxPlayers-${id}`).value)
-};
+      location: document.getElementById(`edit-location-${id}`).value,
+      district,
+      sport: document.getElementById(`edit-sport-${id}`).value,
+      price: parseInt(document.getElementById(`edit-price-${id}`).value),
+      min_players: parseInt(document.getElementById(`edit-minTarget-${id}`).value),
+      max_stranger_players: parseInt(document.getElementById(`edit-maxPlayers-${id}`).value)
+    };
 
     try {
       await fetch(`http://localhost:4001/turfs/${id}`, {
@@ -242,14 +247,12 @@
       const res = await fetch(`http://localhost:4001/owner/bookings/${user.id}`);
       let bookings = await res.json();
 
-      // Apply filters
       const statusFilter = document.getElementById("statusFilter").value;
       const modeFilter = document.getElementById("modeFilter").value;
 
       if (statusFilter) bookings = bookings.filter(b => b.status === statusFilter);
       if (modeFilter) bookings = bookings.filter(b => b.mode === modeFilter);
 
-      // Sort by slot_start (earliest first)
       bookings.sort((a, b) => new Date(a.slot_start) - new Date(b.slot_start));
 
       const container = document.getElementById("owner-bookings");
@@ -267,7 +270,8 @@
       console.error("Error loading bookings:", err);
     }
   }
-    // Update Booking Status
+
+  // Update Booking Status
   async function updateBookingStatus(bookingId, status) {
     try {
       await fetch(`http://localhost:4001/bookings/${bookingId}/status`, {
@@ -282,14 +286,14 @@
         alert("Booking confirmed ✅");
       }
 
-      loadBookings(); // refresh list
+      loadBookings();
     } catch (err) {
       console.error("Error updating booking status:", err);
       alert("Failed to update booking ❌");
     }
   }
 
-  // Filters
+    // Filters
   document.getElementById("statusFilter").addEventListener("change", loadBookings);
   document.getElementById("modeFilter").addEventListener("change", loadBookings);
 
@@ -297,6 +301,5 @@
   loadTurfs();
   loadBookings();
 </script>
-  </script>
 </body>
 </html>
