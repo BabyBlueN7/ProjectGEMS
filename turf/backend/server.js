@@ -265,20 +265,33 @@ app.post("/bookings", (req, res) => {
                 }
               );
             } else {
-              db.all(
-                `SELECT COUNT(*) as joined FROM bookings 
-                 WHERE turf_id=? AND slot_start=? AND slot_end=? AND mode='stranger' AND status='booked'`,
-                [turf_id, slot_start, slot_end],
-                (err6, result) => {
-                  const joined = result?.[0]?.joined || 0;
-                  if (joined >= turf.min_players && turf.owner_id) {
-                    const share = Math.floor(turf.price / turf.max_stranger_players);
-                    db.run("UPDATE users SET wallet_balance = wallet_balance + ? WHERE id=?", [share * joined, turf.owner_id]);
-                  }
-                  res.json({ id: bookingId, status: "booked", mode, price: priceToCharge });
-                }
-              );
-            }
+  // Insert pending credit immediately after booking
+  db.run(
+    "INSERT INTO pending_owner_credits (booking_id, owner_id, amount) VALUES (?,?,?)",
+    [bookingId, turf.owner_id, priceToCharge]
+  );
+
+  // Check how many players have joined this slot
+  db.all(
+    `SELECT COUNT(*) as joined FROM bookings 
+     WHERE turf_id=? AND slot_start=? AND slot_end=? AND mode='stranger' AND status='booked'`,
+    [turf_id, slot_start, slot_end],
+    (err6, result) => {
+      const joined = result?.[0]?.joined || 0;
+
+      if (joined >= turf.min_players && turf.owner_id) {
+        const share = Math.floor(turf.price / turf.max_stranger_players);
+        const totalAmount = share * joined;
+
+        // Credit owner and mark pending credit as fulfilled
+        db.run("UPDATE users SET wallet_balance = wallet_balance + ? WHERE id=?", [totalAmount, turf.owner_id]);
+        db.run("UPDATE pending_owner_credits SET status='credited' WHERE booking_id=?", [bookingId]);
+      }
+
+      res.json({ id: bookingId, status: "booked", mode, price: priceToCharge });
+    }
+  );
+}
           }
         );
       });
@@ -452,6 +465,22 @@ app.post("/bookings/:id/autocancel", (req, res) => {
       );
     });
   });
+});
+
+// ✅ Get pending credits for an owner
+app.get("/owner/pending-credits/:owner_id", (req, res) => {
+  db.all(
+    `SELECT p.booking_id, p.amount, b.slot_start, b.slot_end, t.location, t.sport
+     FROM pending_owner_credits p
+     JOIN bookings b ON p.booking_id = b.id
+     JOIN turfs t ON b.turf_id = t.id
+     WHERE p.owner_id = ? AND p.status = 'pending'`,
+    [req.params.owner_id],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(rows);
+    }
+  );
 });
 
 // --- Start server ---
