@@ -418,6 +418,7 @@ app.get("/wallet/:user_id", (req, res) => {
   const { user_id } = req.params;
   db.get("SELECT wallet_balance FROM users WHERE id=?", [user_id], (err, row) => {
     if (err) return res.status(500).json({ error: err.message });
+    if (!row) return res.status(404).json({ error: "User not found" }); // ✅ Fix
     res.json({ balance: row.wallet_balance });
   });
 });

@@ -47,6 +47,10 @@
 <body>
   <header>
     <h1>Canteen Owner Dashboard</h1>
+    <div style="display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; background: #f0fdf4;">
+  <span id="wallet" style="font-weight: bold; color: #10b981; margin-right: 20px;">₹0</span>
+  <a href="login.html">Logout</a>
+</div>
   </header>
   <main>
     <!-- Add Menu Item -->
@@ -260,10 +264,24 @@
       }
     }
 
+    // Show wallet balance in nav
+    async function loadCanteenOwnerWallet() {
+  const user = JSON.parse(localStorage.getItem("user"));
+  try {
+    const res = await fetch(`http://localhost:4002/wallet/${user.id}`);
+    const data = await res.json();
+    document.getElementById("wallet").innerText = `₹${data.balance}`;
+  } catch (err) {
+    console.error("Error loading wallet:", err);
+    document.getElementById("wallet").innerText = "₹0";
+  }
+}
+
     // Initial load
     loadMenu();
     loadOwnerOrders();
     loadAnalytics();
+    loadCanteenOwnerWallet();
   </script>
 </body>
 </html>

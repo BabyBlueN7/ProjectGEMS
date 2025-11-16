@@ -23,6 +23,10 @@
 <body>
   <header>
     <h1>Turf Owner Dashboard</h1>
+    <div style="display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; background: #f0fdf4;">
+  <span id="wallet" style="font-weight: bold; color: #10b981; margin-right: 20px;">₹0</span>
+  <a href="login.html">Logout</a>
+</div>
   </header>
   <main id="dashboard">
     <!-- My Turfs -->
@@ -267,8 +271,7 @@
           <div class="booking">
             <p><b>${b.customer_name}</b> booked ${b.turf_name} (${b.slot_start} - ${b.slot_end})</p>
             <p class="status ${b.status}">Status: ${b.status}</p>
-            <button onclick="updateBookingStatus(${b.id}, 'confirmed')">Confirm</button>
-            <button onclick="updateBookingStatus(${b.id}, 'canceled')">Cancel</button>
+            
           </div>
         `).join("")
         : "<p>No bookings yet.</p>";
@@ -324,11 +327,26 @@ async function loadPendingCredits() {
     // Filters
   document.getElementById("statusFilter").addEventListener("change", loadBookings);
   document.getElementById("modeFilter").addEventListener("change", loadBookings);
+  
+    // Show wallet balance in nav
+ async function loadUserWallet() {
+  const user = JSON.parse(localStorage.getItem("user"));
+  try {
+    const res = await fetch(`http://localhost:4001/wallet/${user.id}`);
+    const data = await res.json();
+    document.getElementById("wallet").innerText = `Owner's Wallet: ₹${data.balance}`;
+  } catch (err) {
+    console.error("Error loading wallet:", err);
+    document.getElementById("wallet").innerText = "Owner's Wallet: ₹0";
+  }
+}
+loadUserWallet();
 
   // Initial load
   loadTurfs();
   loadBookings();
   loadPendingCredits();
+  loadOwnerWallet();
 </script>
 </body>
 </html>

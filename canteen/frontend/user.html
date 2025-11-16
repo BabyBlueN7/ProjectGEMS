@@ -22,12 +22,13 @@
 
   <nav>
     <span>Welcome, Student</span>
-    <span id="wallet" style="font-weight:bold; color:#10b981;"></span>
-    <div>
-      <a href="wallet.html">Add Money</a>
-      <a href="my-orders.html">My Orders</a>
-      <a href="login.html">Logout</a>
-    </div>
+<div style="display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; background: #f0fdf4;">
+  <span id="wallet" style="font-weight: bold; color: #10b981; margin-right: 20px;">₹0</span>
+  <a href="wallet.html">Add Money</a>
+  <a href="my-orders.html" style="margin-right: 15px;">My Orders</a>
+  <a href="login.html">Logout</a>
+</div>
+    
   </nav>
 
   <main>
@@ -112,13 +113,19 @@
       }
     }
     // Show wallet balance in nav
-document.addEventListener("DOMContentLoaded", () => {
-  const walletSpan = document.getElementById("wallet");
-  if (user?.wallet_balance !== undefined) {
-    walletSpan.textContent = `Wallet Balance: ₹${user.wallet_balance}`;
+async function loadCanteenUserWallet() {
+  const user = JSON.parse(localStorage.getItem("user"));
+  try {
+    const res = await fetch(`http://localhost:4002/wallet/${user.id}`);
+    const data = await res.json();
+    document.getElementById("wallet").innerText = `Wallet Balance: ₹${data.balance}`;
+  } catch (err) {
+    console.error("Error loading wallet:", err);
+    document.getElementById("wallet").innerText = "₹0";
   }
-});
+}
 
+loadCanteenUserWallet();
     renderMenu();
   </script>
 </body>
