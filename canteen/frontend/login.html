@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <title>Canteen Login</title>
@@ -13,7 +12,6 @@
       align-items: center;
       height: 100vh;
     }
-
     .box {
       background: #fff;
       padding: 28px;
@@ -21,24 +19,15 @@
       border-radius: 12px;
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
     }
-
-    h2 {
-      text-align: center;
-      margin: 0 0 18px;
-    }
-
-    input {
+    h2 { text-align: center; margin: 0 0 18px; }
+    input, select {
       width: 100%;
       padding: 10px;
       margin: 8px 0;
       border: 1px solid #cdd4da;
       border-radius: 8px;
     }
-
-    .roles {
-      margin: 10px 0;
-    }
-
+    .roles { margin: 10px 0; }
     button {
       width: 100%;
       padding: 10px;
@@ -49,31 +38,31 @@
       border-radius: 8px;
       cursor: pointer;
     }
-
-    button:hover {
-      background: #1e4fd6;
-    }
-
+    button:hover { background: #1e4fd6; }
     .links {
       text-align: center;
       margin-top: 12px;
       font-size: 14px;
     }
-
-    .links a {
-      color: #2563eb;
-      text-decoration: none;
-    }
+    .links a { color: #2563eb; text-decoration: none; }
   </style>
 </head>
-
 <body>
   <div class="box">
     <h2>Canteen Login</h2>
-    <input type="text" id="admission" placeholder="Admission Number" />
+
+    <!-- Student login -->
+    <div id="student-fields">
+      <input type="text" id="admission" placeholder="Admission Number" />
+    </div>
+
+    <!-- Owner login -->
+    <div id="owner-fields" style="display: none;">
+      <input type="text" id="college_code" placeholder="College Code" />
+    </div>
+
     <input type="password" id="password" placeholder="Password" />
 
-    <!-- Role selection -->
     <div class="roles">
       <label><input type="radio" name="role" value="student" checked /> Student</label>
       <label><input type="radio" name="role" value="owner" /> Owner</label>
@@ -88,43 +77,51 @@
   </div>
 
   <script>
-  async function login() {
-    const admission_no = document.getElementById("admission").value.trim();
-    const password = document.getElementById("password").value.trim();
-    const role = document.querySelector("input[name='role']:checked").value;
+    const roleRadios = document.querySelectorAll("input[name='role']");
+    roleRadios.forEach(r => r.addEventListener("change", toggleFields));
 
-    if (!admission_no || !password) {
-      alert("Please enter admission number and password");
-      return;
+    function toggleFields() {
+      const role = document.querySelector("input[name='role']:checked").value;
+      document.getElementById("student-fields").style.display = role === "student" ? "block" : "none";
+      document.getElementById("owner-fields").style.display = role === "owner" ? "block" : "none";
     }
 
-    try {
-      const res = await fetch("http://localhost:4002/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ admission_no, password, role })
-      });
+    async function login() {
+      const role = document.querySelector("input[name='role']:checked").value;
+      const password = document.getElementById("password").value.trim();
 
-      const data = await res.json();
-      if (data.error) {
-        alert("Login failed: " + data.error);
+      let payload = { role, password };
+
+      if (role === "student") {
+        const admission_no = document.getElementById("admission").value.trim();
+        if (!admission_no || !password) return alert("Enter admission number and password");
+        payload.admission_no = admission_no;
       } else {
-        alert("Login successful ✅");
-        // Save user info for later use
-        localStorage.setItem("user", JSON.stringify(data));
-        // Redirect based on role
-        if (data.role === "student") {
-          window.location.href = "user.html";
-        } else if (data.role === "owner") {
-          window.location.href = "owner-dashboard.html";
-        }
+        const college_code = document.getElementById("college_code").value.trim();
+        if (!college_code || !password) return alert("Enter college code and password");
+        payload.college_code = college_code;
       }
-    } catch (err) {
-      console.error("Login error:", err);
-      alert("Something went wrong. Try again.");
-    }
-  }
-</script>
-</body>
 
+      try {
+        const res = await fetch("http://localhost:4002/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (data.error) {
+          alert("Login failed: " + data.error);
+        } else {
+          localStorage.setItem("user", JSON.stringify(data));
+          alert("Login successful ✅");
+          window.location.href = role === "student" ? "user.html" : "canteen-dashboard.html";
+        }
+      } catch (err) {
+        console.error("Login error:", err);
+        alert("Something went wrong. Try again.");
+      }
+    }
+  </script>
+</body>
 </html>

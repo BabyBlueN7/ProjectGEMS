@@ -118,16 +118,73 @@ app.post("/signup", (req, res) => {
 
 // Login route for student or owner
 app.post("/login", (req, res) => {
-  const { admission_no, password, role } = req.body;
-  db.get(
-    "SELECT * FROM users WHERE admission_no=? AND password=? AND role=?",
-    [admission_no, password, role],
-    (err, user) => {
-      if (err) return res.status(500).json({ error: err.message });
-      if (!user) return res.status(401).json({ error: "Invalid credentials" });
-      res.json(user);
+  const { admission_no, college_code, password, role } = req.body;
+
+  if (role === "student") {
+    db.get(
+      "SELECT * FROM users WHERE admission_no=? AND password=? AND role='student'",
+      [admission_no, password],
+      (err, user) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!user) return res.status(401).json({ error: "Invalid student credentials" });
+        res.json(user);
+      }
+    );
+  } else if (role === "owner") {
+    db.get(
+      `SELECT u.id, u.name, u.email, u.role, u.college_id
+       FROM users u
+       JOIN colleges c ON u.college_id = c.id
+       WHERE u.role='owner' AND c.college_code=? AND u.password=?`,
+      [college_code, password],
+      (err, user) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!user) return res.status(401).json({ error: "Invalid owner credentials" });
+        res.json(user);
+      }
+    );
+  } else {
+    res.status(400).json({ error: "Invalid role" });
+  }
+});
+
+//Check if an owner already exists for that college
+app.post("/signup-owner", (req, res) => {
+  const { name, email, password, college_id, college_code } = req.body;
+
+  // Normalize inputs
+  const normalizedCode = college_code?.trim().toLowerCase();
+
+  // Step 1: Validate college exists and code matches
+  db.get("SELECT college_code FROM colleges WHERE id=?", [college_id], (err, college) => {
+    if (err) return res.status(500).json({ error: "Database error" });
+    if (!college) return res.status(400).json({ error: "Invalid college selected" });
+
+    const actualCode = college.college_code?.trim().toLowerCase();
+    if (actualCode !== normalizedCode) {
+      return res.status(400).json({ error: "Incorrect college code" });
     }
-  );
+
+    // Step 2: Check if an owner already exists for this college
+    db.get("SELECT id FROM users WHERE role='owner' AND college_id=?", [college_id], (err2, existingOwner) => {
+      if (err2) return res.status(500).json({ error: "Database error" });
+      if (existingOwner) {
+        return res.status(400).json({ error: "Owner already exists for this college" });
+      }
+
+      // Step 3: Create owner account
+      db.run(
+        "INSERT INTO users (name, email, password, role, college_id) VALUES (?,?,?,?,?)",
+        [name, email, password, "owner", college_id],
+        function (err3) {
+          if (err3) return res.status(500).json({ error: "Signup failed" });
+
+          console.log(`✅ Owner created for college ${college_id} with email ${email}`);
+          res.json({ id: this.lastID, name, email, role: "owner", college_id });
+        }
+      );
+    });
+  });
 });
 
 // Get today's menu for a specific college
@@ -422,6 +479,8 @@ app.get("/wallet/:user_id", (req, res) => {
     res.json({ balance: row.wallet_balance });
   });
 });
+
+
 
 // --- Start server ---
 app.listen(4002, () => console.log("Canteen backend running on http://localhost:4002"));
