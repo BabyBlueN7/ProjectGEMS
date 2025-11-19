@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Kick-Hub Devtool</title>
+  <style>
+    body { font-family: Arial; background: #f9fafb; margin: 0; padding: 0; }
+    header h1 { margin: 0; padding: 16px; background: #2563eb; color: #fff; text-align: center; }
+    section { padding: 20px; }
+    .turf {
+      background: #fff;
+      padding: 16px;
+      margin: 12px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .turf p { margin: 4px 0; }
+    .actions button {
+      margin-right: 8px;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .verify { background: #10b981; color: white; }
+    .reject, .remove { background: #ef4444; color: white; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Kick-Hub Devtool</h1>
+  </header>
+
+  <section>
+    <h2>Unverified Turf Requests</h2>
+    <div id="unverified"></div>
+
+    <h2>Active Verified Turfs</h2>
+    <div id="verified"></div>
+  </section>
+
+  <script>
+    async function loadTurfs() {
+      try {
+        const unverifiedRes = await fetch("http://localhost:4001/admin/turfs/unverified");
+        const verifiedRes = await fetch("http://localhost:4001/admin/turfs/verified");
+
+        const unverified = await unverifiedRes.json();
+        const verified = await verifiedRes.json();
+
+        const unverifiedDiv = document.getElementById("unverified");
+        const verifiedDiv = document.getElementById("verified");
+
+        unverifiedDiv.innerHTML = "";
+        verifiedDiv.innerHTML = "";
+
+        if (unverified.length === 0) {
+          unverifiedDiv.innerHTML = "<p>No unverified turfs found.</p>";
+        } else {
+          unverified.forEach(t => {
+            const div = document.createElement("div");
+            div.className = "turf";
+            div.innerHTML = `
+              <h3>${t.name}</h3>
+              <p>${t.sport} - ${t.location}, ${t.district}</p>
+              <p>₹${t.price}/hr</p>
+              <div class="actions">
+                <button class="verify" onclick="verifyTurf(${t.id})">✅ Verify</button>
+                <button class="reject" onclick="rejectTurf(${t.id})">❌ Reject</button>
+              </div>
+            `;
+            unverifiedDiv.appendChild(div);
+          });
+        }
+
+        if (verified.length === 0) {
+          verifiedDiv.innerHTML = "<p>No verified turfs found.</p>";
+        } else {
+          verified.forEach(t => {
+            const div = document.createElement("div");
+            div.className = "turf";
+            div.innerHTML = `
+              <h3>${t.name}</h3>
+              <p>${t.sport} - ${t.location}, ${t.district}</p>
+              <p>₹${t.price}/hr</p>
+              <div class="actions">
+                <button class="remove" onclick="removeTurf(${t.id})">❌ Remove</button>
+              </div>
+            `;
+            verifiedDiv.appendChild(div);
+          });
+        }
+      } catch (err) {
+        console.error("Error loading turfs:", err);
+      }
+    }
+
+    async function verifyTurf(id) {
+      await fetch(`http://localhost:4001/admin/turfs/${id}/verify`, { method: "POST" });
+      loadTurfs();
+    }
+
+    async function rejectTurf(id) {
+      await fetch(`http://localhost:4001/admin/turfs/${id}/reject`, { method: "DELETE" });
+      loadTurfs();
+    }
+
+    async function removeTurf(id) {
+      await fetch(`http://localhost:4001/admin/turfs/${id}/remove`, { method: "DELETE" });
+      loadTurfs();
+    }
+
+    loadTurfs();
+  </script>
+</body>
+</html>

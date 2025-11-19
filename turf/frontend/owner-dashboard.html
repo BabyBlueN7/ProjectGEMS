@@ -99,6 +99,13 @@
 
         <button type="submit">Add Turf</button>
       </form>
+      <div id="verifyMessage" style="display:none; margin-top:16px; padding:12px; background:#FEF3C7; border-left:4px solid #F59E0B; border-radius:6px; color:#7C2D12;">
+  ✅ Turf added successfully!<br>
+  To verify your eligibility and make your turf visible to players, please contact<strong>Kick-Hub Team</strong> for verification:<br>
+  📧 <strong>mrabhisanth@gmail.com</strong><br>
+  📞 <strong>+91 97780 49379</strong><br>
+  Only verified turfs will appear in the player booking system.
+</div>
     </div>
   </main>
   <script>
@@ -117,6 +124,9 @@
     document.getElementById("minTarget").value = defaultPlayers;
     document.getElementById("maxPlayers").value = defaultPlayers;
   });
+
+  /<script>
+  const user = JSON.parse(localStorage.getItem("user"));
 
   // Add Turf
   document.getElementById("turfForm").addEventListener("submit", async (e) => {
@@ -146,15 +156,26 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(turf)
       });
+
       const data = await res.json();
-      alert(`Turf added successfully ✅`);
-      e.target.reset();
-      loadTurfs();
+
+      if (res.ok) {
+        alert("Turf added successfully ✅");
+        e.target.reset();
+        loadTurfs();
+
+        // ✅ Show verification message
+        const verifyMsg = document.getElementById("verifyMessage");
+        if (verifyMsg) verifyMsg.style.display = "block";
+      } else {
+        alert(data.error || "Failed to add turf ❌");
+      }
     } catch (err) {
       console.error("Error adding turf:", err);
       alert("Failed to add turf ❌");
     }
   });
+</script>
 
   // Load My Turfs
   async function loadTurfs() {

@@ -18,8 +18,12 @@
       width: 340px;
       border-radius: 12px;
       box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+      position: relative;
     }
-    h2 { text-align: center; margin: 0 0 18px; }
+    h2 {
+      text-align: center;
+      margin: 0 0 18px;
+    }
     input, select {
       width: 100%;
       padding: 10px;
@@ -27,7 +31,9 @@
       border: 1px solid #cdd4da;
       border-radius: 8px;
     }
-    .roles { margin: 10px 0; }
+    .roles {
+      margin: 10px 0;
+    }
     button {
       width: 100%;
       padding: 10px;
@@ -38,13 +44,31 @@
       border-radius: 8px;
       cursor: pointer;
     }
-    button:hover { background: #1e4fd6; }
+    button:hover {
+      background: #1e4fd6;
+    }
     .links {
       text-align: center;
       margin-top: 12px;
       font-size: 14px;
     }
-    .links a { color: #2563eb; text-decoration: none; }
+    .links a {
+      color: #2563eb;
+      text-decoration: none;
+    }
+    .devtool-link {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      font-size: 13px;
+    }
+    .devtool-link a {
+      color: #6b7280;
+      text-decoration: none;
+    }
+    .devtool-link a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -74,6 +98,11 @@
       <p>No account? <a href="signup.html">Sign up (Student)</a></p>
       <p>Owner? <a href="signup-owner.html">Sign up as Owner</a></p>
     </div>
+  </div>
+
+  <!-- 🔐 Devtool Access (hidden in corner) -->
+  <div class="devtool-link">
+    <a href="devtool-login-canteen.html">Devtool Access</a>
   </div>
 
   <script>

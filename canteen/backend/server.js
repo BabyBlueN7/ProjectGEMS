@@ -62,34 +62,6 @@ db.serialize(() => {
     quantity INTEGER,
     status TEXT DEFAULT 'pending'
   )`);
-
-  // Auto-insert sample college + menu if empty
-  db.get("SELECT COUNT(*) as count FROM colleges", (err, row) => {
-    if (row.count === 0) {
-      db.run("INSERT INTO colleges (name) VALUES (?)", ["My College"]);
-      console.log("Sample college inserted ✅");
-    }
-  });
-
-  db.get("SELECT COUNT(*) as count FROM menu", (err, row) => {
-    if (row.count === 0) {
-      const stmt = db.prepare("INSERT INTO menu (item, price, in_stock) VALUES (?,?,?)");
-      stmt.run("Masala Dosa", 40, 1);
-      stmt.run("Veg Biriyani", 60, 1);
-      stmt.run("Tea", 10, 1);
-      stmt.run("Coffee", 15, 0);
-      stmt.finalize();
-      console.log("Sample menu inserted ✅");
-
-      // Link all items to college_id = 1
-      db.all("SELECT id FROM menu", [], (err, rows) => {
-        rows.forEach(r => {
-          db.run("INSERT INTO college_menu (college_id, menu_id) VALUES (?,?)", [1, r.id]);
-        });
-        console.log("Linked sample menu to college 1 ✅");
-      });
-    }
-  });
 });
 
 // --- Routes ---
@@ -145,6 +117,17 @@ app.post("/login", (req, res) => {
     );
   } else {
     res.status(400).json({ error: "Invalid role" });
+  }
+});
+
+// Digi-Canteen Devtool Login
+app.post("/devtool/canteen-login", (req, res) => {
+  const { code } = req.body;
+
+  if (code === "876543210") {
+    return res.json({ ok: true });
+  } else {
+    return res.status(403).json({ error: "Invalid dev code" });
   }
 });
 
@@ -230,6 +213,31 @@ app.post("/menu", (req, res) => {
       );
     }
   );
+});
+
+// Get all colleges
+app.get("/admin/colleges", (req, res) => {
+  db.all("SELECT * FROM colleges", [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+// Add a college
+app.post("/admin/colleges", (req, res) => {
+  const { name, college_code } = req.body;
+  db.run("INSERT INTO colleges (name, college_code) VALUES (?, ?)", [name, college_code], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ id: this.lastID });
+  });
+});
+
+// Remove a college
+app.delete("/admin/colleges/:id", (req, res) => {
+  db.run("DELETE FROM colleges WHERE id = ?", [req.params.id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ ok: true });
+  });
 });
 
 // Create a new order (student)

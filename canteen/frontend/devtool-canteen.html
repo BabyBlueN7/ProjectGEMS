@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Digi-Canteen Devtool</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #f9fafb;
+      padding: 20px;
+    }
+    h1 {
+      color: #2563eb;
+    }
+    .form {
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+      max-width: 400px;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+    }
+    button {
+      padding: 10px 16px;
+      background: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #1e4fd6;
+    }
+    .college {
+      background: #fff;
+      padding: 14px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .college-info {
+      flex-grow: 1;
+    }
+    .remove {
+      background: #ef4444;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .remove:hover {
+      background: #dc2626;
+    }
+  </style>
+</head>
+<body>
+  <h1>Digi-Canteen Devtool</h1>
+
+  <div class="form">
+    <h3>Add College</h3>
+    <input type="text" id="name" placeholder="College Name" required />
+    <input type="text" id="college_code" placeholder="College Code" required />
+    <button onclick="addCollege()">Add College</button>
+  </div>
+
+  <h3>All Colleges</h3>
+  <div id="colleges"></div>
+
+  <script>
+    async function loadColleges() {
+      const res = await fetch("http://localhost:4002/admin/colleges");
+      const colleges = await res.json();
+      const div = document.getElementById("colleges");
+      div.innerHTML = "";
+
+      colleges.forEach(c => {
+        div.innerHTML += `
+          <div class="college">
+            <div class="college-info">
+              <strong>${c.name}</strong><br>
+              Code: ${c.college_code}
+            </div>
+            <button class="remove" onclick="removeCollege(${c.id})">❌ Remove</button>
+          </div>
+        `;
+      });
+    }
+
+    async function addCollege() {
+      const name = document.getElementById("name").value.trim();
+      const code = document.getElementById("college_code").value.trim();
+
+      if (!name || !code) return alert("Enter both name and code");
+
+      await fetch("http://localhost:4002/admin/colleges", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, college_code: code })
+      });
+
+      document.getElementById("name").value = "";
+      document.getElementById("college_code").value = "";
+      loadColleges();
+    }
+
+    async function removeCollege(id) {
+      await fetch(`http://localhost:4002/admin/colleges/${id}`, {
+        method: "DELETE"
+      });
+      loadColleges();
+    }
+
+    loadColleges();
+  </script>
+</body>
+</html>

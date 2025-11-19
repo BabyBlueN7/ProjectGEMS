@@ -4,14 +4,68 @@
   <meta charset="UTF-8" />
   <title>Turf Login</title>
   <style>
-    body { font-family: Arial; background: #f3f5f7; display: flex; justify-content: center; align-items: center; height: 100vh; }
-    .box { background: #fff; padding: 28px; width: 340px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
-    h2 { text-align: center; margin: 0 0 18px; }
-    input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #cdd4da; border-radius: 8px; }
-    button { width: 100%; padding: 10px; margin-top: 10px; background: #2563eb; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
-    button:hover { background: #1e4fd6; }
-    .links { text-align: center; margin-top: 12px; font-size: 14px; }
-    .links a { color: #2563eb; text-decoration: none; }
+    body {
+      font-family: Arial;
+      background: #f3f5f7;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .box {
+      background: #fff;
+      padding: 28px;
+      width: 340px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+      position: relative;
+    }
+    h2 {
+      text-align: center;
+      margin: 0 0 18px;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border: 1px solid #cdd4da;
+      border-radius: 8px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #1e4fd6;
+    }
+    .links {
+      text-align: center;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+    .links a {
+      color: #2563eb;
+      text-decoration: none;
+    }
+    .devtool-link {
+      position: fixed;
+      bottom: 10px;
+      left: 10px;
+      font-size: 13px;
+    }
+    .devtool-link a {
+      color: #6b7280;
+      text-decoration: none;
+    }
+    .devtool-link a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -27,40 +81,42 @@
     </div>
   </div>
 
- <script>
-  async function login() {
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+  <!-- 🔐 Devtool Access (hidden in corner) -->
+  <div class="devtool-link">
+    <a href="devtool-login-turf.html">Devtool Access</a>
+  </div>
 
-    try {
-      const res = await fetch("http://localhost:4001/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
-      });
+  <script>
+    async function login() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
 
-      const data = await res.json();
+      try {
+        const res = await fetch("http://localhost:4001/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
 
-      if (res.ok && !data.error) {
-        // Save user info for later use (optional)
-        localStorage.setItem("user", JSON.stringify(data));
+        const data = await res.json();
 
-        alert("Welcome, " + data.name + " (" + data.role + ")");
+        if (res.ok && !data.error) {
+          localStorage.setItem("user", JSON.stringify(data));
+          alert("Welcome, " + data.name + " (" + data.role + ")");
 
-        // Redirect based on role
-        if (data.role === "owner") {
-          window.location.href = `owner-dashboard.html?id=${data.id}`;
+          if (data.role === "owner") {
+            window.location.href = `owner-dashboard.html?id=${data.id}`;
+          } else {
+            window.location.href = `user.html?id=${data.id}`;
+          }
         } else {
-          window.location.href = `user.html?id=${data.id}`;
+          alert(data.error || "Login failed");
         }
-      } else {
-        alert(data.error || "Login failed");
+      } catch (err) {
+        console.error("Login error:", err);
+        alert("Something went wrong. Try again.");
       }
-    } catch (err) {
-      console.error("Login error:", err);
-      alert("Something went wrong. Try again.");
     }
-  }
-</script>
+  </script>
 </body>
 </html>

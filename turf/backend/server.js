@@ -94,22 +94,37 @@ app.post("/login", (req, res) => {
   );
 });
 
-// Get all turfs
+// Kick-Hub Devtool Login
+app.post("/devtool/turf-login", (req, res) => {
+  const { code } = req.body;
+
+  if (code === "4815162342") {
+    return res.json({ ok: true });
+  } else {
+    return res.status(403).json({ error: "Invalid dev code" });
+  }
+});
+
+// ✅ Get all verified turfs (for user.html)
 app.get("/turfs", (req, res) => {
-  db.all("SELECT * FROM turfs", [], (err, rows) => {
+  db.all("SELECT * FROM turfs WHERE is_verified = 1", [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(rows);
   });
 });
 
 
-// Get turfs by district
+// ✅ Get verified turfs by district (for user.html filters)
 app.get("/turfs/by-district/:district", (req, res) => {
   const district = req.params.district;
-  db.all("SELECT * FROM turfs WHERE LOWER(district) = LOWER(?)", [district], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+  db.all(
+    "SELECT * FROM turfs WHERE LOWER(district) = LOWER(?) AND is_verified = 1",
+    [district],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(rows);
+    }
+  );
 });
 
 // ✅ Get slots for a turf with Stranger Play progress and booking metadata
@@ -212,6 +227,40 @@ app.post("/turfs", (req, res) => {
       res.json({ id: this.lastID, message: "Turf added successfully" });
     }
   );
+});
+
+// Get unverified turfs
+app.get("/admin/turfs/unverified", (req, res) => {
+  db.all("SELECT * FROM turfs WHERE is_verified = 0", [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+// Get verified turfs
+app.get("/admin/turfs/verified", (req, res) => {
+  db.all("SELECT * FROM turfs WHERE is_verified = 1", [], (err, rows) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(rows);
+  });
+});
+
+//Add turf approval route:
+
+app.post("/admin/turfs/:id/verify", (req, res) => {
+  db.run("UPDATE turfs SET is_verified = 1 WHERE id = ?", [req.params.id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ ok: true });
+  });
+});
+
+
+//- Add turf reject route
+app.delete("/admin/turfs/:id/remove", (req, res) => {
+  db.run("DELETE FROM turfs WHERE id = ?", [req.params.id], function(err) {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json({ ok: true });
+  });
 });
 
 // POST /bookings

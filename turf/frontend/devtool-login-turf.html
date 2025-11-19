@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Kick-Hub Devtool Login</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #f3f5f7;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .box {
+      background: #fff;
+      padding: 28px;
+      width: 340px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 18px;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border: 1px solid #cdd4da;
+      border-radius: 8px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      background: #10b981;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0f9a70;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2>Kick-Hub Devtool Access</h2>
+    <input type="password" id="devcode" placeholder="Enter Dev Code" />
+    <button onclick="submitDevcode()">Login</button>
+  </div>
+
+  <script>
+    async function submitDevcode() {
+      const code = document.getElementById("devcode").value;
+
+      try {
+        const res = await fetch("http://localhost:4001/devtool/turf-login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code })
+        });
+
+        if (res.ok) {
+          window.location.href = "devtool-turf.html";
+        } else {
+          alert("Access denied ❌");
+        }
+      } catch (err) {
+        console.error("Devtool login error:", err);
+        alert("Something went wrong. Try again.");
+      }
+    }
+  </script>
+</body>
+</html>
