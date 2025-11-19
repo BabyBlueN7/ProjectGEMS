@@ -7,33 +7,72 @@
     body { font-family: Arial; background: #f9fafb; margin: 0; padding: 0; }
     header { background: #2563eb; color: #fff; padding: 16px; text-align: center; }
     main { padding: 20px; }
-    form, .section { background: #fff; padding: 16px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    form, .section {
+      background: #fff;
+      padding: 16px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
     label { display: block; margin: 8px 0 4px; }
-    input, select { width: 100%; padding: 8px; margin-bottom: 12px; border-radius: 6px; border: 1px solid #ccc; }
-    button { background: #10b981; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; margin-right: 6px; }
+    input, select, textarea {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background: #10b981;
+      color: #fff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-right: 6px;
+    }
     button:hover { background: #0f9a70; }
-    .turf, .booking { border-bottom: 1px solid #eee; padding: 10px 0; }
+    .turf, .booking {
+      border-bottom: 1px solid #eee;
+      padding: 10px 0;
+    }
     .status { font-weight: bold; }
     .pending { color: orange; }
     .confirmed { color: green; }
     .canceled { color: red; }
-    .edit-form { background:#f3f4f6; padding:10px; border-radius:6px; margin-top:8px; }
+    .edit-form {
+      background:#f3f4f6;
+      padding:10px;
+      border-radius:6px;
+      margin-top:8px;
+    }
   </style>
 </head>
 <body>
   <header>
     <h1>Turf Owner Dashboard</h1>
     <div style="display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; background: #f0fdf4;">
-  <span id="wallet" style="font-weight: bold; color: #10b981; margin-right: 20px;">₹0</span>
-  <a href="login.html">Logout</a>
-</div>
+      <span id="wallet" style="font-weight: bold; color: #10b981; margin-right: 20px;">₹0</span>
+      <a href="login.html">Logout</a>
+    </div>
   </header>
+
   <main id="dashboard">
     <!-- My Turfs -->
     <div class="section" id="turfs-section">
-      <h2>My Turfs</h2>
-      <div id="my-turfs">Loading...</div>
-    </div>
+  <h2>My Turfs</h2>
+  <div id="my-turfs">Loading...</div>
+
+  <!-- ✅ Always-visible message -->
+  <div id="verifyMessage" style="margin-top:16px; padding:12px; background:#FEF3C7; border-left:4px solid #F59E0B; border-radius:6px; color:#7C2D12; position:relative;">
+    <button onclick="closeVerifyMessage()" style="position:absolute; top:8px; right:12px; background:none; border:none; font-size:16px; cursor:pointer;">✖</button>
+    ✅ Turf added successfully!<br>
+    To verify your eligibility and make your turf visible to players, please contact <strong>Kick-Hub Team</strong>:<br>
+    📧 <strong>mrabhisanth@gmail.com</strong><br>
+    📞 <strong>+91 97780 49379</strong><br>
+    Only verified turfs will appear in the player booking system.
+  </div>
+</div>
 
     <!-- Bookings -->
     <div class="section" id="bookings-section">
@@ -56,10 +95,10 @@
     </div>
 
     <!-- Pending Credits -->
-<div class="section" id="pending-credits-section">
-  <h2>Pending Credits</h2>
-  <div id="pending-credits">Loading...</div>
-</div>
+    <div class="section" id="pending-credits-section">
+      <h2>Pending Credits</h2>
+      <div id="pending-credits">Loading...</div>
+    </div>
 
     <!-- Add Turf -->
     <div class="section" id="add-turf-section">
@@ -97,85 +136,65 @@
         <label for="maxPlayers">Maximum Stranger Players Allowed</label>
         <input type="number" id="maxPlayers" required />
 
+        <label for="contact">Contact Details (Phone, Email, etc.)</label>
+        <textarea id="contact" rows="3" placeholder="Enter phone numbers, email, WhatsApp…" required></textarea>
+
         <button type="submit">Add Turf</button>
       </form>
-      <div id="verifyMessage" style="display:none; margin-top:16px; padding:12px; background:#FEF3C7; border-left:4px solid #F59E0B; border-radius:6px; color:#7C2D12;">
-  ✅ Turf added successfully!<br>
-  To verify your eligibility and make your turf visible to players, please contact<strong>Kick-Hub Team</strong> for verification:<br>
-  📧 <strong>mrabhisanth@gmail.com</strong><br>
-  📞 <strong>+91 97780 49379</strong><br>
-  Only verified turfs will appear in the player booking system.
-</div>
     </div>
-  </main>
-  <script>
+    <script>
   const user = JSON.parse(localStorage.getItem("user"));
 
   // Auto-fill min/max players when sport changes
   document.getElementById("sport").addEventListener("change", (e) => {
     const sport = e.target.value;
-    let defaultPlayers = 0;
-
-    if (sport === "Football 5s") defaultPlayers = 5;
-    else if (sport === "Football 7s") defaultPlayers = 7;
-    else if (sport === "Football 10s") defaultPlayers = 10;
-    else if (sport === "Cricket") defaultPlayers = 11;
-
+    let defaultPlayers = sport === "Cricket" ? 11 : parseInt(sport.match(/\d+/)) || 0;
     document.getElementById("minTarget").value = defaultPlayers;
     document.getElementById("maxPlayers").value = defaultPlayers;
   });
 
-  /<script>
-  const user = JSON.parse(localStorage.getItem("user"));
+  // Close Turf Added Message
+function closeVerifyMessage() {
+  document.getElementById("verifyMessage").style.display = "none";
+}
 
   // Add Turf
   document.getElementById("turfForm").addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    let district = document.getElementById("district").value.trim();
-    district = district.charAt(0).toUpperCase() + district.slice(1).toLowerCase();
-
-    const turf = {
+    const payload = {
       name: document.getElementById("name").value,
-      location: document.getElementById("location").value,
-      district: district,
-      sport: document.getElementById("sport").value,
-      price: parseInt(document.getElementById("price").value),
-      start_time: document.getElementById("start_time").value,
-      end_time: document.getElementById("end_time").value,
-      min_players: parseInt(document.getElementById("minTarget").value),
-      max_stranger_players: parseInt(document.getElementById("maxPlayers").value),
+  location: document.getElementById("location").value,
+      district: district.value,
+      sport: sport.value,
+      price: parseInt(price.value),
+      start_time: start_time.value,
+      end_time: end_time.value,
+      min_players: parseInt(minTarget.value),
+      max_stranger_players: parseInt(maxPlayers.value),
+      contact: contact.value,
       owner_id: user.id
     };
-
-    console.log("Sending turf:", turf);
 
     try {
       const res = await fetch("http://localhost:4001/turfs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(turf)
+        body: JSON.stringify(payload)
       });
 
       const data = await res.json();
-
       if (res.ok) {
-        alert("Turf added successfully ✅");
-        e.target.reset();
-        loadTurfs();
-
-        // ✅ Show verification message
-        const verifyMsg = document.getElementById("verifyMessage");
-        if (verifyMsg) verifyMsg.style.display = "block";
-      } else {
-        alert(data.error || "Failed to add turf ❌");
+  document.getElementById("verifyMessage").style.display = "block";
+  loadTurfs(); 
+} else {
+        alert("Failed to add turf ❌: " + (data.error || "Unknown error"));
       }
     } catch (err) {
-      console.error("Error adding turf:", err);
-      alert("Failed to add turf ❌");
+      console.error("Add turf error:", err);
+      alert("Something went wrong while adding turf ❌");
     }
   });
-</script>
 
   // Load My Turfs
   async function loadTurfs() {
@@ -292,7 +311,6 @@
           <div class="booking">
             <p><b>${b.customer_name}</b> booked ${b.turf_name} (${b.slot_start} - ${b.slot_end})</p>
             <p class="status ${b.status}">Status: ${b.status}</p>
-            
           </div>
         `).join("")
         : "<p>No bookings yet.</p>";
@@ -323,51 +341,49 @@
     }
   }
 
-// Pending Credits
-async function loadPendingCredits() {
-  try {
-    const res = await fetch(`http://localhost:4001/owner/pending-credits/${user.id}`);
-    const credits = await res.json();
+  // Load Pending Credits
+  async function loadPendingCredits() {
+    try {
+      const res = await fetch(`http://localhost:4001/owner/pending-credits/${user.id}`);
+      const credits = await res.json();
 
-    const container = document.getElementById("pending-credits");
-    container.innerHTML = credits.length
-      ? credits.map(c => `
-        <div class="turf">
-          <b>${c.location}</b> — ${c.sport}<br/>
-          Slot: ${c.slot_start} - ${c.slot_end}<br/>
-          Pending Amount: ₹${c.amount}
-        </div>
-      `).join("")
-      : "<p>No pending credits at the moment ✅</p>";
-  } catch (err) {
-    console.error("Error loading pending credits:", err);
-    document.getElementById("pending-credits").innerHTML = "<p>Failed to load pending credits ❌</p>";
+      const container = document.getElementById("pending-credits");
+      container.innerHTML = credits.length
+        ? credits.map(c => `
+          <div class="turf">
+            <b>${c.location}</b> — ${c.sport}<br/>
+            Slot: ${c.slot_start} - ${c.slot_end}<br/>
+            Pending Amount: ₹${c.amount}
+          </div>
+        `).join("")
+        : "<p>No pending credits at the moment ✅</p>";
+    } catch (err) {
+      console.error("Error loading pending credits:", err);
+      document.getElementById("pending-credits").innerHTML = "<p>Failed to load pending credits ❌</p>";
+    }
   }
-}
 
-    // Filters
+   // Filters
   document.getElementById("statusFilter").addEventListener("change", loadBookings);
   document.getElementById("modeFilter").addEventListener("change", loadBookings);
-  
-    // Show wallet balance in nav
- async function loadUserWallet() {
-  const user = JSON.parse(localStorage.getItem("user"));
-  try {
-    const res = await fetch(`http://localhost:4001/wallet/${user.id}`);
-    const data = await res.json();
-    document.getElementById("wallet").innerText = `Owner's Wallet: ₹${data.balance}`;
-  } catch (err) {
-    console.error("Error loading wallet:", err);
-    document.getElementById("wallet").innerText = "Owner's Wallet: ₹0";
+
+  // Show wallet balance in nav
+  async function loadUserWallet() {
+    try {
+      const res = await fetch(`http://localhost:4001/wallet/${user.id}`);
+      const data = await res.json();
+      document.getElementById("wallet").innerText = `Owner's Wallet: ₹${data.balance}`;
+    } catch (err) {
+      console.error("Error loading wallet:", err);
+      document.getElementById("wallet").innerText = "Owner's Wallet: ₹0";
+    }
   }
-}
-loadUserWallet();
 
   // Initial load
+  loadUserWallet();
   loadTurfs();
   loadBookings();
   loadPendingCredits();
-  loadOwnerWallet();
 </script>
 </body>
 </html>

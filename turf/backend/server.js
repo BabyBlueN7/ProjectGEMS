@@ -181,7 +181,7 @@ app.get("/turfs/:id/slots", (req, res) => {
   });
 });
 
-// ✅ Add new turf with district normalization and default player ranges
+// ✅ Add new turf with district normalization, default player ranges, and contact info
 app.post("/turfs", (req, res) => {
   let {
     name,
@@ -193,7 +193,8 @@ app.post("/turfs", (req, res) => {
     end_time,
     min_players,
     max_stranger_players,
-    owner_id
+    owner_id,
+    contact
   } = req.body;
 
   district = normalizeDistrict(district);
@@ -219,9 +220,24 @@ app.post("/turfs", (req, res) => {
   }
 
   db.run(
-    `INSERT INTO turfs (name, location, district, sport, price, start_time, end_time, min_players, max_stranger_players, owner_id)
-     VALUES (?,?,?,?,?,?,?,?,?,?)`,
-    [name, location, district, sport, price, start_time, end_time, min_players, max_stranger_players, owner_id],
+    `INSERT INTO turfs (
+      name, location, district, sport, price,
+      start_time, end_time, min_players, max_stranger_players,
+      owner_id, contact
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+    [
+      name,
+      location,
+      district,
+      sport,
+      price,
+      start_time,
+      end_time,
+      min_players,
+      max_stranger_players,
+      owner_id,
+      contact
+    ],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
       res.json({ id: this.lastID, message: "Turf added successfully" });

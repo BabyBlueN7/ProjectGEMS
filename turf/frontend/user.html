@@ -38,6 +38,7 @@
     .turf:hover { background: #eef4ff; }
     .location { font-size: 14px; color: #555; }
     .price { font-weight: bold; color: #10b981; }
+    .contact { font-size: 14px; color: #374151; margin-top: 8px; }
   </style>
 </head>
 <body>
@@ -98,6 +99,7 @@
             <p class="location">${turf.location}</p>
             <p>${turf.sport}</p>
             <p class="price">₹${turf.price}/hr</p>
+            ${turf.contact ? `<p class="contact"><strong>Contact:</strong> ${turf.contact}</p>` : ""}
           `;
           div.onclick = () => {
             window.location.href = `turf-slots.html?id=${turf.id}`;
@@ -110,25 +112,24 @@
       }
     }
 
-    // Show wallet balance in nav
-document.addEventListener("DOMContentLoaded", async () => {
-  const user = JSON.parse(localStorage.getItem("user"));
-  const walletSpan = document.getElementById("wallet");
+    document.addEventListener("DOMContentLoaded", async () => {
+      const user = JSON.parse(localStorage.getItem("user"));
+      const walletSpan = document.getElementById("wallet");
 
-  if (!user?.id) {
-    walletSpan.textContent = "Wallet: ₹0";
-    return;
-  }
+      if (!user?.id) {
+        walletSpan.textContent = "Wallet: ₹0";
+        return;
+      }
 
-  try {
-    const res = await fetch(`http://localhost:4001/wallet/${user.id}`);
-    const data = await res.json();
-    walletSpan.textContent = `Wallet: ₹${data.balance}`;
-  } catch (err) {
-    console.error("Failed to fetch wallet balance:", err);
-    walletSpan.textContent = "Wallet: ₹0";
-  }
-});
+      try {
+        const res = await fetch(`http://localhost:4001/wallet/${user.id}`);
+        const data = await res.json();
+        walletSpan.textContent = `Wallet: ₹${data.balance}`;
+      } catch (err) {
+        console.error("Failed to fetch wallet balance:", err);
+        walletSpan.textContent = "Wallet: ₹0";
+      }
+    });
   </script>
 </body>
 </html>
