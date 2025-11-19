@@ -34,6 +34,19 @@
     main {
       padding: 20px;
     }
+    .date-selector {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .date-selector button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      background: #2563eb;
+      color: #fff;
+      cursor: pointer;
+    }
     .slot {
       background: #fff;
       padding: 12px;
@@ -72,6 +85,9 @@
       padding: 6px 12px;
       border-radius: 6px;
       cursor: pointer;
+    }
+    .stranger-btn.booked-by-user {
+      background: #10b981;
     }
     button[disabled] {
       background: #ccc;
@@ -114,6 +130,7 @@
 
   <main>
     <h2>Available Slots</h2>
+    <div class="date-selector" id="date-selector"></div>
     <div id="slots"></div>
   </main>
 
@@ -133,13 +150,27 @@
       }
     }
 
-    async function loadSlots() {
+    function setupDateSelector() {
+      const selector = document.getElementById("date-selector");
+      for (let i = 0; i < 3; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() + i);
+        const label = date.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+        const value = date.toISOString().split("T")[0];
+        const btn = document.createElement("button");
+        btn.textContent = label;
+        btn.onclick = () => loadSlotsForDate(value);
+        selector.appendChild(btn);
+        if (i === 0) loadSlotsForDate(value); // Load today by default
+      }
+    }
+
+    async function loadSlotsForDate(date) {
       try {
-        const res = await fetch(`http://localhost:4001/turfs/${turfId}/slots`);
+        const res = await fetch(`http://localhost:4001/turfs/${turfId}/slots?date=${date}`);
         const data = await res.json();
 
         document.getElementById("turfName").innerText = data.turf.name;
-
         const container = document.getElementById("slots");
         container.innerHTML = "";
 
@@ -156,15 +187,18 @@
           const slotDiv = document.createElement("div");
           slotDiv.className = "slot";
 
-          const bookButtons = slot.available
-            ? `
+          let normalDisabled = slot.bookings.some(b => b.mode === "normal");
+          let strangerBookedByUser = slot.bookings.some(b => b.mode === "stranger" && b.customer_id === user.id);
+
+          const bookButtons = normalDisabled
+            ? `<div class="right-buttons"><button disabled>Booked</button></div>`
+            : `
               <div class="right-buttons">
                 <span class="price">₹${slot.price}</span>
                 <button class="book-btn" onclick="bookSlot('${slot.start}','${slot.end}', 'normal')">Book</button>
-                <button class="stranger-btn" onclick="bookSlot('${slot.start}','${slot.end}', 'stranger')">Stranger Play Booking</button>
+                <button class="stranger-btn ${strangerBookedByUser ? 'booked-by-user' : ''}" onclick="bookSlot('${slot.start}','${slot.end}', 'stranger')">Stranger Play Booking</button>
               </div>
-            `
-            : `<button disabled>Booked</button>`;
+            `;
 
           slotDiv.innerHTML = `
             <div class="slot-header">
@@ -202,7 +236,7 @@
         const data = await res.json();
         if (res.ok) {
           alert(`Booked slot ${start} - ${end} ✅`);
-          loadSlots();
+          setupDateSelector(); // reload slots
         } else {
           alert(data.error || "Booking failed");
         }
@@ -213,7 +247,7 @@
     }
 
     loadWallet();
-    loadSlots();
+    setupDateSelector();
   </script>
 </body>
 </html>

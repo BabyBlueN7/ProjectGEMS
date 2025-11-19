@@ -57,7 +57,6 @@
     const user = JSON.parse(localStorage.getItem("user"));
 
     if (!user) {
-      // If no user is logged in, redirect to login
       alert("Please log in first.");
       window.location.href = "login.html";
     }
@@ -81,13 +80,14 @@
         }
 
         bookings.forEach(b => {
+          const modeLabel = b.mode === "stranger" ? "Stranger Play" : "Normal Booking";
           container.innerHTML += `
             <div class="booking">
               <p><strong>Turf:</strong> ${b.turf_name} (${b.sport})</p>
               <p><strong>Location:</strong> ${b.location}</p>
               <p><strong>Slot:</strong> ${b.slot_start} - ${b.slot_end}</p>
-              <p><strong>Price:</strong> ₹${b.price}</p>
-              <p><strong>Mode:</strong> ${b.mode}</p>
+              <p><strong>Price:</strong> ₹${b.price_charged}</p>
+              <p><strong>Mode:</strong> ${modeLabel}</p>
               <p class="status ${b.status}">Status: ${b.status}</p>
             </div>
           `;

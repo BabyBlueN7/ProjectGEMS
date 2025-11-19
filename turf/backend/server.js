@@ -112,9 +112,10 @@ app.get("/turfs/by-district/:district", (req, res) => {
   });
 });
 
-// ✅ Get slots for a turf with Stranger Play progress
+// ✅ Get slots for a turf with Stranger Play progress and booking metadata
 app.get("/turfs/:id/slots", (req, res) => {
   const id = req.params.id;
+  const date = req.query.date;
 
   db.get("SELECT * FROM turfs WHERE id=?", [id], (err, turf) => {
     if (err || !turf) return res.status(404).json({ error: "Turf not found" });
@@ -123,40 +124,43 @@ app.get("/turfs/:id/slots", (req, res) => {
     const [sh] = turf.start_time.split(":").map(Number);
     const [eh] = turf.end_time.split(":").map(Number);
 
-    db.all(
-      `SELECT b.slot_start, b.slot_end, COUNT(*) as joined
-       FROM bookings b
-       WHERE b.turf_id=? AND b.mode='stranger' AND b.status='booked'
-       GROUP BY b.slot_start, b.slot_end`,
-      [id],
-      (err2, rows) => {
-        if (err2) return res.status(500).json({ error: err2.message });
+    const startOfDay = `${date} 00:00:00`;
+    const endOfDay = `${date} 23:59:59`;
 
-        const progressMap = {};
-        (rows || []).forEach(r => {
-          const key = `${r.slot_start}-${r.slot_end}`;
-          progressMap[key] = { joined: r.joined };
-        });
+    db.all(
+      `SELECT slot_start, slot_end, mode, customer_id
+       FROM bookings
+       WHERE turf_id=? AND created_at BETWEEN ? AND ? AND status='booked'`,
+      [id, startOfDay, endOfDay],
+      (err2, bookings) => {
+        if (err2) return res.status(500).json({ error: err2.message });
 
         for (let h = sh; h < eh; h++) {
           const start = `${String(h).padStart(2, "0")}:00`;
           const end = `${String(h + 1).padStart(2, "0")}:00`;
-          const key = `${start}-${end}`;
 
-          const progress = progressMap[key] || { joined: 0 };
+          const slotBookings = bookings.filter(
+            b => b.slot_start === start && b.slot_end === end
+          );
+
+          const joined = slotBookings.filter(b => b.mode === "stranger").length;
 
           slots.push({
-  start,
-  end,
-  price: turf.price,
-  available: true,
-  max_stranger_players: turf.max_stranger_players,
-  min_players: turf.min_players,
-  progress
-});
+            start,
+            end,
+            price: turf.price,
+            available: !slotBookings.some(b => b.mode === "normal"),
+            max_stranger_players: turf.max_stranger_players,
+            min_players: turf.min_players,
+            progress: { joined },
+            bookings: slotBookings.map(b => ({
+              mode: b.mode,
+              customer_id: b.customer_id
+            }))
+          });
         }
 
-        res.json({ turf, slots }); // ✅ Correctly placed inside db.all callback
+        res.json({ turf, slots });
       }
     );
   });
@@ -210,119 +214,172 @@ app.post("/turfs", (req, res) => {
   );
 });
 
+// POST /bookings
+// mode: "normal" or "stranger"
 app.post("/bookings", (req, res) => {
   const { turf_id, slot_start, slot_end, customer_id, mode } = req.body;
 
-  db.get("SELECT price, min_players, max_stranger_players, owner_id FROM turfs WHERE id=?", [turf_id], (err, turf) => {
-    if (err || !turf) return res.status(400).json({ error: "Invalid turf" });
+  if (!["normal", "stranger"].includes(mode)) {
+    return res.status(400).json({ error: "Invalid mode" });
+  }
 
-    const priceToCharge = mode === "stranger"
-      ? Math.ceil(turf.price / turf.max_stranger_players)
-      : turf.price;
+  db.get(
+    "SELECT price, min_players, max_stranger_players, owner_id FROM turfs WHERE id=?",
+    [turf_id],
+    (err, turf) => {
+      if (err || !turf) return res.status(400).json({ error: "Invalid turf" });
 
-    // ✅ Prevent duplicate booking by same user
-    db.get(
-      `SELECT COUNT(*) as count FROM bookings 
-       WHERE turf_id=? AND slot_start=? AND slot_end=? AND customer_id=? AND status='booked'`,
-      [turf_id, slot_start, slot_end, customer_id],
-      (errCheck, resultCheck) => {
-        if (errCheck) return res.status(500).json({ error: errCheck.message });
-        if (resultCheck.count > 0) {
-          return res.status(400).json({ error: "You already booked this slot" });
-        }
+      const sharePrice = Math.ceil(turf.price / turf.max_stranger_players);
+      const priceToCharge = mode === "stranger" ? sharePrice : turf.price;
 
-        // ✅ Prevent booking if slot already taken (for single mode)
-        db.get(
-          `SELECT COUNT(*) as count FROM bookings 
-           WHERE turf_id=? AND slot_start=? AND slot_end=? AND status='booked'`,
-          [turf_id, slot_start, slot_end],
-          (errSlot, resultSlot) => {
-            if (errSlot) return res.status(500).json({ error: errSlot.message });
-            if (mode === "single" && resultSlot.count > 0) {
-              return res.status(400).json({ error: "Slot already booked" });
-            }
+      // Prevent duplicate booking by same user (same slot/date/time)
+      db.get(
+        `SELECT COUNT(*) as count FROM bookings
+         WHERE turf_id=? AND slot_start=? AND slot_end=? AND customer_id=? AND status='booked'`,
+        [turf_id, slot_start, slot_end, customer_id],
+        (errCheck, resultCheck) => {
+          if (errCheck) return res.status(500).json({ error: errCheck.message });
+          if (resultCheck.count > 0) {
+            return res.status(400).json({ error: "You already booked this slot" });
+          }
 
-            // ✅ Proceed with wallet check and booking
-            db.get("SELECT wallet_balance FROM users WHERE id=?", [customer_id], (err2, user) => {
-              if (err2 || !user) return res.status(400).json({ error: "Invalid user" });
-              if (user.wallet_balance < priceToCharge) {
-                return res.status(400).json({ error: "Insufficient wallet balance" });
+          // Prevent booking if slot already taken (for normal bookings)
+          db.get(
+            `SELECT COUNT(*) as count FROM bookings
+             WHERE turf_id=? AND slot_start=? AND slot_end=? AND status='booked' AND mode='normal'`,
+            [turf_id, slot_start, slot_end],
+            (errSlot, resultSlot) => {
+              if (errSlot) return res.status(500).json({ error: errSlot.message });
+              if (mode === "normal" && resultSlot.count > 0) {
+                return res.status(400).json({ error: "Slot already booked" });
               }
 
-              db.run("UPDATE users SET wallet_balance = wallet_balance - ? WHERE id=?", [priceToCharge, customer_id], (err3) => {
-                if (err3) return res.status(500).json({ error: err3.message });
+              // Wallet check
+              db.get(
+                "SELECT wallet_balance FROM users WHERE id=?",
+                [customer_id],
+                (err2, user) => {
+                  if (err2 || !user) return res.status(400).json({ error: "Invalid user" });
+                  if (user.wallet_balance < priceToCharge) {
+                    return res.status(400).json({ error: "Insufficient wallet balance" });
+                  }
 
-                db.run(
-                  "INSERT INTO bookings (turf_id, slot_start, slot_end, customer_id, mode, status, created_at) VALUES (?,?,?,?,?,?,datetime('now'))",
-                  [turf_id, slot_start, slot_end, customer_id, mode || "single", "booked"],
-                  function (err4) {
-                    if (err4) return res.status(500).json({ error: err4.message });
+                  // Deduct from customer wallet
+                  db.run(
+                    "UPDATE users SET wallet_balance = wallet_balance - ? WHERE id=?",
+                    [priceToCharge, customer_id],
+                    (err3) => {
+                      if (err3) return res.status(500).json({ error: err3.message });
 
-                    const bookingId = this.lastID;
-
-                    if (mode === "single") {
-                      db.all(
-                        `SELECT id, customer_id FROM bookings 
-                         WHERE turf_id=? AND slot_start=? AND slot_end=? AND mode='stranger' AND status='booked'`,
-                        [turf_id, slot_start, slot_end],
-                        (err5, strangers) => {
-                          if (err5) return res.status(500).json({ error: err5.message });
-
-                          if (strangers.length < turf.min_players) {
-                            const refundAmount = Math.floor(turf.price / turf.max_stranger_players);
-                            strangers.forEach(s => {
-                              db.run("UPDATE users SET wallet_balance = wallet_balance + ? WHERE id=?", [refundAmount, s.customer_id]);
-                              db.run("UPDATE bookings SET status='canceled' WHERE id=?", [s.id]);
-                            });
-
-                            if (turf.owner_id) {
-                              db.run("UPDATE users SET wallet_balance = wallet_balance + ? WHERE id=?", [turf.price, turf.owner_id]);
-                            }
-
-                            return res.json({ id: bookingId, status: "booked", mode, price: priceToCharge });
-                          } else {
-                            db.run("UPDATE bookings SET status='canceled' WHERE id=?", [bookingId]);
-                            return res.status(400).json({ error: "Stranger play already locked in" });
-                          }
-                        }
-                      );
-                    } else {
-                      // ✅ Stranger booking: track pending credit
+                      // Insert booking with price_charged
                       db.run(
-                        "INSERT INTO pending_owner_credits (booking_id, owner_id, amount) VALUES (?,?,?)",
-                        [bookingId, turf.owner_id, priceToCharge]
-                      );
+                        `INSERT INTO bookings (turf_id, slot_start, slot_end, customer_id, mode, status, price_charged, created_at)
+                         VALUES (?,?,?,?,?,?,?, datetime('now'))`,
+                        [turf_id, slot_start, slot_end, customer_id, mode, "booked", priceToCharge],
+                        function (err4) {
+                          if (err4) return res.status(500).json({ error: err4.message });
 
-                      db.all(
-                        `SELECT COUNT(*) as joined FROM bookings 
-                         WHERE turf_id=? AND slot_start=? AND slot_end=? AND mode='stranger' AND status='booked'`,
-                        [turf_id, slot_start, slot_end],
-                        (err6, result) => {
-                          const joined = result?.[0]?.joined || 0;
+                          const bookingId = this.lastID;
 
-                          if (joined >= turf.min_players && turf.owner_id) {
-                            const share = Math.floor(turf.price / turf.max_stranger_players);
-                            const totalAmount = share * joined;
+                          if (mode === "normal") {
+                            // Normal booking overrides strangers unless already locked
+                            db.all(
+                              `SELECT id, customer_id, price_charged FROM bookings
+                               WHERE turf_id=? AND slot_start=? AND slot_end=? AND mode='stranger' AND status='booked'`,
+                              [turf_id, slot_start, slot_end],
+                              (err5, strangers) => {
+                                if (err5) return res.status(500).json({ error: err5.message });
 
-                            db.run("UPDATE users SET wallet_balance = wallet_balance + ? WHERE id=?", [totalAmount, turf.owner_id]);
-                            db.run("UPDATE pending_owner_credits SET status='credited' WHERE booking_id=?", [bookingId]);
+                                // If strangers already meet min_players, block normal and cancel it
+                                if (strangers.length >= turf.min_players) {
+                                  db.run("UPDATE bookings SET status='canceled' WHERE id=?", [bookingId]);
+                                  return res.status(400).json({ error: "Stranger play already locked in" });
+                                }
+
+                                // Refund all stranger bookings (using their price_charged) and cancel them
+                                strangers.forEach(s => {
+                                  db.run(
+                                    "UPDATE users SET wallet_balance = wallet_balance + ? WHERE id=?",
+                                    [s.price_charged, s.customer_id]
+                                  );
+                                  db.run("UPDATE bookings SET status='canceled' WHERE id=?", [s.id]);
+                                });
+
+                                // Credit owner immediately with full turf price
+                                if (turf.owner_id) {
+                                  db.run(
+                                    "UPDATE users SET wallet_balance = wallet_balance + ? WHERE id=?",
+                                    [turf.price, turf.owner_id]
+                                  );
+                                }
+
+                                return res.json({
+                                  id: bookingId,
+                                  status: "booked",
+                                  mode,
+                                  price_charged: priceToCharge
+                                });
+                              }
+                            );
+                          } else {
+                            // Stranger booking → add pending owner credit
+                            db.run(
+                              "INSERT INTO pending_owner_credits (booking_id, owner_id, amount, status) VALUES (?,?,?, 'pending')",
+                              [bookingId, turf.owner_id, priceToCharge],
+                              (errPOC) => {
+                                if (errPOC) return res.status(500).json({ error: errPOC.message });
+
+                                // Count current strangers for the slot
+                                db.all(
+                                  `SELECT id, price_charged FROM bookings
+                                   WHERE turf_id=? AND slot_start=? AND slot_end=? AND mode='stranger' AND status='booked'`,
+                                  [turf_id, slot_start, slot_end],
+                                  (err6, strangersNow) => {
+                                    if (err6) return res.status(500).json({ error: err6.message });
+
+                                    const joined = strangersNow.length;
+
+                                    // If min_players reached, credit owner sum of stranger payments and mark pending as credited
+                                    if (joined >= turf.min_players && turf.owner_id) {
+                                      const totalAmount = strangersNow.reduce((sum, b) => sum + (b.price_charged || 0), 0);
+
+                                      db.run(
+                                        "UPDATE users SET wallet_balance = wallet_balance + ? WHERE id=?",
+                                        [totalAmount, turf.owner_id]
+                                      );
+
+                                      db.run(
+                                        `UPDATE pending_owner_credits
+                                         SET status='credited'
+                                         WHERE booking_id IN (${strangersNow.map(() => "?").join(",")})`,
+                                        strangersNow.map(b => b.id)
+                                      );
+                                    }
+
+                                    return res.json({
+                                      id: bookingId,
+                                      status: "booked",
+                                      mode,
+                                      price_charged: priceToCharge
+                                    });
+                                  }
+                                );
+                              }
+                            );
                           }
-
-                          res.json({ id: bookingId, status: "booked", mode, price: priceToCharge });
                         }
                       );
                     }
-                  }
-                );
-              });
-            });
-          }
-        );
-      }
-    );
-  });
+                  );
+                }
+              );
+            }
+          );
+        }
+      );
+    }
+  );
 });
-
 // Get bookings for a specific customer (My Bookings page)
 app.get("/bookings/:customer_id", (req, res) => {
   const { customer_id } = req.params;
@@ -332,14 +389,15 @@ app.get("/bookings/:customer_id", (req, res) => {
             t.name AS turf_name, 
             t.location, 
             t.sport, 
-            t.price,
             b.slot_start, 
             b.slot_end, 
             b.status, 
-            b.mode
+            b.mode,
+            b.price_charged
      FROM bookings b
      JOIN turfs t ON b.turf_id = t.id
-     WHERE b.customer_id = ?`,
+     WHERE b.customer_id = ?
+     ORDER BY b.created_at DESC`,
     [customer_id],
     (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
