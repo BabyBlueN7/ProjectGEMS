@@ -64,14 +64,14 @@
   <div id="my-turfs">Loading...</div>
 
   <!-- ✅ Always-visible message -->
-  <div id="verifyMessage" style="margin-top:16px; padding:12px; background:#FEF3C7; border-left:4px solid #F59E0B; border-radius:6px; color:#7C2D12; position:relative;">
-    <button onclick="closeVerifyMessage()" style="position:absolute; top:8px; right:12px; background:none; border:none; font-size:16px; cursor:pointer;">✖</button>
-    ✅ Turf added successfully!<br>
-    To verify your eligibility and make your turf visible to players, please contact <strong>Kick-Hub Team</strong>:<br>
-    📧 <strong>mrabhisanth@gmail.com</strong><br>
-    📞 <strong>+91 97780 49379</strong><br>
-    Only verified turfs will appear in the player booking system.
-  </div>
+  <div id="verifyMessage" style="display:none; margin-top:16px; padding:12px; background:#FEF3C7; border-left:4px solid #F59E0B; border-radius:6px; color:#7C2D12; position:relative;">
+  <button onclick="closeVerifyMessage()" style="position:absolute; top:8px; right:12px; background:none; border:none; font-size:16px; cursor:pointer;">✖</button>
+  ✅ Turf added successfully!<br>
+  To verify your eligibility and make your turf visible to players, please contact <strong>Kick-Hub Team</strong>:<br>
+  📧 <strong>mrabhisanth@gmail.com</strong><br>
+  📞 <strong>+91 97780 49379</strong><br>
+  Only verified turfs will appear in the player booking system.
+</div>
 </div>
 
     <!-- Bookings -->
@@ -163,20 +163,21 @@ function closeVerifyMessage() {
     e.preventDefault();
 
     const payload = {
-      name: document.getElementById("name").value,
-  location: document.getElementById("location").value,
-      district: district.value,
-      sport: sport.value,
-      price: parseInt(price.value),
-      start_time: start_time.value,
-      end_time: end_time.value,
-      min_players: parseInt(minTarget.value),
-      max_stranger_players: parseInt(maxPlayers.value),
-      contact: contact.value,
-      owner_id: user.id
-    };
+      const payload = {
+  name: document.getElementById("name").value.trim(),
+  location: document.getElementById("location").value.trim(),
+  district: document.getElementById("district").value,
+  sport: document.getElementById("sport").value,
+  price: parseInt(document.getElementById("price").value),
+  start_time: document.getElementById("start_time").value,
+  end_time: document.getElementById("end_time").value,
+  min_players: parseInt(document.getElementById("minTarget").value),
+  max_stranger_players: parseInt(document.getElementById("maxPlayers").value),
+  contact: document.getElementById("contact").value,
+  owner_id: user.id
+};
 
-    try {
+       try {
       const res = await fetch("http://localhost:4001/turfs", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -223,6 +224,11 @@ function closeVerifyMessage() {
       document.getElementById("my-turfs").innerHTML = "<p>Failed to load turfs ❌</p>";
     }
   }
+
+  if (localStorage.getItem("turfAdded") === "true") {
+  document.getElementById("verifyMessage").style.display = "block";
+  localStorage.removeItem("turfAdded");
+}
 
   // Show Edit Form
   function showEditForm(id, location, district, sport, price, minTarget = 0, maxPlayers = 0) {
@@ -319,27 +325,35 @@ function closeVerifyMessage() {
     }
   }
 
-  // Update Booking Status
   async function updateBookingStatus(bookingId, status) {
-    try {
-      await fetch(`http://localhost:4001/bookings/${bookingId}/status`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status })
-      });
+  const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
 
-      if (status === "canceled") {
-        alert("Booking canceled. Refund will be processed 💸");
-      } else {
-        alert("Booking confirmed ✅");
-      }
+  const confirmMsg =
+    status === "canceled"
+      ? `Are you sure you want to cancel this booking?`
+      : `Are you sure you want to mark this booking as "${statusLabel}"?`;
 
-      loadBookings();
-    } catch (err) {
-      console.error("Error updating booking status:", err);
-      alert("Failed to update booking ❌");
+  if (!confirm(confirmMsg)) return; // ✅ Ask before proceeding
+
+  try {
+    await fetch(`http://localhost:4001/bookings/${bookingId}/status`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status })
+    });
+
+    if (status === "canceled") {
+      alert("Booking canceled. Refund will be processed 💸");
+    } else {
+      alert("Booking confirmed ✅");
     }
+
+    loadBookings();
+  } catch (err) {
+    console.error("Error updating booking status:", err);
+    alert("Failed to update booking ❌");
   }
+}
 
   // Load Pending Credits
   async function loadPendingCredits() {
@@ -378,6 +392,10 @@ function closeVerifyMessage() {
       document.getElementById("wallet").innerText = "Owner's Wallet: ₹0";
     }
   }
+
+  function closeVerifyMessage() {
+  document.getElementById("verifyMessage").style.display = "none";
+}
 
   // Initial load
   loadUserWallet();
