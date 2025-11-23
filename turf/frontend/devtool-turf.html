@@ -124,18 +124,42 @@
     }
 
     async function verifyTurf(id) {
-      await fetch(`http://localhost:4001/admin/turfs/${id}/verify`, { method: "POST" });
-      loadTurfs();
+      try {
+        await fetch(`http://localhost:4001/admin/turfs/${id}/verify`, { method: "POST" });
+        loadTurfs();
+      } catch (err) {
+        console.error("Error verifying turf:", err);
+        alert("Failed to verify turf ❌");
+      }
     }
 
     async function rejectTurf(id) {
-      await fetch(`http://localhost:4001/admin/turfs/${id}/reject`, { method: "DELETE" });
-      loadTurfs();
+      try {
+        const res = await fetch(`http://localhost:4001/admin/turfs/${id}/remove`, {
+          method: "DELETE"
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          alert("Failed to reject turf ❌" + (err.error ? `: ${err.error}` : ""));
+          return;
+        }
+
+        loadTurfs();
+      } catch (e) {
+        console.error("Reject turf error:", e);
+        alert("Failed to reject turf ❌");
+      }
     }
 
     async function removeTurf(id) {
-      await fetch(`http://localhost:4001/admin/turfs/${id}/remove`, { method: "DELETE" });
-      loadTurfs();
+      try {
+        await fetch(`http://localhost:4001/admin/turfs/${id}/remove`, { method: "DELETE" });
+        loadTurfs();
+      } catch (err) {
+        console.error("Error removing turf:", err);
+        alert("Failed to remove turf ❌");
+      }
     }
 
     loadTurfs();
