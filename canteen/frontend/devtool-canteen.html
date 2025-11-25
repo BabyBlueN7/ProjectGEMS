@@ -38,7 +38,7 @@
     button:hover {
       background: #1e4fd6;
     }
-    .college {
+    .college, .order {
       background: #fff;
       padding: 14px;
       margin-bottom: 12px;
@@ -48,7 +48,7 @@
       justify-content: space-between;
       align-items: center;
     }
-    .college-info {
+    .college-info, .order-info {
       flex-grow: 1;
     }
     .remove {
@@ -61,6 +61,14 @@
     }
     .remove:hover {
       background: #dc2626;
+    }
+    .status {
+      font-weight: bold;
+      text-transform: capitalize;
+    }
+    h3 {
+      cursor: pointer;
+      user-select: none;
     }
   </style>
 </head>
@@ -76,6 +84,9 @@
 
   <h3>All Colleges</h3>
   <div id="colleges"></div>
+
+  <h3 onclick="toggleOrders()">All Canteen Orders <span id="order-toggle-icon">⬇️</span></h3>
+  <div id="all-orders" style="display: none;">Loading...</div>
 
   <script>
     async function loadColleges() {
@@ -121,7 +132,55 @@
       loadColleges();
     }
 
+    async function loadAllOrders() {
+      try {
+        const res = await fetch("http://localhost:4002/admin/orders");
+        const orders = await res.json();
+        const container = document.getElementById("all-orders");
+        container.innerHTML = "";
+
+        if (orders.length === 0) {
+          container.innerHTML = "<p>No orders found.</p>";
+          return;
+        }
+
+        orders.forEach(o => {
+          const div = document.createElement("div");
+          div.className = "order";
+          div.innerHTML = `
+            <div class="order-info">
+              <strong>${o.item_name}</strong> × ${o.quantity} — ₹${o.price * o.quantity}<br>
+              <small>Student: ${o.student_name} (${o.college_name})</small><br>
+              <small>Status: <span class="status">${o.status}</span> | Placed: ${new Date(o.created_at).toLocaleString()}</small>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+      } catch (err) {
+        console.error("Error loading all orders:", err);
+        document.getElementById("all-orders").innerHTML = "<p>Failed to load orders ❌</p>";
+      }
+    }
+
+    function toggleOrders() {
+      const section = document.getElementById("all-orders");
+      const icon = document.getElementById("order-toggle-icon");
+
+      if (section.style.display === "none") {
+        section.style.display = "block";
+        icon.textContent = "⬆️";
+        if (!section.dataset.loaded) {
+          loadAllOrders();
+          section.dataset.loaded = "true";
+        }
+      } else {
+        section.style.display = "none";
+        icon.textContent = "⬇️";
+      }
+    }
+
     loadColleges();
+    loadAllOrders();
   </script>
 </body>
 </html>

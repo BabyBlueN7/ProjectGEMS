@@ -240,6 +240,26 @@ app.delete("/admin/colleges/:id", (req, res) => {
   });
 });
 
+//All Canteen Orders for devtool
+app.get("/admin/orders", (req, res) => {
+  db.all(
+    `SELECT o.id, o.status, o.quantity, o.created_at,
+            u.name AS student_name,
+            m.item AS item_name, m.price,
+            c.name AS college_name
+     FROM orders o
+     JOIN users u ON o.customer_id = u.id
+     JOIN menu m ON o.item_id = m.id
+     JOIN colleges c ON u.college_id = c.id
+     ORDER BY o.created_at DESC`,
+    [],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(rows);
+    }
+  );
+});
+
 // Create a new order (student)
 app.post("/orders", (req, res) => {
   const { customer_id, item_id, quantity } = req.body;
@@ -325,11 +345,13 @@ app.put("/orders/:id/status", (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
 
-  // ✅ Add "confirmed" to allowed statuses
-  if (!["pending", "confirmed", "canceled", "delivered"].includes(status)) {
+  // ✅ Allowed statuses
+  const allowedStatuses = ["pending", "confirmed", "preparing", "ready", "delivered", "canceled"];
+  if (!allowedStatuses.includes(status)) {
     return res.status(400).json({ error: "Invalid status" });
   }
 
+  // ✅ Get order + item price
   db.get(
     `SELECT o.id, o.customer_id, o.item_id, o.quantity, o.status, m.price
      FROM orders o JOIN menu m ON o.item_id = m.id WHERE o.id=?`,
@@ -341,20 +363,31 @@ app.put("/orders/:id/status", (req, res) => {
       const willCancel = status === "canceled";
       const total = row.price * row.quantity;
 
+      // ✅ Update order status
       db.run("UPDATE orders SET status=? WHERE id=?", [status, id], (err2) => {
         if (err2) return res.status(500).json({ error: err2.message });
 
+        // ✅ Refund only if newly canceled
         if (willCancel && !wasCanceled) {
           db.run(
             "UPDATE users SET wallet_balance = wallet_balance + ? WHERE id=?",
             [total, row.customer_id],
             (err3) => {
               if (err3) return res.status(500).json({ error: err3.message });
-              return res.json({ id: row.id, status: "canceled", refund: total });
+              return res.json({
+                id: row.id,
+                status: "canceled",
+                refund: total,
+                message: "Order canceled and refunded 💸"
+              });
             }
           );
         } else {
-          return res.json({ id: row.id, status });
+          return res.json({
+            id: row.id,
+            status,
+            message: `Order updated to "${status}" ✅`
+          });
         }
       });
     }

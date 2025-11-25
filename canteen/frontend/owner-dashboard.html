@@ -95,29 +95,55 @@
     const collegeId = user?.college_id;
 
     // Add Menu Item
-    document.getElementById("menuForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const item = {
-        item: document.getElementById("item").value,
-        price: parseInt(document.getElementById("price").value),
-        in_stock: parseInt(document.getElementById("in_stock").value),
-        college_id: collegeId
-      };
-      try {
-        const res = await fetch("http://localhost:4002/menu", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(item)
-        });
-        const data = await res.json();
-        alert(`Menu item "${data.item}" added successfully ✅`);
-        e.target.reset();
-        loadMenu();
-      } catch (err) {
-        console.error("Error adding menu item:", err);
-        alert("Failed to add menu item ❌");
-      }
+document.getElementById("menuForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  // ✅ Get and validate inputs
+  const name = document.getElementById("item").value.trim();
+  const priceStr = document.getElementById("price").value;
+  const price = parseFloat(priceStr);
+  const inStock = parseInt(document.getElementById("in_stock").value);
+
+  // ✅ Validation checks
+  if (!name) {
+    alert("Please enter a valid food name.");
+    return;
+  }
+
+  if (isNaN(price) || price <= 0) {
+    alert("Please enter a valid price greater than ₹0.");
+    return;
+  }
+
+  const item = {
+    item: name,
+    price,
+    in_stock: inStock,
+    college_id: collegeId
+  };
+
+  try {
+    const res = await fetch("http://localhost:4002/menu", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(item)
     });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert("Failed to add menu item ❌: " + (data.error || res.status));
+      return;
+    }
+
+    alert(`Menu item "${data.item}" added successfully ✅`);
+    e.target.reset();
+    loadMenu();
+  } catch (err) {
+    console.error("Error adding menu item:", err);
+    alert("Failed to add menu item ❌");
+  }
+});
 
     // Load Menu Items
     async function loadMenu() {
