@@ -20,13 +20,14 @@ app.get("/", (req, res) => res.send("Canteen backend running!"));
 const db = new sqlite3.Database("./canteen.db");
 
 db.serialize(() => {
-  // Colleges table
+  // Colleges table (✅ FIXED: added college_code)
   db.run(`CREATE TABLE IF NOT EXISTS colleges (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT UNIQUE
+    name TEXT UNIQUE,
+    college_code TEXT UNIQUE
   )`);
 
-  // Users table
+  // Users table (✅ FIXED: added wallet_balance)
   db.run(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
@@ -34,6 +35,7 @@ db.serialize(() => {
     password TEXT,
     role TEXT CHECK(role IN ('student', 'owner')),
     college_id INTEGER,
+    wallet_balance INTEGER DEFAULT 0,
     UNIQUE(admission_no, role)
   )`);
 
@@ -54,20 +56,21 @@ db.serialize(() => {
     FOREIGN KEY (menu_id) REFERENCES menu(id)
   )`);
 
-  // Orders table
+  // Orders table (✅ FIXED: added created_at and college_id)
   db.run(`CREATE TABLE IF NOT EXISTS orders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     customer_id INTEGER,
     item_id INTEGER,
     quantity INTEGER,
-    status TEXT DEFAULT 'pending'
+    status TEXT DEFAULT 'pending',
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    college_id INTEGER
   )`);
 });
 
 // --- Routes ---
 
 // ✅ Signup route for owner
-
 app.post("/signup-owner", (req, res) => {
   const { name, password, college_id, college_code } = req.body;
   const normalizedCode = college_code?.trim().toLowerCase();
@@ -99,9 +102,7 @@ app.post("/signup-owner", (req, res) => {
   });
 });
 
-
 // ✅ Signup route for student
-
 app.post("/signup", (req, res) => {
   const { name, admission_no, password, role, college_id } = req.body;
 
@@ -127,7 +128,7 @@ app.post("/signup", (req, res) => {
   );
 });
 
-// Login route for student or owner
+// ✅ Login route for student or owner
 app.post("/login", (req, res) => {
   const { admission_no, college_code, password, role, college_id } = req.body;
 
@@ -159,10 +160,9 @@ app.post("/login", (req, res) => {
   }
 });
 
-// Digi-Canteen Devtool Login
+// ✅ Digi-Canteen Devtool Login
 app.post("/devtool/canteen-login", (req, res) => {
   const { code } = req.body;
-
   if (code === "876543210") {
     return res.json({ ok: true });
   } else {
@@ -170,7 +170,7 @@ app.post("/devtool/canteen-login", (req, res) => {
   }
 });
 
-// Get today's menu for a specific college
+// ✅ Get today's menu for a specific college
 app.get("/menu/today/:college_id", (req, res) => {
   const college_id = req.params.college_id;
   db.all(
@@ -186,10 +186,10 @@ app.get("/menu/today/:college_id", (req, res) => {
   );
 });
 
-// ✅ Add menu item with case normalization and college mapping
+// ✅ Add menu item with normalization and mapping
 app.post("/menu", (req, res) => {
   let { item, price, in_stock, college_id } = req.body;
-  item = normalizeText(item); // normalize item name
+  item = normalizeText(item);
 
   if (!item || price == null || in_stock == null || !college_id) {
     return res.status(400).json({ error: "Invalid menu payload" });
@@ -215,7 +215,7 @@ app.post("/menu", (req, res) => {
   );
 });
 
-// Get all colleges
+// ✅ Get all colleges
 app.get("/admin/colleges", (req, res) => {
   db.all("SELECT * FROM colleges", [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -223,24 +223,28 @@ app.get("/admin/colleges", (req, res) => {
   });
 });
 
-// Add a college
+// ✅ Add a college
 app.post("/admin/colleges", (req, res) => {
   const { name, college_code } = req.body;
-  db.run("INSERT INTO colleges (name, college_code) VALUES (?, ?)", [name, college_code], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ id: this.lastID });
-  });
+  db.run(
+    "INSERT INTO colleges (name, college_code) VALUES (?, ?)",
+    [name, college_code],
+    function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ id: this.lastID });
+    }
+  );
 });
 
-// Remove a college
+// ✅ Remove a college
 app.delete("/admin/colleges/:id", (req, res) => {
-  db.run("DELETE FROM colleges WHERE id = ?", [req.params.id], function(err) {
+  db.run("DELETE FROM colleges WHERE id = ?", [req.params.id], function (err) {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ ok: true });
   });
 });
 
-//All Canteen Orders for devtool
+// ✅ All Canteen Orders for devtool
 app.get("/admin/orders", (req, res) => {
   db.all(
     `SELECT o.id, o.status, o.quantity, o.created_at,
@@ -260,11 +264,11 @@ app.get("/admin/orders", (req, res) => {
   );
 });
 
-// Create a new order (student)
+// ✅ Create a new order (student)
 app.post("/orders", (req, res) => {
-  const { customer_id, item_id, quantity } = req.body;
+  const { customer_id, item_id, quantity, college_id } = req.body;
 
-  if (!customer_id || !item_id || !quantity || quantity <= 0) {
+  if (!customer_id || !item_id || !quantity || quantity <= 0 || !college_id) {
     return res.status(400).json({ error: "Invalid order payload" });
   }
 
@@ -283,8 +287,8 @@ app.post("/orders", (req, res) => {
         if (errDeduct) return res.status(500).json({ error: errDeduct.message });
 
         db.run(
-          "INSERT INTO orders (customer_id, item_id, quantity, status, created_at) VALUES (?,?,?,?,datetime('now'))",
-          [customer_id, item_id, quantity, "pending"],
+          "INSERT INTO orders (customer_id, item_id, quantity, status, created_at, college_id) VALUES (?,?,?,?,datetime('now'), ?)",
+          [customer_id, item_id, quantity, "pending", college_id],
           function (errOrder) {
             if (errOrder) return res.status(500).json({ error: errOrder.message });
             res.json({ id: this.lastID, customer_id, item_id, quantity, total, status: "pending" });
@@ -295,7 +299,7 @@ app.post("/orders", (req, res) => {
   });
 });
 
-// Get all orders for a student with item details
+// ✅ Get all orders for a student
 app.get("/orders/:customer_id", (req, res) => {
   const customer_id = req.params.customer_id;
   db.all(
@@ -311,7 +315,7 @@ app.get("/orders/:customer_id", (req, res) => {
   );
 });
 
-// Get all colleges
+// ✅ Get all colleges (public route)
 app.get("/colleges", (req, res) => {
   db.all("SELECT * FROM colleges", [], (err, rows) => {
     if (err) return res.status(500).json({ error: err.message });
@@ -327,8 +331,7 @@ app.get("/owner/orders/:college_id", (req, res) => {
      FROM orders o
      JOIN users u ON o.customer_id = u.id
      JOIN menu m ON o.item_id = m.id
-     JOIN college_menu cm ON m.id = cm.menu_id
-     WHERE cm.college_id = ?`,
+     WHERE o.college_id = ?`,
     [college_id],
     (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
@@ -338,20 +341,16 @@ app.get("/owner/orders/:college_id", (req, res) => {
 });
 
 // ✅ Update order status (delivered or canceled)
-// If status is changed to "canceled", refund the total price to the user's wallet.
-// Uses joined query to get item price from menu table.
-// Prevents double refund if already canceled.
+// Refunds wallet if canceled and not already canceled
 app.put("/orders/:id/status", (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
 
-  // ✅ Allowed statuses
   const allowedStatuses = ["pending", "confirmed", "preparing", "ready", "delivered", "canceled"];
   if (!allowedStatuses.includes(status)) {
     return res.status(400).json({ error: "Invalid status" });
   }
 
-  // ✅ Get order + item price
   db.get(
     `SELECT o.id, o.customer_id, o.item_id, o.quantity, o.status, m.price
      FROM orders o JOIN menu m ON o.item_id = m.id WHERE o.id=?`,
@@ -363,11 +362,9 @@ app.put("/orders/:id/status", (req, res) => {
       const willCancel = status === "canceled";
       const total = row.price * row.quantity;
 
-      // ✅ Update order status
       db.run("UPDATE orders SET status=? WHERE id=?", [status, id], (err2) => {
         if (err2) return res.status(500).json({ error: err2.message });
 
-        // ✅ Refund only if newly canceled
         if (willCancel && !wasCanceled) {
           db.run(
             "UPDATE users SET wallet_balance = wallet_balance + ? WHERE id=?",
@@ -394,26 +391,25 @@ app.put("/orders/:id/status", (req, res) => {
   );
 });
 
-// ✅ Owner marks item as out of stock and cancels only unconfirmed orders
+// ✅ Owner marks item as out of stock and cancels unconfirmed orders
 app.put("/menu/:id/outofstock", (req, res) => {
   const itemId = req.params.id;
 
-  // Step 1: Mark item as not instock in the menu
+  // Step 1: Mark item as not in stock
   db.run("UPDATE menu SET in_stock = 0 WHERE id=?", [itemId], (err1) => {
     if (err1) return res.status(500).json({ error: err1.message });
 
-    // Step 2: Get all pending or unconfirmed orders for this item
+    // Step 2: Get all pending orders for this item
     db.all(
       `SELECT o.id, o.customer_id, o.quantity, o.status, m.price
        FROM orders o JOIN menu m ON o.item_id = m.id
-       WHERE o.item_id=? AND o.status IN ('pending')`,
+       WHERE o.item_id=? AND o.status = 'pending'`,
       [itemId],
       (err2, orders) => {
         if (err2) return res.status(500).json({ error: err2.message });
 
         let canceledCount = 0;
 
-        // Step 3: Cancel only unconfirmed orders and refund
         orders.forEach(order => {
           const total = order.price * order.quantity;
 
@@ -431,11 +427,11 @@ app.put("/menu/:id/outofstock", (req, res) => {
   });
 });
 
-// Analytics for owner
+// ✅ Owner Analytics Dashboard
 app.get("/owner/analytics/:college_id", (req, res) => {
   const { college_id } = req.params;
   const today = new Date().toISOString().split("T")[0];
-  const weekAgo = new Date(Date.now() - 7*24*60*60*1000).toISOString().split("T")[0];
+  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
   const analytics = {};
 
   // Daily sales
@@ -443,8 +439,7 @@ app.get("/owner/analytics/:college_id", (req, res) => {
     `SELECT COUNT(*) as orders, SUM(o.quantity * m.price) as revenue
      FROM orders o
      JOIN menu m ON o.item_id = m.id
-     JOIN college_menu cm ON m.id = cm.menu_id
-     WHERE cm.college_id=? AND DATE(o.created_at)=? AND o.status='delivered'`,
+     WHERE o.college_id=? AND DATE(o.created_at)=? AND o.status='delivered'`,
     [college_id, today],
     (err, row) => {
       analytics.daily = row || { orders: 0, revenue: 0 };
@@ -454,8 +449,7 @@ app.get("/owner/analytics/:college_id", (req, res) => {
         `SELECT COUNT(*) as orders, SUM(o.quantity * m.price) as revenue
          FROM orders o
          JOIN menu m ON o.item_id = m.id
-         JOIN college_menu cm ON m.id = cm.menu_id
-         WHERE cm.college_id=? AND DATE(o.created_at) >= ? AND o.status='delivered'`,
+         WHERE o.college_id=? AND DATE(o.created_at) >= ? AND o.status='delivered'`,
         [college_id, weekAgo],
         (err2, row2) => {
           analytics.weekly = row2 || { orders: 0, revenue: 0 };
@@ -465,8 +459,7 @@ app.get("/owner/analytics/:college_id", (req, res) => {
             `SELECT SUM(o.quantity * m.price) as collected
              FROM orders o
              JOIN menu m ON o.item_id = m.id
-             JOIN college_menu cm ON m.id = cm.menu_id
-             WHERE cm.college_id=? AND o.status='delivered'`,
+             WHERE o.college_id=? AND o.status='delivered'`,
             [college_id],
             (err3, row3) => {
               analytics.collected = row3?.collected || 0;
@@ -476,8 +469,7 @@ app.get("/owner/analytics/:college_id", (req, res) => {
                 `SELECT m.item, SUM(o.quantity) as sold
                  FROM orders o
                  JOIN menu m ON o.item_id = m.id
-                 JOIN college_menu cm ON m.id = cm.menu_id
-                 WHERE cm.college_id=? AND o.status='delivered'
+                 WHERE o.college_id=? AND o.status='delivered'
                  GROUP BY m.item
                  ORDER BY sold DESC
                  LIMIT 5`,
@@ -495,7 +487,7 @@ app.get("/owner/analytics/:college_id", (req, res) => {
   );
 });
 
-// Add money to wallet
+// ✅ Add money to wallet
 app.post("/wallet/add", (req, res) => {
   const { user_id, amount } = req.body;
   db.run(
@@ -511,17 +503,15 @@ app.post("/wallet/add", (req, res) => {
   );
 });
 
-// Get wallet balance
+// ✅ Get wallet balance
 app.get("/wallet/:user_id", (req, res) => {
   const { user_id } = req.params;
   db.get("SELECT wallet_balance FROM users WHERE id=?", [user_id], (err, row) => {
     if (err) return res.status(500).json({ error: err.message });
-    if (!row) return res.status(404).json({ error: "User not found" }); // ✅ Fix
+    if (!row) return res.status(404).json({ error: "User not found" });
     res.json({ balance: row.wallet_balance });
   });
 });
 
-
-
-// --- Start server ---
+// ✅ Start the server
 app.listen(4002, () => console.log("Canteen backend running on http://localhost:4002"));
