@@ -18,14 +18,11 @@
   <div class="box">
     <h2>Student Sign Up</h2>
     <input type="text" id="name" placeholder="Name" />
-    <input type="text" id="admission" placeholder="Admission Number" />
+    <input type="text" id="admission_no" placeholder="Admission Number" />
     <input type="password" id="password" placeholder="Password" />
-    
-    <!-- College selection (now populated dynamically) -->
     <select id="college">
       <option value="">Loading colleges...</option>
     </select>
-
     <button onclick="signup()">Create Account</button>
     <div class="links">
       <p>Already have an account? <a href="login.html">Login</a></p>
@@ -33,41 +30,24 @@
   </div>
 
   <script>
-    // Load colleges dynamically
     async function loadColleges() {
       try {
         const res = await fetch("http://localhost:4002/colleges");
         const colleges = await res.json();
         const select = document.getElementById("college");
-        select.innerHTML = ""; // clear placeholder
-
-        if (colleges.length === 0) {
-          const opt = document.createElement("option");
-          opt.value = "";
-          opt.textContent = "No colleges available";
-          select.appendChild(opt);
-          return;
-        }
-
-        colleges.forEach(c => {
-          const opt = document.createElement("option");
-          opt.value = c.id;
-          opt.textContent = c.name;
-          select.appendChild(opt);
-        });
+        select.innerHTML = '<option value="">-- Select College --</option>' +
+          colleges.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
       } catch (err) {
         console.error("Error loading colleges:", err);
-        const select = document.getElementById("college");
-        select.innerHTML = "<option value=''>Error loading colleges</option>";
+        document.getElementById("college").innerHTML = "<option value=''>Error loading colleges</option>";
       }
     }
 
-    // Call on page load
     loadColleges();
 
     async function signup() {
       const name = document.getElementById("name").value.trim();
-      const admission_no = document.getElementById("admission").value.trim();
+      const admission_no = document.getElementById("admission_no").value.trim();
       const password = document.getElementById("password").value.trim();
       const college_id = document.getElementById("college").value;
 

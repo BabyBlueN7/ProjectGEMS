@@ -4,66 +4,118 @@
   <meta charset="UTF-8" />
   <title>Canteen Owner Sign Up</title>
   <style>
-    body { font-family: Arial; background: #f6f7fb; display: flex; justify-content: center; align-items: center; height: 100vh; }
-    .box { background: #fff; padding: 28px; width: 380px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
-    h2 { text-align: center; margin: 0 0 18px; }
-    select, input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #cdd4da; border-radius: 8px; }
-    button { width: 100%; padding: 10px; margin-top: 10px; background: #f59e0b; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
-    button:hover { background: #d98906; }
-    .links { text-align: center; margin-top: 12px; font-size: 14px; }
-    .links a { color: #2563eb; text-decoration: none; }
+    body {
+      font-family: Arial;
+      background: #f6f7fb;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .box {
+      background: #fff;
+      padding: 28px;
+      width: 380px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+    }
+    h2 {
+      text-align: center;
+      margin: 0 0 18px;
+    }
+    select, input {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border: 1px solid #cdd4da;
+      border-radius: 8px;
+    }
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      background: #f59e0b;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #d98906;
+    }
+    .links {
+      text-align: center;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+    .links a {
+      color: #2563eb;
+      text-decoration: none;
+    }
   </style>
 </head>
 <body>
   <div class="box">
     <h2>Canteen Owner Sign Up</h2>
-    <!-- Dropdown will be filled dynamically -->
     <select id="college"></select>
     <input type="text" id="name" placeholder="Name" />
     <input type="text" id="college_code" placeholder="College Code" />
     <input type="password" id="password" placeholder="Password" />
     <button onclick="signup()">Create Owner Account</button>
     <p style="margin-top:10px;color:#374151;">
-  To verify eligibility and obtain the College Code required for account registration,<br>
-  contact the Digi-Canteen Team:
-  <strong>digitcanteen@gmail.com</strong>
-  <strong>12345678</strong>
-</p>
+      To verify eligibility and obtain the College Code required for account registration,<br>
+      contact the Digi-Canteen Team:
+      <strong>digitcanteen@gmail.com</strong>
+      <strong>12345678</strong>
+    </p>
     <div class="links">
       <p>Already have an account? <a href="login.html">Login</a></p>
     </div>
   </div>
 
-  <!-- 🔑 Scripts go here -->
   <script>
-    // Load colleges into dropdown
     async function loadColleges() {
-      const res = await fetch("http://localhost:4002/colleges");
-      const colleges = await res.json();
-      const select = document.getElementById("college");
-      select.innerHTML = '<option value="">-- Select College --</option>' +
-        colleges.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+      try {
+        const res = await fetch("http://localhost:4002/colleges");
+        const colleges = await res.json();
+        const select = document.getElementById("college");
+        select.innerHTML = '<option value="">-- Select College --</option>' +
+          colleges.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+      } catch (err) {
+        alert("Failed to load colleges.");
+        console.error(err);
+      }
     }
+
     loadColleges();
 
-    // Signup function
     async function signup() {
       const college_id = document.getElementById("college").value;
-      const name = document.getElementById("name").value;
-      const admission_no = document.getElementById("admission").value;
-      const password = document.getElementById("password").value;
+      const name = document.getElementById("name").value.trim();
+      const college_code = document.getElementById("college_code").value.trim();
+      const password = document.getElementById("password").value.trim();
 
-      const res = await fetch("http://localhost:4002/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, admission_no, password, role: "owner", college_id })
-      });
+      if (!college_id || !name || !college_code || !password) {
+        alert("Please fill all fields");
+        return;
+      }
 
-      const data = await res.json();
-      if (data.error) alert(data.error);
-      else {
-        alert("Owner account created!");
-        window.location.href = "user.html";
+      try {
+        const res = await fetch("http://localhost:4002/signup-owner", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, password, college_id, college_code })
+        });
+
+        const data = await res.json();
+        if (data.error) alert(data.error);
+        else {
+          alert("Owner account created!");
+          window.location.href = "login.html";
+        }
+      } catch (err) {
+        console.error("Signup failed:", err);
+        alert("Signup failed. Check console.");
       }
     }
   </script>

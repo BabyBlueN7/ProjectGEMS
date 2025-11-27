@@ -66,46 +66,75 @@ db.serialize(() => {
 
 // --- Routes ---
 
-// ✅ Signup route for student or owner
-async function signup() {
-  const college_id = document.getElementById("college").value;
-  const name = document.getElementById("name").value;
-  const college_code = document.getElementById("college_code").value;
-  const password = document.getElementById("password").value;
+// ✅ Signup route for owner
 
-  if (!college_id || !name || !college_code || !password) {
-    alert("Please fill all fields");
-    return;
-  }
+app.post("/signup-owner", (req, res) => {
+  const { name, password, college_id, college_code } = req.body;
+  const normalizedCode = college_code?.trim().toLowerCase();
 
-  const res = await fetch("http://localhost:4002/signup", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      name,
-      admission_no: college_code, // store college_code in admission_no
-      password,
-      role: "owner",
-      college_id
-    })
+  db.get("SELECT college_code FROM colleges WHERE id=?", [college_id], (err, college) => {
+    if (err) return res.status(500).json({ error: "Database error" });
+    if (!college) return res.status(400).json({ error: "Invalid college selected" });
+
+    const actualCode = college.college_code?.trim().toLowerCase();
+    if (actualCode !== normalizedCode) {
+      return res.status(400).json({ error: "Incorrect college code" });
+    }
+
+    db.get("SELECT id FROM users WHERE role='owner' AND college_id=?", [college_id], (err2, existingOwner) => {
+      if (err2) return res.status(500).json({ error: "Database error" });
+      if (existingOwner) {
+        return res.status(400).json({ error: "Owner already exists for this college" });
+      }
+
+      db.run(
+        "INSERT INTO users (name, admission_no, password, role, college_id) VALUES (?,?,?,?,?)",
+        [name, college_code, password, "owner", college_id],
+        function (err3) {
+          if (err3) return res.status(500).json({ error: "Signup failed" });
+          res.json({ id: this.lastID, name, role: "owner", college_id });
+        }
+      );
+    });
   });
+});
 
-  const data = await res.json();
-  if (data.error) alert(data.error);
-  else {
-    alert("Owner account created!");
-    window.location.href = "user.html";
+
+// ✅ Signup route for student
+
+app.post("/signup", (req, res) => {
+  const { name, admission_no, password, role, college_id } = req.body;
+
+  if (role !== "student") {
+    return res.status(400).json({ error: "Invalid role for this route" });
   }
-}
+
+  db.run(
+    "INSERT INTO users (name, admission_no, password, role, college_id) VALUES (?,?,?,?,?)",
+    [name, admission_no, password, role, college_id],
+    function (err) {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.json({
+        id: this.lastID,
+        name,
+        admission_no,
+        role,
+        college_id
+      });
+    }
+  );
+});
 
 // Login route for student or owner
 app.post("/login", (req, res) => {
-  const { admission_no, college_code, password, role } = req.body;
+  const { admission_no, college_code, password, role, college_id } = req.body;
 
   if (role === "student") {
     db.get(
-      "SELECT * FROM users WHERE admission_no=? AND password=? AND role='student'",
-      [admission_no, password],
+      "SELECT * FROM users WHERE admission_no=? AND password=? AND role='student' AND college_id=?",
+      [admission_no, password, college_id],
       (err, user) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!user) return res.status(401).json({ error: "Invalid student credentials" });
@@ -114,11 +143,11 @@ app.post("/login", (req, res) => {
     );
   } else if (role === "owner") {
     db.get(
-      `SELECT u.id, u.name, u.email, u.role, u.college_id
+      `SELECT u.id, u.name, u.role, u.college_id
        FROM users u
        JOIN colleges c ON u.college_id = c.id
-       WHERE u.role='owner' AND c.college_code=? AND u.password=?`,
-      [college_code, password],
+       WHERE u.role='owner' AND u.admission_no=? AND u.password=? AND u.college_id=?`,
+      [college_code, password, college_id],
       (err, user) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!user) return res.status(401).json({ error: "Invalid owner credentials" });
@@ -139,41 +168,6 @@ app.post("/devtool/canteen-login", (req, res) => {
   } else {
     return res.status(403).json({ error: "Invalid dev code" });
   }
-});
-
-//Check if an owner already exists for that college
-app.post("/signup-owner", (req, res) => {
-  const { name, email, password, college_id, college_code } = req.body;
-  const normalizedCode = college_code?.trim().toLowerCase();
-
-  db.get("SELECT college_code FROM colleges WHERE id=?", [college_id], (err, college) => {
-    if (err) return res.status(500).json({ error: "Database error" });
-    if (!college) return res.status(400).json({ error: "Invalid college selected" });
-
-    const actualCode = college.college_code?.trim().toLowerCase();
-    if (actualCode !== normalizedCode) {
-      return res.status(400).json({ error: "Incorrect college code" });
-    }
-
-    db.get("SELECT id FROM users WHERE role='owner' AND college_id=?", [college_id], (err2, existingOwner) => {
-      if (err2) return res.status(500).json({ error: "Database error" });
-      if (existingOwner) {
-        return res.status(400).json({ error: "Owner already exists for this college" });
-      }
-
-      // ✅ Store college_code in admission_no field
-      db.run(
-        "INSERT INTO users (name, admission_no, email, password, role, college_id) VALUES (?,?,?,?,?,?)",
-        [name, college_code, email, password, "owner", college_id],
-        function (err3) {
-          if (err3) return res.status(500).json({ error: "Signup failed" });
-
-          console.log(`✅ Owner created for college ${college_id} with email ${email}`);
-          res.json({ id: this.lastID, name, email, role: "owner", college_id });
-        }
-      );
-    });
-  });
 });
 
 // Get today's menu for a specific college

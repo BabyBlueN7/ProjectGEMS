@@ -56,31 +56,20 @@
       color: #2563eb;
       text-decoration: none;
     }
-    .devtool-link {
-      position: fixed;
-      bottom: 10px;
-      left: 10px;
-      font-size: 13px;
-    }
-    .devtool-link a {
-      color: #6b7280;
-      text-decoration: none;
-    }
-    .devtool-link a:hover {
-      text-decoration: underline;
-    }
   </style>
 </head>
 <body>
   <div class="box">
     <h2>Canteen Login</h2>
 
-    <!-- Student login -->
+    <select id="college">
+      <option value="">Loading colleges...</option>
+    </select>
+
     <div id="student-fields">
-      <input type="text" id="admission" placeholder="Admission Number" />
+      <input type="text" id="admission_no" placeholder="Admission Number" />
     </div>
 
-    <!-- Owner login -->
     <div id="owner-fields" style="display: none;">
       <input type="text" id="college_code" placeholder="College Code" />
     </div>
@@ -100,12 +89,22 @@
     </div>
   </div>
 
-  <!-- 🔐 Devtool Access (hidden in corner) -->
-  <div class="devtool-link">
-    <a href="devtool-login-canteen.html">Devtool Access</a>
-  </div>
-
   <script>
+    async function loadColleges() {
+      try {
+        const res = await fetch("http://localhost:4002/colleges");
+        const colleges = await res.json();
+        const select = document.getElementById("college");
+        select.innerHTML = '<option value="">-- Select College --</option>' +
+          colleges.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+      } catch (err) {
+        console.error("Error loading colleges:", err);
+        document.getElementById("college").innerHTML = "<option value=''>Error loading colleges</option>";
+      }
+    }
+
+    loadColleges();
+
     const roleRadios = document.querySelectorAll("input[name='role']");
     roleRadios.forEach(r => r.addEventListener("change", toggleFields));
 
@@ -118,16 +117,22 @@
     async function login() {
       const role = document.querySelector("input[name='role']:checked").value;
       const password = document.getElementById("password").value.trim();
+      const college_id = document.getElementById("college").value;
 
-      let payload = { role, password };
+      if (!college_id || !password) {
+        alert("Please select a college and enter password");
+        return;
+      }
+
+      let payload = { role, password, college_id };
 
       if (role === "student") {
-        const admission_no = document.getElementById("admission").value.trim();
-        if (!admission_no || !password) return alert("Enter admission number and password");
+        const admission_no = document.getElementById("admission_no").value.trim();
+        if (!admission_no) return alert("Enter admission number");
         payload.admission_no = admission_no;
       } else {
         const college_code = document.getElementById("college_code").value.trim();
-        if (!college_code || !password) return alert("Enter college code and password");
+        if (!college_code) return alert("Enter college code");
         payload.college_code = college_code;
       }
 
