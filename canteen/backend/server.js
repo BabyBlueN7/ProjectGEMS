@@ -67,26 +67,36 @@ db.serialize(() => {
 // --- Routes ---
 
 // ✅ Signup route for student or owner
-app.post("/signup", (req, res) => {
-  const { name, admission_no, password, role, college_id } = req.body;
+async function signup() {
+  const college_id = document.getElementById("college").value;
+  const name = document.getElementById("name").value;
+  const college_code = document.getElementById("college_code").value;
+  const password = document.getElementById("password").value;
 
-  db.run(
-    "INSERT INTO users (name, admission_no, password, role, college_id) VALUES (?,?,?,?,?)",
-    [name, admission_no, password, role, college_id],
-    function (err) {
-      if (err) {
-        return res.status(500).json({ error: err.message });
-      }
-      res.json({
-        id: this.lastID,
-        name,
-        admission_no,
-        role,
-        college_id
-      });
-    }
-  );
-});
+  if (!college_id || !name || !college_code || !password) {
+    alert("Please fill all fields");
+    return;
+  }
+
+  const res = await fetch("http://localhost:4002/signup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name,
+      admission_no: college_code, // store college_code in admission_no
+      password,
+      role: "owner",
+      college_id
+    })
+  });
+
+  const data = await res.json();
+  if (data.error) alert(data.error);
+  else {
+    alert("Owner account created!");
+    window.location.href = "user.html";
+  }
+}
 
 // Login route for student or owner
 app.post("/login", (req, res) => {
@@ -134,11 +144,8 @@ app.post("/devtool/canteen-login", (req, res) => {
 //Check if an owner already exists for that college
 app.post("/signup-owner", (req, res) => {
   const { name, email, password, college_id, college_code } = req.body;
-
-  // Normalize inputs
   const normalizedCode = college_code?.trim().toLowerCase();
 
-  // Step 1: Validate college exists and code matches
   db.get("SELECT college_code FROM colleges WHERE id=?", [college_id], (err, college) => {
     if (err) return res.status(500).json({ error: "Database error" });
     if (!college) return res.status(400).json({ error: "Invalid college selected" });
@@ -148,17 +155,16 @@ app.post("/signup-owner", (req, res) => {
       return res.status(400).json({ error: "Incorrect college code" });
     }
 
-    // Step 2: Check if an owner already exists for this college
     db.get("SELECT id FROM users WHERE role='owner' AND college_id=?", [college_id], (err2, existingOwner) => {
       if (err2) return res.status(500).json({ error: "Database error" });
       if (existingOwner) {
         return res.status(400).json({ error: "Owner already exists for this college" });
       }
 
-      // Step 3: Create owner account
+      // ✅ Store college_code in admission_no field
       db.run(
-        "INSERT INTO users (name, email, password, role, college_id) VALUES (?,?,?,?,?)",
-        [name, email, password, "owner", college_id],
+        "INSERT INTO users (name, admission_no, email, password, role, college_id) VALUES (?,?,?,?,?,?)",
+        [name, college_code, email, password, "owner", college_id],
         function (err3) {
           if (err3) return res.status(500).json({ error: "Signup failed" });
 
