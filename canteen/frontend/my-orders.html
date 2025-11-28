@@ -49,8 +49,11 @@
     button.cancel-btn:hover {
       background: #dc2626;
     }
+    button.cancel-btn[disabled] {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
 
-    /* Tracker styles */
     .tracker {
       display: flex;
       justify-content: space-between;
@@ -137,6 +140,7 @@
         }
 
         orders.forEach(o => {
+          const canCancel = o.status === "pending";
           container.innerHTML += `
             <div class="order">
               <p><strong>Order ID:</strong> ${o.id}</p>
@@ -144,8 +148,9 @@
               <p><strong>Quantity:</strong> ${o.quantity}</p>
               <p class="status ${o.status}">Status: ${o.status.charAt(0).toUpperCase() + o.status.slice(1)}</p>
               ${o.status !== "canceled" ? renderTracker(o.status) : ""}
-              ${o.status === "pending" || o.status === "confirmed" ? 
-                `<button class="cancel-btn" onclick="cancelOrder(${o.id})">Cancel Order</button>` : ""}
+              <button class="cancel-btn" onclick="cancelOrder(${o.id})" ${canCancel ? "" : "disabled"}>
+                Cancel Order
+              </button>
             </div>
           `;
         });
@@ -161,7 +166,7 @@
         await fetch(`http://localhost:4002/orders/${orderId}/status`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "canceled" })
+          body: JSON.stringify({ status: "canceled", role: "student" })
         });
         alert("Order canceled. Refund will be processed 💸");
         loadOrders();

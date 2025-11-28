@@ -13,6 +13,10 @@
     button { background: #2563eb; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
     button:hover { background: #1e4fd6; }
     .closed { color: red; font-weight: bold; }
+    .cancel-btn[disabled] {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -54,33 +58,29 @@
     }
 
     async function placeOrder(itemId) {
-  const user = JSON.parse(localStorage.getItem("user"));
-  const customerId = user?.id;
-  const collegeId = user?.college_id;
+      try {
+        const res = await fetch("http://localhost:4002/orders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            customer_id: customerId,
+            item_id: itemId,
+            quantity: 1,
+            college_id: collegeId
+          })
+        });
 
-  try {
-    const res = await fetch("http://localhost:4002/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        customer_id: customerId,
-        item_id: itemId,
-        quantity: 1,
-        college_id: collegeId  // ✅ this was missing
-      })
-    });
-
-    const data = await res.json();
-    if (data?.id) {
-      alert(`Order placed ✅ (Order ID: ${data.id})`);
-    } else {
-      alert("Order failed ❌: " + (data.error || "Unknown error"));
+        const data = await res.json();
+        if (data?.id) {
+          alert(`Order placed ✅ (Order ID: ${data.id})`);
+        } else {
+          alert("Order failed ❌: " + (data.error || "Unknown error"));
+        }
+      } catch (err) {
+        console.error("Failed to place order:", err);
+        alert("Failed to place order ❌");
+      }
     }
-  } catch (err) {
-    console.error("Failed to place order:", err);
-    alert("Failed to place order ❌");
-  }
-}
 
     async function renderMenu() {
       const container = document.getElementById("menu");

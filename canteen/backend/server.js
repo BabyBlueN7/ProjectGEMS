@@ -359,7 +359,7 @@ app.get("/owner/orders/:college_id", (req, res) => {
 // Refunds wallet if canceled and not already canceled
 app.put("/orders/:id/status", (req, res) => {
   const { id } = req.params;
-  const { status } = req.body;
+  const { status, role } = req.body; // ✅ role must be passed from frontend
 
   const allowedStatuses = ["pending", "confirmed", "preparing", "ready", "delivered", "canceled"];
   if (!allowedStatuses.includes(status)) {
@@ -376,6 +376,11 @@ app.put("/orders/:id/status", (req, res) => {
       const wasCanceled = row.status === "canceled";
       const willCancel = status === "canceled";
       const total = row.price * row.quantity;
+
+      // ✅ Block student cancel if already confirmed or beyond
+      if (role === "student" && willCancel && row.status !== "pending") {
+        return res.status(400).json({ error: "Cannot cancel after confirmation" });
+      }
 
       db.run("UPDATE orders SET status=? WHERE id=?", [status, id], (err2) => {
         if (err2) return res.status(500).json({ error: err2.message });
@@ -439,6 +444,25 @@ app.put("/menu/:id/outofstock", (req, res) => {
         });
       }
     );
+  });
+});
+
+//Owner Can Delete Canceled Orders
+app.delete("/orders/:id", (req, res) => {
+  const { id } = req.params;
+
+  db.get("SELECT status FROM orders WHERE id = ?", [id], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!row) return res.status(404).json({ error: "Order not found" });
+
+    if (row.status !== "canceled") {
+      return res.status(400).json({ error: "Only canceled orders can be deleted" });
+    }
+
+    db.run("DELETE FROM orders WHERE id = ?", [id], function (err2) {
+      if (err2) return res.status(500).json({ error: err2.message });
+      res.json({ success: true });
+    });
   });
 });
 

@@ -253,43 +253,69 @@ async function updateMenu(id) {
   }
 }
 
-        // Load Orders
-    async function loadOwnerOrders() {
-      try {
-        const res = await fetch(`http://localhost:4002/owner/orders/${collegeId}`);
-        const orders = await res.json();
-        const container = document.getElementById("owner-orders");
-        container.innerHTML = "";
+// Track removed order IDs (only in memory)
+let removedOrderIds = new Set();
 
-        if (orders.length === 0) {
-          container.innerHTML = "<p>No orders yet.</p>";
-          return;
-        }
+// Load Orders
+async function loadOwnerOrders() {
+  try {
+    const res = await fetch(`http://localhost:4002/owner/orders/${collegeId}`);
+    const orders = await res.json();
+    const container = document.getElementById("owner-orders");
+    container.innerHTML = "";
 
-        orders.forEach(o => {
-          container.innerHTML += `
-            <div class="order">
-              <p><b>${o.item}</b> × ${o.quantity} — ordered by ${o.student_name}</p>
-              <p>Status: <span class="status ${o.status}">${o.status.charAt(0).toUpperCase() + o.status.slice(1)}</span></p>
-              <label>Update Status:</label>
-              <select onchange="updateStatus(${o.id}, this.value)">
-                <option value="pending" ${o.status === "pending" ? "selected" : ""}>Pending</option>
-                <option value="confirmed" ${o.status === "confirmed" ? "selected" : ""}>Confirmed</option>
-                <option value="preparing" ${o.status === "preparing" ? "selected" : ""}>Preparing</option>
-                <option value="ready" ${o.status === "ready" ? "selected" : ""}>Ready</option>
-                <option value="delivered" ${o.status === "delivered" ? "selected" : ""}>Delivered</option>
-                <option value="canceled" ${o.status === "canceled" ? "selected" : ""}>Canceled</option>
-              </select>
-            </div>
-          `;
-        });
-      } catch (err) {
-        console.error("Error loading orders:", err);
-        document.getElementById("owner-orders").innerHTML = "<p>Failed to load orders ❌</p>";
-      }
+    if (orders.length === 0) {
+      container.innerHTML = "<p>No orders yet.</p>";
+      return;
     }
 
-    // Update Order Status
+    orders.forEach(o => {
+      if (removedOrderIds.has(o.id)) return; // ✅ Skip if removed from dashboard
+
+      const isCanceled = o.status === "canceled";
+
+      container.innerHTML += `
+        <div class="order" id="order-${o.id}">
+          <p><b>${o.item}</b> × ${o.quantity} — ordered by ${o.student_name}</p>
+          <p>Status: <span class="status ${o.status}">${o.status.charAt(0).toUpperCase() + o.status.slice(1)}</span></p>
+
+          ${isCanceled ? `
+            <button onclick="removeFromDashboard(${o.id})" style="
+              background:#ef4444;
+              color:#fff;
+              border:none;
+              padding:6px 12px;
+              border-radius:6px;
+              cursor:pointer;
+              margin-top:6px;
+            ">🗑️ Remove Canceled Order</button>
+          ` : `
+            <label>Update Status:</label>
+            <select onchange="updateStatus(${o.id}, this.value)">
+              <option value="pending" ${o.status === "pending" ? "selected" : ""}>Pending</option>
+              <option value="confirmed" ${o.status === "confirmed" ? "selected" : ""}>Confirmed</option>
+              <option value="preparing" ${o.status === "preparing" ? "selected" : ""}>Preparing</option>
+              <option value="ready" ${o.status === "ready" ? "selected" : ""}>Ready</option>
+              <option value="delivered" ${o.status === "delivered" ? "selected" : ""}>Delivered</option>
+              <option value="canceled" ${o.status === "canceled" ? "selected" : ""}>Canceled</option>
+            </select>
+          `}
+        </div>
+      `;
+    });
+  } catch (err) {
+    console.error("Error loading orders:", err);
+    document.getElementById("owner-orders").innerHTML = "<p>Failed to load orders ❌</p>";
+  }
+}
+
+function removeFromDashboard(orderId) {
+  removedOrderIds.add(orderId); // mark as removed
+  const el = document.getElementById(`order-${orderId}`);
+  if (el) el.remove(); // remove from DOM
+}
+
+// Update Order Status
     async function updateStatus(orderId, status) {
       try {
         await fetch(`http://localhost:4002/orders/${orderId}/status`, {
@@ -305,7 +331,27 @@ async function updateMenu(id) {
       }
     }
 
-    // Load Analytics
+// Delete Canceled Order
+    async function deleteOrder(orderId) {
+  if (!confirm("Remove this canceled order permanently?")) return;
+  try {
+    const res = await fetch(`http://localhost:4002/orders/${orderId}`, {
+      method: "DELETE"
+    });
+    const data = await res.json();
+    if (data.success) {
+      alert("Order removed ✅");
+      loadOwnerOrders();
+    } else {
+      alert("Delete failed ❌: " + (data.error || "Unknown error"));
+    }
+  } catch (err) {
+    console.error("Error deleting order:", err);
+    alert("Failed to delete order ❌");
+  }
+}
+
+// Load Analytics
     async function loadAnalytics() {
       try {
         const res = await fetch(`http://localhost:4002/owner/analytics/${user.college_id}`);
@@ -326,7 +372,7 @@ async function updateMenu(id) {
       }
     }
 
-    // Show wallet balance in nav
+// Show wallet balance in nav
     async function loadCanteenOwnerWallet() {
   const user = JSON.parse(localStorage.getItem("user"));
   try {
