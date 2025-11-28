@@ -97,9 +97,19 @@
   </div>
 
   <script>
-    const user = JSON.parse(localStorage.getItem("user"));
-    const collegeId = user?.college_id;
-    const originalMenuItems = {};
+      const user = JSON.parse(localStorage.getItem("user"));
+
+  // ✅ Role check: block non-owners
+  if (!user || user.role !== "owner") {
+    window.location.href = "login.html";
+  }
+
+  // ✅ Make user globally available
+  window.user = user;
+
+  const collegeId = user.college_id;
+  const originalMenuItems = {};
+
 
 //owner profile name
 if (user && user.name) {
@@ -258,6 +268,9 @@ let removedOrderIds = new Set();
 
 // Load Orders
 async function loadOwnerOrders() {
+  const removed = JSON.parse(localStorage.getItem("removedOrders") || "[]");
+  const removedOrderIds = new Set(removed);
+
   try {
     const res = await fetch(`http://localhost:4002/owner/orders/${collegeId}`);
     const orders = await res.json();
@@ -270,7 +283,7 @@ async function loadOwnerOrders() {
     }
 
     orders.forEach(o => {
-      if (removedOrderIds.has(o.id)) return; // ✅ Skip if removed from dashboard
+      if (removedOrderIds.has(o.id)) return; // ✅ skip removed orders
 
       const isCanceled = o.status === "canceled";
 
@@ -310,9 +323,14 @@ async function loadOwnerOrders() {
 }
 
 function removeFromDashboard(orderId) {
-  removedOrderIds.add(orderId); // mark as removed
   const el = document.getElementById(`order-${orderId}`);
-  if (el) el.remove(); // remove from DOM
+  if (el) el.remove();
+
+  const removed = JSON.parse(localStorage.getItem("removedOrders") || "[]");
+  if (!removed.includes(orderId)) {
+    removed.push(orderId);
+    localStorage.setItem("removedOrders", JSON.stringify(removed));
+  }
 }
 
 // Update Order Status

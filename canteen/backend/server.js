@@ -265,6 +265,7 @@ app.get("/admin/orders", (req, res) => {
 });
 
 // ✅ Create a new order (student)
+// ✅ Create a new order (student) with owner wallet credit
 app.post("/orders", (req, res) => {
   const { customer_id, item_id, quantity, college_id } = req.body;
 
@@ -284,28 +285,38 @@ app.post("/orders", (req, res) => {
         return res.status(400).json({ error: "Insufficient wallet balance" });
       }
 
+      // Step 1: Deduct from student
       db.run(
         "UPDATE users SET wallet_balance = wallet_balance - ? WHERE id = ?",
         [total, customer_id],
         (errDeduct) => {
           if (errDeduct) return res.status(500).json({ error: errDeduct.message });
 
+          // Step 2: Credit to owner of same college
           db.run(
-            `INSERT INTO orders (customer_id, item_id, quantity, status, created_at, college_id)
-             VALUES (?, ?, ?, 'pending', datetime('now'), ?)`,
-            [customer_id, item_id, quantity, college_id],
-            function (errOrder) {
-              if (errOrder) return res.status(500).json({ error: errOrder.message });
+            "UPDATE users SET wallet_balance = wallet_balance + ? WHERE college_id = ? AND role = 'owner'",
+            [total, college_id],
+            (errCredit) => {
+              if (errCredit) return res.status(500).json({ error: "Failed to credit owner" });
 
-              // ✅ Return the new order ID
-              res.json({
-                id: this.lastID,
-                customer_id,
-                item_id,
-                quantity,
-                total,
-                status: "pending"
-              });
+              // Step 3: Create order
+              db.run(
+                `INSERT INTO orders (customer_id, item_id, quantity, status, created_at, college_id)
+                 VALUES (?, ?, ?, 'pending', datetime('now'), ?)`,
+                [customer_id, item_id, quantity, college_id],
+                function (errOrder) {
+                  if (errOrder) return res.status(500).json({ error: errOrder.message });
+
+                  res.json({
+                    id: this.lastID,
+                    customer_id,
+                    item_id,
+                    quantity,
+                    total,
+                    status: "pending"
+                  });
+                }
+              );
             }
           );
         }
@@ -356,10 +367,10 @@ app.get("/owner/orders/:college_id", (req, res) => {
 });
 
 // ✅ Update order status (delivered or canceled)
-// Refunds wallet if canceled and not already canceled
+// Refunds wallet if canceled and not already canceled, and deducts from owner
 app.put("/orders/:id/status", (req, res) => {
   const { id } = req.params;
-  const { status, role } = req.body; // ✅ role must be passed from frontend
+  const { status, role } = req.body;
 
   const allowedStatuses = ["pending", "confirmed", "preparing", "ready", "delivered", "canceled"];
   if (!allowedStatuses.includes(status)) {
@@ -367,7 +378,7 @@ app.put("/orders/:id/status", (req, res) => {
   }
 
   db.get(
-    `SELECT o.id, o.customer_id, o.item_id, o.quantity, o.status, m.price
+    `SELECT o.id, o.customer_id, o.item_id, o.quantity, o.status, o.college_id, m.price
      FROM orders o JOIN menu m ON o.item_id = m.id WHERE o.id=?`,
     [id],
     (err, row) => {
@@ -386,17 +397,28 @@ app.put("/orders/:id/status", (req, res) => {
         if (err2) return res.status(500).json({ error: err2.message });
 
         if (willCancel && !wasCanceled) {
+          // Step 1: Refund student
           db.run(
             "UPDATE users SET wallet_balance = wallet_balance + ? WHERE id=?",
             [total, row.customer_id],
             (err3) => {
               if (err3) return res.status(500).json({ error: err3.message });
-              return res.json({
-                id: row.id,
-                status: "canceled",
-                refund: total,
-                message: "Order canceled and refunded 💸"
-              });
+
+              // Step 2: Deduct from owner
+              db.run(
+                "UPDATE users SET wallet_balance = wallet_balance - ? WHERE college_id = ? AND role = 'owner'",
+                [total, row.college_id],
+                (err4) => {
+                  if (err4) return res.status(500).json({ error: err4.message });
+
+                  return res.json({
+                    id: row.id,
+                    status: "canceled",
+                    refund: total,
+                    message: "Order canceled and refunded 💸"
+                  });
+                }
+              );
             }
           );
         } else {
@@ -466,65 +488,6 @@ app.delete("/orders/:id", (req, res) => {
   });
 });
 
-// ✅ Owner Analytics Dashboard
-app.get("/owner/analytics/:college_id", (req, res) => {
-  const { college_id } = req.params;
-  const today = new Date().toISOString().split("T")[0];
-  const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-  const analytics = {};
-
-  // Daily sales
-  db.get(
-    `SELECT COUNT(*) as orders, SUM(o.quantity * m.price) as revenue
-     FROM orders o
-     JOIN menu m ON o.item_id = m.id
-     WHERE o.college_id=? AND DATE(o.created_at)=? AND o.status='delivered'`,
-    [college_id, today],
-    (err, row) => {
-      analytics.daily = row || { orders: 0, revenue: 0 };
-
-      // Weekly sales
-      db.get(
-        `SELECT COUNT(*) as orders, SUM(o.quantity * m.price) as revenue
-         FROM orders o
-         JOIN menu m ON o.item_id = m.id
-         WHERE o.college_id=? AND DATE(o.created_at) >= ? AND o.status='delivered'`,
-        [college_id, weekAgo],
-        (err2, row2) => {
-          analytics.weekly = row2 || { orders: 0, revenue: 0 };
-
-          // Collected money
-          db.get(
-            `SELECT SUM(o.quantity * m.price) as collected
-             FROM orders o
-             JOIN menu m ON o.item_id = m.id
-             WHERE o.college_id=? AND o.status='delivered'`,
-            [college_id],
-            (err3, row3) => {
-              analytics.collected = row3?.collected || 0;
-
-              // Popular items
-              db.all(
-                `SELECT m.item, SUM(o.quantity) as sold
-                 FROM orders o
-                 JOIN menu m ON o.item_id = m.id
-                 WHERE o.college_id=? AND o.status='delivered'
-                 GROUP BY m.item
-                 ORDER BY sold DESC
-                 LIMIT 5`,
-                [college_id],
-                (err4, rows4) => {
-                  analytics.popular = rows4 || [];
-                  res.json(analytics);
-                }
-              );
-            }
-          );
-        }
-      );
-    }
-  );
-});
 
 // ✅ Set canteen status (open or closed)
 app.put("/canteen/status/:college_id", (req, res) => {

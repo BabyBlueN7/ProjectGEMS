@@ -40,11 +40,17 @@
   </main>
 
   <script>
+    // ✅ Role check and global user setup
     const user = JSON.parse(localStorage.getItem("user"));
-    const customerId = user?.id;
-    const collegeId = user?.college_id;
+    if (!user || user.role !== "student") {
+      window.location.href = "login.html";
+    }
+    window.user = user;
 
-    document.getElementById("student-name").innerText = user?.name || "Student";
+    const customerId = user.id;
+    const collegeId = user.college_id;
+
+    document.getElementById("student-name").innerText = user.name || "Student";
 
     async function isCanteenOpen() {
       try {
