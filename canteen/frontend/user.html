@@ -21,14 +21,13 @@
   </header>
 
   <nav>
-    <span>Welcome, Student</span>
-<div style="display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; background: #f0fdf4;">
-  <span id="wallet" style="font-weight: bold; color: #10b981; margin-right: 20px;">₹0</span>
-  <a href="wallet.html">Add Money</a>
-  <a href="my-orders.html" style="margin-right: 15px;">My Orders</a>
-  <a href="login.html">Logout</a>
-</div>
-    
+    <span>Welcome, <b id="student-name">Student</b></span>
+    <div style="display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; background: #f0fdf4;">
+      <span id="wallet" style="font-weight: bold; color: #10b981; margin-right: 20px;">₹0</span>
+      <a href="wallet.html">Add Money</a>
+      <a href="my-orders.html" style="margin-right: 15px;">My Orders</a>
+      <a href="login.html">Logout</a>
+    </div>
   </nav>
 
   <main>
@@ -36,62 +35,66 @@
     <div id="menu"></div>
   </main>
 
-
-  
-  <script>  
-    const openTime = "01:00";
-    const closeTime = "24:00";
-
-    // Use logged-in student info
+  <script>
     const user = JSON.parse(localStorage.getItem("user"));
     const customerId = user?.id;
     const collegeId = user?.college_id;
 
-    function isOpenNow() {
-      const now = new Date();
-      const current = now.getHours() * 60 + now.getMinutes();
+    document.getElementById("student-name").innerText = user?.name || "Student";
 
-      const [oh, om] = openTime.split(":").map(Number);
-      const [ch, cm] = closeTime.split(":").map(Number);
-
-      const openMinutes = oh * 60 + om;
-      const closeMinutes = ch * 60 + cm;
-
-      return current >= openMinutes && current <= closeMinutes;
+    async function isCanteenOpen() {
+      try {
+        const res = await fetch(`http://localhost:4002/canteen/status/${collegeId}`);
+        const data = await res.json();
+        return data.is_open;
+      } catch (err) {
+        console.error("Failed to check canteen status:", err);
+        return false;
+      }
     }
 
     async function placeOrder(itemId) {
-      try {
-        const res = await fetch("http://localhost:4002/orders", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            customer_id: customerId,
-            item_id: itemId,
-            quantity: 1
-          })
-        });
-        const data = await res.json();
-        alert(`Order placed ✅ (Order ID: ${data.id})`);
-      } catch (err) {
-        console.error("Failed to place order:", err);
-        alert("Failed to place order ❌");
-      }
+  const user = JSON.parse(localStorage.getItem("user"));
+  const customerId = user?.id;
+  const collegeId = user?.college_id;
+
+  try {
+    const res = await fetch("http://localhost:4002/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        customer_id: customerId,
+        item_id: itemId,
+        quantity: 1,
+        college_id: collegeId  // ✅ this was missing
+      })
+    });
+
+    const data = await res.json();
+    if (data?.id) {
+      alert(`Order placed ✅ (Order ID: ${data.id})`);
+    } else {
+      alert("Order failed ❌: " + (data.error || "Unknown error"));
     }
+  } catch (err) {
+    console.error("Failed to place order:", err);
+    alert("Failed to place order ❌");
+  }
+}
 
     async function renderMenu() {
       const container = document.getElementById("menu");
       container.innerHTML = "";
 
-      if (!isOpenNow()) {
-        container.innerHTML = `<p class="closed">Canteen is closed. Open from ${openTime} to ${closeTime}.</p>`;
+      const open = await isCanteenOpen();
+      if (!open) {
+        container.innerHTML = `<p class="closed">Canteen is currently closed by the owner.</p>`;
         return;
       }
 
       try {
         const res = await fetch(`http://localhost:4002/menu/today/${collegeId}`);
         const items = await res.json();
-        console.log("Fetched items:", items);
 
         if (items.length === 0) {
           container.innerHTML = "<p>No items available today.</p>";
@@ -114,20 +117,19 @@
         container.innerHTML = "<p>Failed to load menu. Please try again later.</p>";
       }
     }
-    // Show wallet balance in nav
-async function loadCanteenUserWallet() {
-  const user = JSON.parse(localStorage.getItem("user"));
-  try {
-    const res = await fetch(`http://localhost:4002/wallet/${user.id}`);
-    const data = await res.json();
-    document.getElementById("wallet").innerText = `Wallet Balance: ₹${data.balance}`;
-  } catch (err) {
-    console.error("Error loading wallet:", err);
-    document.getElementById("wallet").innerText = "₹0";
-  }
-}
 
-loadCanteenUserWallet();
+    async function loadCanteenUserWallet() {
+      try {
+        const res = await fetch(`http://localhost:4002/wallet/${user.id}`);
+        const data = await res.json();
+        document.getElementById("wallet").innerText = `Wallet Balance: ₹${data.balance}`;
+      } catch (err) {
+        console.error("Error loading wallet:", err);
+        document.getElementById("wallet").innerText = "₹0";
+      }
+    }
+
+    loadCanteenUserWallet();
     renderMenu();
   </script>
 </body>

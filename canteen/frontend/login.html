@@ -149,7 +149,7 @@
         } else {
           localStorage.setItem("user", JSON.stringify(data));
           alert("Login successful ✅");
-          window.location.href = role === "student" ? "user.html" : "canteen-dashboard.html";
+          window.location.href = role === "student" ? "user.html" : "owner-dashboard.html";
         }
       } catch (err) {
         console.error("Login error:", err);

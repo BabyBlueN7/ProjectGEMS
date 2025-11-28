@@ -177,7 +177,7 @@ app.get("/menu/today/:college_id", (req, res) => {
     `SELECT m.id, m.item, m.price, m.in_stock
      FROM menu m
      JOIN college_menu cm ON m.id = cm.menu_id
-     WHERE cm.college_id = ? AND m.in_stock = 1`,
+     WHERE cm.college_id = ?`,
     [college_id],
     (err, rows) => {
       if (err) return res.status(500).json({ error: err.message });
@@ -272,29 +272,44 @@ app.post("/orders", (req, res) => {
     return res.status(400).json({ error: "Invalid order payload" });
   }
 
-  db.get("SELECT price FROM menu WHERE id=?", [item_id], (errItem, item) => {
+  db.get("SELECT price FROM menu WHERE id = ?", [item_id], (errItem, item) => {
     if (errItem || !item) return res.status(400).json({ error: "Invalid item" });
 
     const total = item.price * quantity;
 
-    db.get("SELECT wallet_balance FROM users WHERE id=?", [customer_id], (errUser, user) => {
+    db.get("SELECT wallet_balance FROM users WHERE id = ?", [customer_id], (errUser, user) => {
       if (errUser || !user) return res.status(400).json({ error: "Invalid user" });
+
       if (user.wallet_balance < total) {
         return res.status(400).json({ error: "Insufficient wallet balance" });
       }
 
-      db.run("UPDATE users SET wallet_balance = wallet_balance - ? WHERE id=?", [total, customer_id], (errDeduct) => {
-        if (errDeduct) return res.status(500).json({ error: errDeduct.message });
+      db.run(
+        "UPDATE users SET wallet_balance = wallet_balance - ? WHERE id = ?",
+        [total, customer_id],
+        (errDeduct) => {
+          if (errDeduct) return res.status(500).json({ error: errDeduct.message });
 
-        db.run(
-          "INSERT INTO orders (customer_id, item_id, quantity, status, created_at, college_id) VALUES (?,?,?,?,datetime('now'), ?)",
-          [customer_id, item_id, quantity, "pending", college_id],
-          function (errOrder) {
-            if (errOrder) return res.status(500).json({ error: errOrder.message });
-            res.json({ id: this.lastID, customer_id, item_id, quantity, total, status: "pending" });
-          }
-        );
-      });
+          db.run(
+            `INSERT INTO orders (customer_id, item_id, quantity, status, created_at, college_id)
+             VALUES (?, ?, ?, 'pending', datetime('now'), ?)`,
+            [customer_id, item_id, quantity, college_id],
+            function (errOrder) {
+              if (errOrder) return res.status(500).json({ error: errOrder.message });
+
+              // ✅ Return the new order ID
+              res.json({
+                id: this.lastID,
+                customer_id,
+                item_id,
+                quantity,
+                total,
+                status: "pending"
+              });
+            }
+          );
+        }
+      );
     });
   });
 });
@@ -485,6 +500,78 @@ app.get("/owner/analytics/:college_id", (req, res) => {
       );
     }
   );
+});
+
+// ✅ Set canteen status (open or closed)
+app.put("/canteen/status/:college_id", (req, res) => {
+  const { college_id } = req.params;
+  const { is_open } = req.body;
+
+  db.run(
+    "UPDATE colleges SET is_open = ? WHERE id = ?",
+    [is_open ? 1 : 0, college_id],
+    function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ success: true });
+    }
+  );
+});
+
+// ✅ Get canteen status
+app.get("/canteen/status/:college_id", (req, res) => {
+  const { college_id } = req.params;
+
+  db.get(
+    "SELECT is_open FROM colleges WHERE id = ?",
+    [college_id],
+    (err, row) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ is_open: row?.is_open === 1 });
+    }
+  );
+});
+
+// ✅ Update menu item
+app.put("/menu/:id", (req, res) => {
+  const { id } = req.params;
+  const { item, price, in_stock } = req.body;
+
+  if (!item || price == null || in_stock == null) {
+    return res.status(400).json({ error: "Invalid update payload" });
+  }
+
+  db.run(
+    "UPDATE menu SET item = ?, price = ?, in_stock = ? WHERE id = ?",
+    [item, price, in_stock, id],
+    function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+
+      if (this.changes === 0) {
+        return res.status(404).json({ error: "Menu item not found or unchanged" });
+      }
+
+      res.json({ success: true });
+    }
+  );
+});
+
+// ✅ Delete menu item (from both tables)
+app.delete("/menu/:id", (req, res) => {
+  const { id } = req.params;
+
+  db.run("DELETE FROM college_menu WHERE menu_id = ?", [id], function (err1) {
+    if (err1) return res.status(500).json({ error: err1.message });
+
+    db.run("DELETE FROM menu WHERE id = ?", [id], function (err2) {
+      if (err2) return res.status(500).json({ error: err2.message });
+
+      if (this.changes === 0) {
+        return res.status(404).json({ error: "Menu item not found" });
+      }
+
+      res.json({ success: true });
+    });
+  });
 });
 
 // ✅ Add money to wallet

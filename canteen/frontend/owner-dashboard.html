@@ -47,12 +47,18 @@
 <body>
   <header>
     <h1>Canteen Owner Dashboard</h1>
+    <h2 id="owner-name" style="margin-left: 20px; color: #0f172a;">Welcome, Owner</h2>
     <div style="display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; background: #f0fdf4;">
   <span id="wallet" style="font-weight: bold; color: #10b981; margin-right: 20px;">₹0</span>
   <a href="login.html">Logout</a>
 </div>
   </header>
   <main>
+<h2>Canteen Status</h2>
+<label style="display: flex; align-items: center;">
+  <input type="checkbox" id="canteen-toggle" style="width: 20px; height: 20px;" />
+  <span id="canteen-status-label" style="margin-left: 10px; font-weight: bold;">Closed</span>
+</label>
     <!-- Add Menu Item -->
     <h2>Add Menu Item</h2>
     <form id="menuForm">
@@ -93,8 +99,13 @@
   <script>
     const user = JSON.parse(localStorage.getItem("user"));
     const collegeId = user?.college_id;
+    const originalMenuItems = {};
 
-    // Add Menu Item
+//owner profile name
+if (user && user.name) {
+  document.getElementById("owner-name").textContent = `Welcome, ${user.name}`;
+}
+// Add Menu Item
 document.getElementById("menuForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
@@ -130,92 +141,117 @@ document.getElementById("menuForm").addEventListener("submit", async (e) => {
     });
 
     const data = await res.json();
+    console.log("Menu add response:", data); // Debug log
 
-    if (!res.ok) {
+    // ✅ Final success check based on actual backend response
+    if (data && data.id) {
+      alert(`Menu item "${data.item}" added successfully ✅`);
+      e.target.reset();
+      loadMenu();
+    } else {
       alert("Failed to add menu item ❌: " + (data.error || res.status));
-      return;
     }
-
-    alert(`Menu item "${data.item}" added successfully ✅`);
-    e.target.reset();
-    loadMenu();
   } catch (err) {
     console.error("Error adding menu item:", err);
     alert("Failed to add menu item ❌");
   }
 });
 
-    // Load Menu Items
-    async function loadMenu() {
-      try {
-        const res = await fetch(`http://localhost:4002/menu/all/${collegeId}`);
-        const menu = await res.json();
-        const container = document.getElementById("menu-list");
-        container.innerHTML = "";
+ // Load Menu Items
+async function loadMenu() {
+  try {
+    const res = await fetch(`http://localhost:4002/menu/today/${collegeId}`);
+    const menu = await res.json();
+    const container = document.getElementById("menu-list");
+    container.innerHTML = "";
 
-        if (menu.length === 0) {
-          container.innerHTML = "<p>No menu items yet.</p>";
-          return;
-        }
-
-        menu.forEach(m => {
-          container.innerHTML += `
-            <div class="menu-item">
-              <b>${m.item}</b> — ₹${m.price} 
-              <span class="${m.in_stock ? 'in' : 'out'}">(${m.in_stock ? 'Available' : 'Out of Stock'})</span>
-              <button onclick="showEditForm(${m.id}, '${m.item}', ${m.price}, ${m.in_stock})">Edit</button>
-            </div>
-          `;
-        });
-      } catch (err) {
-        console.error("Error loading menu:", err);
-        document.getElementById("menu-list").innerHTML = "<p>Failed to load menu ❌</p>";
-      }
+    if (!Array.isArray(menu) || menu.length === 0) {
+      container.innerHTML = "<p>No menu items yet.</p>";
+      return;
     }
 
-    // Show Edit Form for Menu Item
-    function showEditForm(id, item, price, in_stock) {
-      const container = document.getElementById("menu-list");
-      const formId = `editForm-${id}`;
-      if (document.getElementById(formId)) return;
+    menu.forEach(m => {
+      // Store original values for change detection
+      originalMenuItems[m.id] = {
+        item: m.item,
+        price: m.price,
+        in_stock: m.in_stock
+      };
 
       container.innerHTML += `
-        <form id="${formId}" class="menu-item" style="background:#f3f4f6; padding:10px; border-radius:6px;">
-          <h4>Edit: ${item}</h4>
-          <label>Item</label>
-          <input type="text" id="edit-item-${id}" value="${item}" required />
-          <label>Price (₹)</label>
-          <input type="number" id="edit-price-${id}" value="${price}" required />
-          <label>In Stock</label>
-          <select id="edit-in_stock-${id}">
-            <option value="1" ${in_stock ? "selected" : ""}>Yes</option>
-            <option value="0" ${!in_stock ? "selected" : ""}>No</option>
-          </select>
-          <button type="button" onclick="updateMenu(${id})">Save</button>
-        </form>
-      `;
-    }
+  <div class="menu-item">
+    <b>${m.item}</b> — ₹${m.price} 
+    <span class="${m.in_stock ? 'in' : 'out'}">(${m.in_stock ? 'Available' : 'Out of Stock'})</span>
+    <button onclick="showEditForm(${m.id}, '${m.item}', ${m.price}, ${m.in_stock})">Edit</button>
+    <button onclick="deleteMenuItem(${m.id})" style="margin-left:10px; color:red;">Remove</button>
+  </div>
+`;
+    });
+  } catch (err) {
+    console.error("Error loading menu:", err);
+    document.getElementById("menu-list").innerHTML = "<p>Failed to load menu ❌</p>";
+  }
+}
 
-    // Update Menu Item
-    async function updateMenu(id) {
-      const updated = {
-        item: document.getElementById(`edit-item-${id}`).value,
-        price: parseInt(document.getElementById(`edit-price-${id}`).value),
-        in_stock: parseInt(document.getElementById(`edit-in_stock-${id}`).value)
-      };
-      try {
-        await fetch(`http://localhost:4002/menu/${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updated)
-        });
-        alert("Menu updated successfully ✅");
-        loadMenu();
-      } catch (err) {
-        console.error("Error updating menu:", err);
-        alert("Failed to update menu ❌");
-      }
+
+// Show Edit Form for Menu Item
+function showEditForm(id, item, price, in_stock) {
+  const container = document.getElementById("menu-list");
+  const formId = `editForm-${id}`;
+  if (document.getElementById(formId)) return;
+
+  container.innerHTML += `
+    <form id="${formId}" class="menu-item" style="background:#f3f4f6; padding:10px; border-radius:6px;">
+      <h4>Edit: ${item}</h4>
+      <label>Item</label>
+      <input type="text" id="edit-item-${id}" value="${item}" required />
+      <label>Price (₹)</label>
+      <input type="number" id="edit-price-${id}" value="${price}" required />
+      <label>In Stock</label>
+      <select id="edit-in_stock-${id}">
+        <option value="1" ${in_stock ? "selected" : ""}>Yes</option>
+        <option value="0" ${!in_stock ? "selected" : ""}>No</option>
+      </select>
+      <button type="button" onclick="updateMenu(${id})">Save</button>
+    </form>
+  `;
+}
+
+// Update Menu Item
+async function updateMenu(id) {
+  const item = document.getElementById(`edit-item-${id}`).value.trim();
+  const price = parseFloat(document.getElementById(`edit-price-${id}`).value);
+  const in_stock = parseInt(document.getElementById(`edit-in_stock-${id}`).value);
+
+  const original = originalMenuItems[id];
+  if (
+    item === original.item &&
+    price === original.price &&
+    in_stock === original.in_stock
+  ) {
+    alert("No changes made to the item.");
+    return;
+  }
+
+  try {
+    const res = await fetch(`http://localhost:4002/menu/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ item, price, in_stock })
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      alert("Menu updated successfully ✅");
+      loadMenu();
+    } else {
+      alert("Failed to update menu ❌: " + (data.error || res.status));
     }
+  } catch (err) {
+    console.error("Error updating menu:", err);
+    alert("Failed to update menu ❌");
+  }
+}
 
         // Load Orders
     async function loadOwnerOrders() {
@@ -302,6 +338,52 @@ document.getElementById("menuForm").addEventListener("submit", async (e) => {
     document.getElementById("wallet").innerText = "₹0";
   }
 }
+
+// Remove Menu Item 
+async function deleteMenuItem(id) {
+  if (!confirm("Are you sure you want to delete this item?")) return;
+
+  try {
+    const res = await fetch(`http://localhost:4002/menu/${id}`, {
+      method: "DELETE"
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      alert("Menu item deleted ✅");
+      loadMenu();
+    } else {
+      alert("Failed to delete item ❌: " + (data.error || res.status));
+    }
+  } catch (err) {
+    console.error("Error deleting item:", err);
+    alert("Failed to delete item ❌");
+  }
+}
+
+const toggle = document.getElementById("canteen-toggle");
+const label = document.getElementById("canteen-status-label");
+
+toggle.addEventListener("change", async () => {
+  const isOpen = toggle.checked;
+  label.textContent = isOpen ? "Open" : "Closed";
+
+  await fetch(`http://localhost:4002/canteen/status/${collegeId}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ is_open: isOpen })
+  });
+});
+
+// Load current status
+async function loadCanteenStatus() {
+  const res = await fetch(`http://localhost:4002/canteen/status/${collegeId}`);
+  const data = await res.json();
+  toggle.checked = data.is_open;
+  label.textContent = data.is_open ? "Open" : "Closed";
+}
+
+loadCanteenStatus();
 
     // Initial load
     loadMenu();
