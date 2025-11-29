@@ -587,5 +587,110 @@ app.get("/wallet/:user_id", (req, res) => {
   });
 });
 
+// Analytics for Owner
+app.get("/owner/analytics/:college_id", (req, res) => {
+  const { college_id } = req.params;
+
+  const today = new Date().toISOString().split("T")[0];
+  const weekAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+
+  const sql = `
+    SELECT
+      SUM(CASE WHEN DATE(o.created_at) = ? THEN 1 ELSE 0 END) AS daily_orders,
+      SUM(CASE WHEN DATE(o.created_at) = ? THEN o.quantity * m.price ELSE 0 END) AS daily_revenue,
+      SUM(CASE WHEN DATE(o.created_at) >= ? THEN 1 ELSE 0 END) AS weekly_orders,
+      SUM(CASE WHEN DATE(o.created_at) >= ? THEN o.quantity * m.price ELSE 0 END) AS weekly_revenue,
+      SUM(o.quantity * m.price) AS total_collected
+    FROM orders o
+    JOIN menu m ON o.item_id = m.id
+    WHERE o.college_id = ? AND o.status != 'canceled'
+  `;
+
+  const popularSql = `
+    SELECT m.item, SUM(o.quantity) AS sold
+    FROM orders o
+    JOIN menu m ON o.item_id = m.id
+    WHERE o.college_id = ? AND o.status != 'canceled'
+    GROUP BY o.item_id
+    ORDER BY sold DESC
+    LIMIT 5
+  `;
+
+  const mostRatedSql = `
+  SELECT m.item, ROUND(AVG(r.stars), 1) AS avg_stars, COUNT(r.id) AS total_ratings
+  FROM ratings r
+  JOIN menu m ON r.item_id = m.id
+  WHERE r.college_id = ?
+  GROUP BY r.item_id
+  ORDER BY avg_stars DESC, total_ratings DESC
+  LIMIT 1
+`;
+
+  db.get(sql, [today, today, weekAgo, weekAgo, college_id], (err, stats) => {
+    if (err) return res.status(500).json({ error: err.message });
+
+    db.all(popularSql, [college_id], (err2, popular) => {
+      if (err2) return res.status(500).json({ error: err2.message });
+
+      db.get(mostRatedSql, [college_id], (err3, mostRated) => {
+        if (err3) return res.status(500).json({ error: err3.message });
+
+        res.json({
+          daily: {
+            orders: stats.daily_orders || 0,
+            revenue: stats.daily_revenue || 0
+          },
+          weekly: {
+            orders: stats.weekly_orders || 0,
+            revenue: stats.weekly_revenue || 0
+          },
+          collected: stats.total_collected || 0,
+          popular: popular || [],
+          mostRated: mostRated || null
+        });
+      });
+    });
+  });
+});
+
+// Get average ratings per item
+app.get("/ratings/average/:college_id", (req, res) => {
+  const { college_id } = req.params;
+
+  db.all(
+    `SELECT m.id AS item_id, m.item,
+            ROUND(AVG(r.stars), 1) AS avg_stars,
+            COUNT(r.id) AS total_ratings
+     FROM ratings r
+     JOIN menu m ON r.item_id = m.id
+     WHERE r.college_id = ?
+     GROUP BY r.item_id`,
+    [college_id],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(rows);
+    }
+  );
+});
+
+// Submit or update rating
+app.post("/ratings", (req, res) => {
+  const { user_id, item_id, college_id, stars } = req.body;
+
+  if (!user_id || !item_id || !college_id || !stars) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  db.run(
+    `INSERT OR REPLACE INTO ratings (user_id, item_id, college_id, stars, created_at)
+     VALUES (?, ?, ?, ?, datetime('now'))`,
+    [user_id, item_id, college_id, stars],
+    function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ success: true });
+    }
+  );
+});
+
 // ✅ Start the server
 app.listen(4002, () => console.log("Canteen backend running on http://localhost:4002"));

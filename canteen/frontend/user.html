@@ -13,10 +13,41 @@
     button { background: #2563eb; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
     button:hover { background: #1e4fd6; }
     .closed { color: red; font-weight: bold; }
-    .cancel-btn[disabled] {
-      background: #9ca3af;
-      cursor: not-allowed;
+    .stars { color: #facc15; font-size: 14px; }
+    .rating-popup {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      z-index: 1000;
     }
+    .rating-popup h3 { margin-top: 0; }
+    .rating-popup .star {
+      font-size: 24px;
+      cursor: pointer;
+      color: #d1d5db;
+    }
+    .rating-popup .star.selected {
+      color: #facc15;
+    }
+    .overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.4);
+      z-index: 999;
+    }
+    button.rate-btn {
+  background: #facc15; /* amber */
+  color: #000;
+  margin-left: 10px;
+}
+button.rate-btn:hover {
+  background: #eab308;
+}
   </style>
 </head>
 <body>
@@ -39,8 +70,22 @@
     <div id="menu"></div>
   </main>
 
+  <!-- Rating Popup -->
+  <div id="rating-popup" class="rating-popup" style="display:none;">
+    <h3>Rate this item</h3>
+    <div id="rating-stars">
+  <span class="star" data-star="1">★</span>
+  <span class="star" data-star="2">★</span>
+  <span class="star" data-star="3">★</span>
+  <span class="star" data-star="4">★</span>
+  <span class="star" data-star="5">★</span>
+</div>
+    <button onclick="submitRating()">Submit</button>
+    <button onclick="closeRating()">Cancel</button>
+  </div>
+  <div id="overlay" class="overlay" style="display:none;" onclick="closeRating()"></div>
+
   <script>
-    // ✅ Role check and global user setup
     const user = JSON.parse(localStorage.getItem("user"));
     if (!user || user.role !== "student") {
       window.location.href = "login.html";
@@ -49,6 +94,8 @@
 
     const customerId = user.id;
     const collegeId = user.college_id;
+    let currentRatingItemId = null;
+    let selectedStars = 0;
 
     document.getElementById("student-name").innerText = user.name || "Student";
 
@@ -79,6 +126,7 @@
         const data = await res.json();
         if (data?.id) {
           alert(`Order placed ✅ (Order ID: ${data.id})`);
+          showRatingPopup(itemId);
         } else {
           alert("Order failed ❌: " + (data.error || "Unknown error"));
         }
@@ -88,41 +136,60 @@
       }
     }
 
-    async function renderMenu() {
-      const container = document.getElementById("menu");
-      container.innerHTML = "";
+// menu Rendering
+async function renderMenu() {
+  const container = document.getElementById("menu");
+  container.innerHTML = "";
 
-      const open = await isCanteenOpen();
-      if (!open) {
-        container.innerHTML = `<p class="closed">Canteen is currently closed by the owner.</p>`;
-        return;
-      }
+  const open = await isCanteenOpen();
+  if (!open) {
+    container.innerHTML = `<p class="closed">Canteen is currently closed by the owner.</p>`;
+    return;
+  }
 
-      try {
-        const res = await fetch(`http://localhost:4002/menu/today/${collegeId}`);
-        const items = await res.json();
+  try {
+    const [menuRes, ratingRes] = await Promise.all([
+      fetch(`http://localhost:4002/menu/today/${collegeId}`),
+      fetch(`http://localhost:4002/ratings/average/${collegeId}`)
+    ]);
 
-        if (items.length === 0) {
-          container.innerHTML = "<p>No items available today.</p>";
-          return;
-        }
+    const items = await menuRes.json();
+    const ratings = await ratingRes.json();
 
-        items.forEach(item => {
-          const div = document.createElement("div");
-          div.className = "item";
-          div.innerHTML = `
-            <span>${item.item}</span>
-            <span>₹${item.price}</span>
-            <button>Order</button>
-          `;
-          div.querySelector("button").addEventListener("click", () => placeOrder(item.id));
-          container.appendChild(div);
-        });
-      } catch (err) {
-        console.error("Failed to load menu:", err);
-        container.innerHTML = "<p>Failed to load menu. Please try again later.</p>";
-      }
+    const ratingMap = {};
+    ratings.forEach(r => {
+      ratingMap[r.item_id] = r;
+    });
+
+    if (items.length === 0) {
+      container.innerHTML = "<p>No items available today.</p>";
+      return;
     }
+
+    items.forEach(item => {
+      const rating = ratingMap[item.id];
+      const stars = rating ? `⭐ ${rating.avg_stars} (${rating.total_ratings})` : "⭐ No ratings yet";
+
+      const div = document.createElement("div");
+      div.className = "item";
+      div.innerHTML = `
+        <div>
+          <span><b>${item.item}</b></span><br>
+          <span class="stars">${stars}</span>
+          <button class="rate-btn" onclick="showRatingPopup(${item.id})">Rate</button>
+        </div>
+        <div>
+          <span>₹${item.price}</span><br>
+          <button onclick="placeOrder(${item.id})">Order</button>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+  } catch (err) {
+    console.error("Failed to load menu:", err);
+    container.innerHTML = "<p>Failed to load menu. Please try again later.</p>";
+  }
+}
 
     async function loadCanteenUserWallet() {
       try {
@@ -135,8 +202,56 @@
       }
     }
 
-    loadCanteenUserWallet();
-    renderMenu();
-  </script>
+    function showRatingPopup(itemId) {
+      currentRatingItemId = itemId;
+      selectedStars = 0;
+      document.querySelectorAll(".star").forEach(star => {
+        star.classList.remove("selected");
+        star.addEventListener("click", () => {
+          selectedStars = parseInt(star.dataset.star);
+          document.querySelectorAll(".star").forEach(s => {
+            s.classList.toggle("selected", parseInt(s.dataset.star) <= selectedStars);
+          });
+        });
+      });
+      document.getElementById("rating-popup").style.display = "block";
+      document.getElementById("overlay").style.display = "block";
+    }
+
+    function closeRating() {
+      document.getElementById("rating-popup").style.display = "none";
+      document.getElementById("overlay").style.display = "none";
+    }
+
+    async function submitRating() {
+      if (!selectedStars || !currentRatingItemId) {
+        alert("Please select a rating.");
+        return;
+      }
+      try {
+        await fetch("http://localhost:4002/ratings", {
+          method: "POST",
+                  headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          user_id: customerId,
+          item_id: currentRatingItemId,
+          college_id: collegeId,
+          stars: selectedStars
+        })
+      });
+      alert("Thanks for rating ⭐");
+      closeRating();
+      renderMenu(); // refresh to show updated average
+    } catch (err) {
+      console.error("Failed to submit rating:", err);
+      alert("Rating failed ❌");
+    }
+  }
+
+  loadCanteenUserWallet();
+  renderMenu();
+</script>
 </body>
 </html>

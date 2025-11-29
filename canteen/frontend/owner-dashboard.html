@@ -170,8 +170,18 @@ document.getElementById("menuForm").addEventListener("submit", async (e) => {
  // Load Menu Items
 async function loadMenu() {
   try {
-    const res = await fetch(`http://localhost:4002/menu/today/${collegeId}`);
-    const menu = await res.json();
+    const [menuRes, ratingRes] = await Promise.all([
+      fetch(`http://localhost:4002/menu/today/${collegeId}`),
+      fetch(`http://localhost:4002/ratings/average/${collegeId}`)
+    ]);
+
+    const menu = await menuRes.json();
+    const ratings = await ratingRes.json();
+    const ratingMap = {};
+    ratings.forEach(r => {
+      ratingMap[r.item_id] = r;
+    });
+
     const container = document.getElementById("menu-list");
     container.innerHTML = "";
 
@@ -181,28 +191,29 @@ async function loadMenu() {
     }
 
     menu.forEach(m => {
-      // Store original values for change detection
       originalMenuItems[m.id] = {
         item: m.item,
         price: m.price,
         in_stock: m.in_stock
       };
 
+      const rating = ratingMap[m.id];
+      const stars = rating ? `⭐ ${rating.avg_stars} (${rating.total_ratings})` : "⭐ No ratings";
+
       container.innerHTML += `
-  <div class="menu-item">
-    <b>${m.item}</b> — ₹${m.price} 
-    <span class="${m.in_stock ? 'in' : 'out'}">(${m.in_stock ? 'Available' : 'Out of Stock'})</span>
-    <button onclick="showEditForm(${m.id}, '${m.item}', ${m.price}, ${m.in_stock})">Edit</button>
-    <button onclick="deleteMenuItem(${m.id})" style="margin-left:10px; color:red;">Remove</button>
-  </div>
-`;
+        <div class="menu-item">
+          <b>${m.item}</b> — ₹${m.price} ${stars}
+          <span class="${m.in_stock ? 'in' : 'out'}">(${m.in_stock ? 'Available' : 'Out of Stock'})</span>
+          <button onclick="showEditForm(${m.id}, '${m.item}', ${m.price}, ${m.in_stock})">Edit</button>
+          <button onclick="deleteMenuItem(${m.id})" style="margin-left:10px; color:red;">Remove</button>
+        </div>
+      `;
     });
   } catch (err) {
     console.error("Error loading menu:", err);
     document.getElementById("menu-list").innerHTML = "<p>Failed to load menu ❌</p>";
   }
 }
-
 
 // Show Edit Form for Menu Item
 function showEditForm(id, item, price, in_stock) {
@@ -283,12 +294,13 @@ async function loadOwnerOrders() {
     }
 
     orders.forEach(o => {
-      if (removedOrderIds.has(o.id)) return; // ✅ skip removed orders
+      if (removedOrderIds.has(o.id)) return;
 
       const isCanceled = o.status === "canceled";
 
       container.innerHTML += `
         <div class="order" id="order-${o.id}">
+          <p><strong>Order ID:</strong> ${o.id}</p>
           <p><b>${o.item}</b> × ${o.quantity} — ordered by ${o.student_name}</p>
           <p>Status: <span class="status ${o.status}">${o.status.charAt(0).toUpperCase() + o.status.slice(1)}</span></p>
 
@@ -371,24 +383,30 @@ function removeFromDashboard(orderId) {
 
 // Load Analytics
     async function loadAnalytics() {
-      try {
-        const res = await fetch(`http://localhost:4002/owner/analytics/${user.college_id}`);
-        const data = await res.json();
+  try {
+    const res = await fetch(`http://localhost:4002/owner/analytics/${user.college_id}`);
+    const data = await res.json();
 
-        document.getElementById("analytics").innerHTML = `
-          <p><b>Daily Sales:</b> ${data.daily.orders} orders — ₹${data.daily.revenue || 0}</p>
-          <p><b>Weekly Sales:</b> ${data.weekly.orders} orders — ₹${data.weekly.revenue || 0}</p>
-          <p><b>Total Collected:</b> ₹${data.collected}</p>
-          <h4>Popular Items</h4>
-          <ul>
-            ${data.popular.map(p => `<li>${p.item} — ${p.sold} sold</li>`).join("")}
-          </ul>
-        `;
-      } catch (err) {
-        console.error("Error loading analytics:", err);
-        document.getElementById("analytics").innerHTML = "<p>Failed to load analytics ❌</p>";
-      }
-    }
+    document.getElementById("analytics").innerHTML = `
+      <p><b>Daily Sales:</b> ${data.daily.orders} orders — ₹${data.daily.revenue || 0}</p>
+      <p><b>Weekly Sales:</b> ${data.weekly.orders} orders — ₹${data.weekly.revenue || 0}</p>
+      <p><b>Total Collected:</b> ₹${data.collected}</p>
+
+      <h4>Popular Items</h4>
+      <ul>
+        ${data.popular.map(p => `<li>${p.item} — ${p.sold} sold</li>`).join("")}
+      </ul>
+
+      <h4>Most Rated Item</h4>
+      ${data.mostRated
+        ? `<p>${data.mostRated.item} — ⭐ ${data.mostRated.avg_stars} (${data.mostRated.total_ratings} ratings)</p>`
+        : "<p>No ratings yet.</p>"}
+    `;
+  } catch (err) {
+    console.error("Error loading analytics:", err);
+    document.getElementById("analytics").innerHTML = "<p>Failed to load analytics ❌</p>";
+  }
+}
 
 // Show wallet balance in nav
     async function loadCanteenOwnerWallet() {
