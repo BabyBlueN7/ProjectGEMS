@@ -163,39 +163,39 @@ function closeVerifyMessage() {
     e.preventDefault();
 
     const payload = {
-      const payload = {
-  name: document.getElementById("name").value.trim(),
-  location: document.getElementById("location").value.trim(),
-  district: document.getElementById("district").value,
-  sport: document.getElementById("sport").value,
-  price: parseInt(document.getElementById("price").value),
-  start_time: document.getElementById("start_time").value,
-  end_time: document.getElementById("end_time").value,
-  min_players: parseInt(document.getElementById("minTarget").value),
-  max_stranger_players: parseInt(document.getElementById("maxPlayers").value),
-  contact: document.getElementById("contact").value,
-  owner_id: user.id
-};
+    name: document.getElementById("name").value.trim(),
+    location: document.getElementById("location").value.trim(),
+    district: document.getElementById("district").value,
+    sport: document.getElementById("sport").value,
+    price: parseInt(document.getElementById("price").value),
+    start_time: document.getElementById("start_time").value,
+    end_time: document.getElementById("end_time").value,
+    min_players: parseInt(document.getElementById("minTarget").value),
+    max_stranger_players: parseInt(document.getElementById("maxPlayers").value),
+    contact: document.getElementById("contact").value,
+    owner_id: user.id
+  };
 
-       try {
-      const res = await fetch("http://localhost:4001/turfs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+  try {
+    const res = await fetch("http://localhost:4001/turfs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
 
-      const data = await res.json();
-      if (res.ok) {
-  document.getElementById("verifyMessage").style.display = "block";
-  loadTurfs(); 
-} else {
-        alert("Failed to add turf ❌: " + (data.error || "Unknown error"));
-      }
-    } catch (err) {
-      console.error("Add turf error:", err);
-      alert("Something went wrong while adding turf ❌");
+    const data = await res.json();
+    if (res.ok) {
+      document.getElementById("verifyMessage").style.display = "block";
+      loadTurfs(); 
+    } else {
+      alert("Failed to add turf ❌: " + (data.error || "Unknown error"));
     }
-  });
+  } catch (err) {
+    console.error("Add turf error:", err);
+    alert("Something went wrong while adding turf ❌");
+  }
+});
+
 
   // Load My Turfs
   async function loadTurfs() {

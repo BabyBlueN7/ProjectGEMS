@@ -35,7 +35,7 @@
       const res = await fetch("http://localhost:4001/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, role: "owner" })
+        body: JSON.stringify({ name, email, password, role: "customer" })
       });
 
       const data = await res.json();
@@ -48,5 +48,5 @@
       }
     }
   </script>
-</body>shajj
+</body>
 </html>
