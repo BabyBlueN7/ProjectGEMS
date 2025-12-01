@@ -45,7 +45,7 @@
   <header>
     <h1>TURFS</h1>
     <nav>
-      <span>Welcome, Player</span>
+      <span id="welcomeText">Welcome, Player</span>
       <div>
         <span id="wallet" style="font-weight:bold; color:#10b981; margin-right: 20px;">0</span>
         <a href="wallet.html">Add Money</a>
@@ -115,11 +115,15 @@
     document.addEventListener("DOMContentLoaded", async () => {
       const user = JSON.parse(localStorage.getItem("user"));
       const walletSpan = document.getElementById("wallet");
+      const welcomeText = document.getElementById("welcomeText");
 
       if (!user?.id) {
         walletSpan.textContent = "Wallet: ₹0";
+        welcomeText.textContent = "Welcome, Player";
         return;
       }
+
+      welcomeText.textContent = `Welcome, ${user.name}`;
 
       try {
         const res = await fetch(`http://localhost:4001/wallet/${user.id}`);

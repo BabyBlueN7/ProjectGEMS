@@ -50,12 +50,15 @@
 </head>
 <body>
   <header>
-    <h1>Turf Owner Dashboard</h1>
-    <div style="display: flex; justify-content: flex-end; align-items: center; padding: 10px 20px; background: #f0fdf4;">
+  <h1>Turf Owner Dashboard</h1>
+  <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: #ffffff;">
+    <span id="welcomeText" style="font-weight: bold; color: #ff0000">Welcome, Owner</span>
+    <div>
       <span id="wallet" style="font-weight: bold; color: #10b981; margin-right: 20px;">₹0</span>
       <a href="login.html">Logout</a>
     </div>
-  </header>
+  </div>
+</header>
 
   <main id="dashboard">
     <!-- My Turfs -->
@@ -196,6 +199,8 @@ function closeVerifyMessage() {
   }
 });
 
+// Set welcome text to include user's name
+  welcomeText.textContent = `Welcome, ${user.name}`;
 
   // Load My Turfs
   async function loadTurfs() {

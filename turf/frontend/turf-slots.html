@@ -122,7 +122,7 @@
   <header>
     <h1 id="turfName">Turf Slots</h1>
     <nav>
-      <span>Welcome, Player</span>
+      <span id="welcomeText">Welcome, Player</span>
       <div>
         <span id="wallet" style="font-weight:bold; color:#10b981; margin-right: 20px;"></span>
         <a href="wallet.html">Add Money</a>
@@ -154,6 +154,9 @@
       document.getElementById("wallet").textContent = "Wallet: ₹0";
     }
   }
+  
+// Set welcome text to include user's name
+  welcomeText.textContent = `Welcome, ${user.name}`;
 
   function setupDateSelector() {
     const selector = document.getElementById("date-selector");
