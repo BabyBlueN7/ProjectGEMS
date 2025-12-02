@@ -138,7 +138,8 @@
 
         <label for="maxPlayers">Maximum Stranger Players Allowed</label>
         <input type="number" id="maxPlayers" required />
-
+        <p id="strangerCostMessage" style="margin: 8px 0; font-weight: bold; color: #2563eb;">
+  Stranger play cost: Full price / max stranger = ₹0</p>
         <label for="contact">Contact Details (Phone, Email, etc.)</label>
         <textarea id="contact" rows="3" placeholder="Enter phone numbers, email, WhatsApp…" required></textarea>
 
@@ -256,6 +257,8 @@ function closeVerifyMessage() {
         <input type="number" id="edit-minTarget-${id}" value="${minTarget}" required />
         <label>Maximum Stranger Players</label>
         <input type="number" id="edit-maxPlayers-${id}" value="${maxPlayers}" required />
+        <p style="margin: 8px 0; font-weight: bold; color: #2563eb;">
+  Stranger play cost for a player = Full price / max no. of stranger players (auto-calculated for players)</p>
         <button type="button" onclick="updateTurf(${id})">Save</button>
       </form>
     `;
@@ -402,11 +405,33 @@ function closeVerifyMessage() {
   document.getElementById("verifyMessage").style.display = "none";
 }
 
+// Dynamic stranger cost message
+   const priceInput = document.getElementById("price");
+  const maxPlayersInput = document.getElementById("maxPlayers");
+  const costMessage = document.getElementById("strangerCostMessage");
+  function updateStrangerCost() {
+    const price = parseInt(priceInput.value);
+    const maxPlayers = parseInt(maxPlayersInput.value);
+    if (!isNaN(price) && !isNaN(maxPlayers) && maxPlayers > 0) {
+      const cost = Math.ceil(price / maxPlayers);
+      costMessage.textContent = `Stranger play cost: Full price / max stranger = ₹${cost}`;
+    } else {
+      costMessage.textContent = `Stranger play cost: Full price / max stranger = ₹0`;
+    }
+  }
+  priceInput.addEventListener("input", updateStrangerCost);
+  maxPlayersInput.addEventListener("input", updateStrangerCost);
+  maxPlayersInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") updateStrangerCost();
+  });
+
   // Initial load
+
   loadUserWallet();
   loadTurfs();
   loadBookings();
   loadPendingCredits();
+  updateStrangerCost();
 </script>
 </body>
 </html>
