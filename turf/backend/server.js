@@ -254,6 +254,34 @@ app.get("/admin/turfs/unverified", (req, res) => {
   });
 });
 
+// GET average rating and count for a turf
+app.get("/ratings/turf/:id", (req, res) => {
+  const turfId = req.params.id;
+  db.get(
+    `SELECT ROUND(AVG(rating), 1) AS average, COUNT(*) AS count FROM turf_ratings WHERE turf_id=?`,
+    [turfId],
+    (err, row) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(row || { average: null, count: 0 });
+    }
+  );
+});
+
+// POST a new rating
+app.post("/ratings/turf", (req, res) => {
+  const { turf_id, user_id, rating } = req.body;
+  if (!turf_id || !user_id || !rating) return res.status(400).json({ error: "Missing fields" });
+
+  db.run(
+    `INSERT OR REPLACE INTO turf_ratings (turf_id, user_id, rating) VALUES (?, ?, ?)`,
+    [turf_id, user_id, rating],
+    function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json({ success: true, rating });
+    }
+  );
+});
+
 // Get verified turfs
 app.get("/admin/turfs/verified", (req, res) => {
   db.all("SELECT * FROM turfs WHERE is_verified = 1", [], (err, rows) => {

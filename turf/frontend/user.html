@@ -39,6 +39,36 @@
     .location { font-size: 14px; color: #555; }
     .price { font-weight: bold; color: #10b981; }
     .contact { font-size: 14px; color: #374151; margin-top: 8px; }
+    .rating { margin-top: 8px; color: #f59e0b; font-weight: bold; }
+    .rate-btn {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+    .popup {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      display: none;
+      z-index: 999;
+    }
+    .popup h3 { margin-top: 0; }
+    .stars span {
+      font-size: 24px;
+      cursor: pointer;
+      color: #ccc;
+    }
+    .stars span.selected {
+      color: #f59e0b;
+    }
   </style>
 </head>
 <body>
@@ -69,7 +99,17 @@
     <p>Select a district to view turfs.</p>
   </main>
 
+  <div class="popup" id="ratingPopup">
+    <h3>Rate this turf</h3>
+    <div class="stars" id="starContainer"></div>
+    <button onclick="submitRating()">Submit</button>
+    <button onclick="closePopup()">Cancel</button>
+  </div>
+
   <script>
+    let selectedTurfId = null;
+    const user = JSON.parse(localStorage.getItem("user"));
+
     async function loadTurfsByDistrict() {
       const district = document.getElementById("district").value;
       const list = document.getElementById("turfList");
@@ -81,9 +121,7 @@
 
       try {
         const res = await fetch(`http://localhost:4001/turfs/by-district/${encodeURIComponent(district)}`);
-        if (!res.ok) throw new Error("Network response was not ok");
         const turfs = await res.json();
-
         list.innerHTML = "";
 
         if (turfs.length === 0) {
@@ -91,7 +129,12 @@
           return;
         }
 
-        turfs.forEach(turf => {
+        for (const turf of turfs) {
+          const ratingRes = await fetch(`http://localhost:4001/ratings/turf/${turf.id}`);
+          const ratingData = await ratingRes.json();
+          const avg = ratingData.average ? `★ ${ratingData.average}` : "★ No ratings yet";
+          const count = ratingData.count || 0;
+
           const div = document.createElement("div");
           div.className = "turf";
           div.innerHTML = `
@@ -100,20 +143,69 @@
             <p>${turf.sport}</p>
             <p class="price">₹${turf.price}/hr</p>
             ${turf.contact ? `<p class="contact"><strong>Contact:</strong> ${turf.contact}</p>` : ""}
+            <p class="rating">${avg} (${count}) <button class="rate-btn" onclick="event.stopPropagation(); openRating(${turf.id})">Rate</button></p>
           `;
           div.onclick = () => {
             window.location.href = `turf-slots.html?id=${turf.id}`;
           };
           list.appendChild(div);
-        });
+        }
       } catch (err) {
         console.error("Error loading turfs:", err);
         list.innerHTML = "<p>Failed to load turfs. Check console for details.</p>";
       }
     }
 
+    function openRating(turfId) {
+      selectedTurfId = turfId;
+      const container = document.getElementById("starContainer");
+      container.innerHTML = "";
+      for (let i = 1; i <= 5; i++) {
+        const star = document.createElement("span");
+        star.textContent = "★";
+        star.onclick = () => selectStars(i);
+        container.appendChild(star);
+      }
+      document.getElementById("ratingPopup").style.display = "block";
+    }
+
+    function selectStars(count) {
+      const stars = document.querySelectorAll("#starContainer span");
+      stars.forEach((s, i) => {
+        s.classList.toggle("selected", i < count);
+      });
+    }
+
+    async function submitRating() {
+      const selected = document.querySelectorAll("#starContainer span.selected").length;
+      if (!selectedTurfId || !selected || !user?.id) return;
+
+      try {
+        await fetch("http://localhost:4001/ratings/turf", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            turf_id: selectedTurfId,
+            user_id: user.id,
+            rating: selected
+          })
+        });
+
+        alert(`Thanks for rating! You gave ${selected} star${selected > 1 ? "s" : ""}.`);
+        closePopup();
+        loadTurfsByDistrict();
+      } catch (err) {
+        console.error("Rating failed:", err);
+        alert("Failed to submit rating. Try again.");
+      }
+    }
+
+    function closePopup() {
+      document.getElementById("ratingPopup").style.display = "none";
+      selectedTurfId = null;
+    }
+
     document.addEventListener("DOMContentLoaded", async () => {
-      const user = JSON.parse(localStorage.getItem("user"));
       const walletSpan = document.getElementById("wallet");
       const welcomeText = document.getElementById("welcomeText");
 
