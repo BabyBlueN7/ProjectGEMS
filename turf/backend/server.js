@@ -152,24 +152,28 @@ app.get("/turfs/:id/slots", (req, res) => {
           const end = `${String(h + 1).padStart(2, "0")}:00`;
 
           const slotBookings = bookings.filter(
-            b => b.slot_start === start && b.slot_end === end
-          );
+  b => b.slot_start === start && b.slot_end === end
+);
 
-          const joined = slotBookings.filter(b => b.mode === "stranger").length;
+const joined = slotBookings.filter(b => b.mode === "stranger").length;
+const hasNormalBooking = slotBookings.some(b => b.mode === "normal");
+const strangerLockedIn = joined >= turf.min_players;
 
-          slots.push({
-            start,
-            end,
-            price: turf.price,
-            available: !slotBookings.some(b => b.mode === "normal"),
-            max_stranger_players: turf.max_stranger_players,
-            min_players: turf.min_players,
-            progress: { joined },
-            bookings: slotBookings.map(b => ({
-              mode: b.mode,
-              customer_id: b.customer_id
-            }))
-          });
+const isAvailable = !hasNormalBooking && !strangerLockedIn;
+
+slots.push({
+  start,
+  end,
+  price: turf.price,
+  available: isAvailable,
+  max_stranger_players: turf.max_stranger_players,
+  min_players: turf.min_players,
+  progress: { joined },
+  bookings: slotBookings.map(b => ({
+    mode: b.mode,
+    customer_id: b.customer_id
+  }))
+});
         }
 
         res.json({ turf, slots });
