@@ -319,32 +319,36 @@ function closeVerifyMessage() {
   }
 
   // Load Bookings
-  async function loadBookings() {
-    try {
-      const res = await fetch(`http://localhost:4001/owner/bookings/${user.id}`);
-      let bookings = await res.json();
+ async function loadBookings() {
+  try {
+    const res = await fetch(`http://localhost:4001/owner/bookings/${user.id}`);
+    let bookings = await res.json();
 
-      const statusFilter = document.getElementById("statusFilter").value;
-      const modeFilter = document.getElementById("modeFilter").value;
+    const statusFilter = document.getElementById("statusFilter").value;
+    const modeFilter = document.getElementById("modeFilter").value;
 
-      if (statusFilter) bookings = bookings.filter(b => b.status === statusFilter);
-      if (modeFilter) bookings = bookings.filter(b => b.mode === modeFilter);
+    if (statusFilter) bookings = bookings.filter(b => b.status === statusFilter);
+    if (modeFilter) bookings = bookings.filter(b => b.mode === modeFilter);
 
-      bookings.sort((a, b) => new Date(a.slot_start) - new Date(b.slot_start));
+    bookings.sort((a, b) => new Date(a.slot_start) - new Date(b.slot_start));
 
-      const container = document.getElementById("owner-bookings");
-      container.innerHTML = bookings.length
-        ? bookings.map(b => `
-          <div class="booking">
-            <p><b>${b.customer_name}</b> booked ${b.turf_name} (${b.slot_start} - ${b.slot_end})</p>
-            <p class="status ${b.status}">Status: ${b.status}</p>
-          </div>
-        `).join("")
-        : "<p>No bookings yet.</p>";
-    } catch (err) {
-      console.error("Error loading bookings:", err);
-    }
+    const container = document.getElementById("owner-bookings");
+    container.innerHTML = bookings.length
+      ? bookings.map(b => `
+        <div class="booking">
+          <p><strong>Booking ID:</strong> #${b.booking_id}</p>
+          <p><strong>Customer:</strong> ${b.customer_name}</p>
+          <p><strong>Contact:</strong> ${b.customer_contact || "N/A"}</p>
+          <p><strong>Turf:</strong> ${b.turf_name}</p>
+          <p><strong>Slot:</strong> ${b.slot_start} - ${b.slot_end}</p>
+          <p class="status ${b.status}">Status: ${b.status}</p>
+        </div>
+      `).join("")
+      : "<p>No bookings yet.</p>";
+  } catch (err) {
+    console.error("Error loading bookings:", err);
   }
+}
 
   async function updateBookingStatus(bookingId, status) {
   const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
@@ -377,7 +381,7 @@ function closeVerifyMessage() {
 }
 
   // Load Pending Credits
-  async function loadPendingCredits() {
+async function loadPendingCredits() {
   try {
     const res = await fetch(`http://localhost:4001/owner/pending-credits/${user.id}`);
     const credits = await res.json();
@@ -386,10 +390,12 @@ function closeVerifyMessage() {
     container.innerHTML = credits.length
       ? credits.map(c => `
         <div class="turf">
-          <b>${c.location}</b> — ${c.sport}<br/>
-          Booking ID: #${c.booking_id}<br/>
-          Slot: ${c.slot_date} ${c.slot_start} - ${c.slot_end}<br/>
-          Pending Amount: ₹${c.amount}
+          <p><strong>Booking ID:</strong> #${c.booking_id}</p>
+          <p><strong>Customer Contact:</strong> ${c.customer_contact || "N/A"}</p>
+          <p><strong>Location:</strong> ${c.location}</p>
+          <p><strong>Sport:</strong> ${c.sport}</p>
+          <p><strong>Slot:</strong> ${c.slot_date} ${c.slot_start} - ${c.slot_end}</p>
+          <p><strong>Pending Amount:</strong> ₹${c.amount}</p>
         </div>
       `).join("")
       : "<p>No pending credits at the moment ✅</p>";

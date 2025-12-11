@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Turf Owner Sign Up</title>
+  <title>Customer Sign Up</title>
   <style>
     body { font-family: Arial; background: #f6f7fb; display: flex; justify-content: center; align-items: center; height: 100vh; }
     .box { background: #fff; padding: 28px; width: 340px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
@@ -16,9 +16,10 @@
 </head>
 <body>
   <div class="box">
-    <h2>Owner Sign Up</h2>
+    <h2>Customer Sign Up</h2>
     <input type="text" id="name" placeholder="Name" />
     <input type="email" id="email" placeholder="Email" />
+    <input type="text" id="contact" placeholder="Phone Number" />
     <input type="password" id="password" placeholder="Password" />
     <button onclick="signup()">Create Account</button>
     <div class="links">
@@ -30,21 +31,22 @@
     async function signup() {
       const name = document.getElementById("name").value;
       const email = document.getElementById("email").value;
+      const contact = document.getElementById("contact").value;
       const password = document.getElementById("password").value;
 
       const res = await fetch("http://localhost:4001/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password, role: "customer" })
+        body: JSON.stringify({ name, email, contact, password, role: "customer" })
       });
 
       const data = await res.json();
       if (data.error) {
         alert(data.error);
       } else {
-        alert("Owner account created!");
-        localStorage.setItem("user", JSON.stringify(data)); // Save owner info
-        window.location.href = "owner-dashboard.html"; // Redirect to turf creation
+        alert("Customer account created!");
+        localStorage.setItem("user", JSON.stringify(data));
+        window.location.href = "customer-dashboard.html";
       }
     }
   </script>

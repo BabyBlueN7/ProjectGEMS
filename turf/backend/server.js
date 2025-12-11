@@ -60,22 +60,27 @@ app.get("/", (req, res) => res.send("Turf backend running!"));
 
 // Signup route
 app.post("/signup", (req, res) => {
-  const { name, email, password, role } = req.body;
+  const { name, email, password, role, contact } = req.body;
 
   if (!["customer", "owner"].includes(role)) {
     return res.status(400).json({ error: "Invalid role" });
   }
 
-  db.run(
-    "INSERT INTO users (name,email,password,role) VALUES (?,?,?,?)",
-    [name, email, password, role],
-    function (err) {
-      if (err) {
-        return res.status(400).json({ error: "Email already used" });
-      }
-      res.json({ id: this.lastID, name, role });
+  const query = role === "customer"
+    ? "INSERT INTO users (name, email, contact, password, role) VALUES (?, ?, ?, ?, ?)"
+    : "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)";
+
+  const params = role === "customer"
+    ? [name, email, contact, password, role]
+    : [name, email, password, role];
+
+  db.run(query, params, function (err) {
+    if (err) {
+      return res.status(400).json({ error: "Email already used" });
     }
-  );
+
+    res.json({ id: this.lastID, name, role });
+  });
 });
 
 // Login route (works for both customer & owner)
@@ -556,11 +561,17 @@ app.get("/turfs/owner/:owner_id", (req, res) => {
   });
 });
 
-// Get bookings for all turfs owned by an owner
 app.get("/owner/bookings/:owner_id", (req, res) => {
   db.all(
-    `SELECT b.id, u.name as customer_name, t.name as turf_name, 
-            b.slot_start, b.slot_end, b.status, b.mode
+    `SELECT 
+       b.id AS booking_id,
+       u.name AS customer_name,
+       u.contact AS customer_contact,
+       t.name AS turf_name,
+       b.slot_start,
+       b.slot_end,
+       b.status,
+       b.mode
      FROM bookings b
      JOIN users u ON b.customer_id = u.id
      JOIN turfs t ON b.turf_id = t.id

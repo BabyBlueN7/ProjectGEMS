@@ -64,8 +64,6 @@
     <nav>
       <span id="welcomeText">Welcome</span>
       <div>
-        <a href="owner-dashboard.html">Dashboard</a>
-        <a href="owner-slots.html?id=1">Manage Slots</a>
         <a href="login.html">Logout</a>
       </div>
     </nav>
@@ -84,17 +82,14 @@
       window.location.href = "login.html";
     }
 
-    // Set welcome text to include user's name
     document.getElementById("welcomeText").textContent = `Welcome, ${user.name}`;
-
-    const customerId = user.id;
 
     async function loadBookings() {
       const container = document.getElementById("bookings");
       container.innerHTML = "<p>Loading...</p>";
 
       try {
-        const res = await fetch(`http://localhost:4001/bookings/${customerId}`);
+        const res = await fetch(`http://localhost:4001/bookings/${user.id}`);
         if (!res.ok) throw new Error("Failed to fetch bookings");
 
         const bookings = await res.json();
@@ -106,22 +101,24 @@
         }
 
         bookings.forEach(b => {
-          const modeLabel =
-            b.mode === "stranger"
-              ? "Stranger Play"
-              : (b.price_charged === 0 ? "Offline Booking" : "Normal Booking");
+  const modeLabel =
+    b.mode === "stranger"
+      ? "Stranger Play"
+      : (b.price_charged === 0 ? "Offline Booking" : "Normal Booking");
 
-          container.innerHTML += `
-            <div class="booking">
-              <p><strong>Turf:</strong> ${b.turf_name} (${b.sport})</p>
-              <p><strong>Location:</strong> ${b.location}</p>
-              <p><strong>Slot:</strong> ${b.slot_start} - ${b.slot_end}</p>
-              <p><strong>Price:</strong> ₹${b.price_charged}</p>
-              <p><strong>Mode:</strong> ${modeLabel}</p>
-              <p class="status ${b.status}">Status: ${b.status}</p>
-            </div>
-          `;
-        });
+  container.innerHTML += `
+    <div class="booking">
+      <p><strong>Booking ID:</strong> #${b.booking_id || b.id}</p>
+      <p><strong>Customer:</strong> ${user.name}</p>
+      <p><strong>Turf:</strong> ${b.turf_name} (${b.sport})</p>
+      <p><strong>Location:</strong> ${b.location}</p>
+      <p><strong>Slot:</strong> ${b.slot_start} - ${b.slot_end}</p>
+      <p><strong>Price:</strong> ₹${b.price_charged}</p>
+      <p><strong>Mode:</strong> ${modeLabel}</p>
+      <p class="status ${b.status}">Status: ${b.status}</p>
+    </div>
+  `;
+});
       } catch (err) {
         console.error("Error loading bookings:", err);
         container.innerHTML = "<p class='empty'>Failed to load bookings ❌</p>";
