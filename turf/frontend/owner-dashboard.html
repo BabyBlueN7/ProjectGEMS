@@ -76,7 +76,6 @@
   Only verified turfs will appear in the player booking system.
 </div>
 </div>
-
     <!-- Bookings -->
     <div class="section" id="bookings-section">
       <label>Status Filter</label>
@@ -233,11 +232,12 @@ function closeVerifyMessage() {
         const div = document.createElement("div");
         div.className = "turf";
         div.innerHTML = `
-          <b>${t.location}</b> — ${t.sport} — ₹${t.price}
-          <span style="color:#f59e0b; font-weight:bold; margin-left:10px;">${ratingHTML}</span><br>
-          <button onclick="showEditForm(${t.id}, '${t.location}', '${t.district}', '${t.sport}', ${t.price}, ${t.min_players || 0}, ${t.max_stranger_players || 0})">Edit</button>
-          <button onclick="deleteTurf(${t.id})" style="background:#ef4444;">Delete</button>
-        `;
+  <b>${t.location}</b> — ${t.sport} — ₹${t.price}
+  <span style="color:#f59e0b; font-weight:bold; margin-left:10px;">${ratingHTML}</span><br>
+  <a href="owner-slots.html?id=${t.id}" style="margin-left:8px; color:#2563eb;">Slots & Offline Booking Management</a><br><br>
+  <button onclick="showEditForm(${t.id}, '${t.location}', '${t.district}', '${t.sport}', ${t.price}, ${t.min_players || 0}, ${t.max_stranger_players || 0})">Edit</button>
+  <button onclick="deleteTurf(${t.id})" style="background:#ef4444;">Delete</button>
+`;
         container.appendChild(div);
       }
 

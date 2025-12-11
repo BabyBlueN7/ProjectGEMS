@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Owner Slot Manager</title>
+  <style>
+    body { font-family: Arial; background: #f0f4f8; margin: 0; padding: 0; }
+    header h1 { margin: 0; padding: 16px; background: #2563eb; color: #fff; text-align: center; }
+    nav {
+      background: #fff;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    nav a {
+      text-decoration: none;
+      color: #2563eb;
+      font-weight: bold;
+      margin-left: 12px;
+    }
+    main { padding: 20px; }
+    .date-selector {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .date-selector button {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      background: #2563eb;
+      color: #fff;
+      cursor: pointer;
+    }
+    .date-selector button.selected {
+      background: #10b981;
+      color: #fff;
+    }
+    .slot {
+      background: #fff;
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .slot-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .slot-header .right-buttons {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+    .price {
+      font-weight: bold;
+      color: #10b981;
+      margin-bottom: 6px;
+    }
+    .book-btn {
+      background: #10b981;
+      color: #fff;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 6px;
+    }
+    button[disabled] {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    button:hover:not([disabled]) {
+      opacity: 0.9;
+    }
+    .progress {
+      background: #e5e7eb;
+      border-radius: 6px;
+      height: 12px;
+      margin-top: 6px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      background: #2563eb;
+      height: 100%;
+      border-radius: 6px;
+    }
+    .status-text {
+      margin-top: 4px;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 id="turfName">Owner Slot Manager</h1>
+    <nav>
+      <span id="welcomeText">Welcome, Owner</span>
+      <div>
+        <a href="owner-dashboard.html">Dashboard</a>
+        <a href="my-bookings.html">My Bookings</a>
+        <a href="login.html">Logout</a>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <h2>Manage Slots</h2>
+    <div class="date-selector" id="date-selector"></div>
+    <div id="slots"></div>
+  </main>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const turfId = params.get("id");
+
+    if (!turfId) {
+      alert("Missing turf ID. Please open this page from the dashboard.");
+      window.location.href = "owner-dashboard.html";
+    }
+
+    const user = JSON.parse(localStorage.getItem("user"));
+    let selectedDate = null;
+
+    if (!user) {
+      alert("Please log in first.");
+      window.location.href = "login.html";
+    }
+
+    document.getElementById("welcomeText").textContent = `Welcome, ${user.name}`;
+
+    function setupDateSelector() {
+      const selector = document.getElementById("date-selector");
+      selector.innerHTML = "";
+      for (let i = 0; i < 3; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() + i);
+        const label = date.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+        const value = date.toISOString().split("T")[0];
+        const btn = document.createElement("button");
+        btn.textContent = label;
+        btn.onclick = () => {
+          document.querySelectorAll(".date-selector button").forEach(b => b.classList.remove("selected"));
+          btn.classList.add("selected");
+          selectedDate = value;
+          loadSlotsForDate(value);
+        };
+        selector.appendChild(btn);
+        if (i === 0) {
+          btn.classList.add("selected");
+          selectedDate = value;
+          loadSlotsForDate(value);
+        }
+      }
+    }
+
+    async function loadSlotsForDate(date) {
+      try {
+        const res = await fetch(`http://localhost:4001/turfs/${turfId}/slots?date=${date}`);
+        const data = await res.json();
+
+        if (!data.turf) {
+          document.getElementById("slots").innerHTML = "<p>Failed to load turf info.</p>";
+          return;
+        }
+
+        document.getElementById("turfName").innerText = data.turf.name;
+        const container = document.getElementById("slots");
+        container.innerHTML = "";
+
+        for (const slot of data.slots) {
+          const joined = slot.progress.joined || 0;
+          const max = slot.max_stranger_players || 0;
+          const min = slot.min_players || 0;
+          const percent = max > 0 ? Math.min(100, (joined / max) * 100) : 0;
+          const strangerLockedIn = joined >= min;
+
+          const waitingText = strangerLockedIn
+            ? "✅ Stranger play locked in"
+            : `⏳ Minimum ${min - joined} more needed`;
+
+          const slotDiv = document.createElement("div");
+          slotDiv.className = "slot";
+
+          const hasNormalBooking = slot.bookings.some(b => b.mode === "normal");
+          const isBookedByOthers = hasNormalBooking || (strangerLockedIn && slot.bookings.some(b => b.mode === "stranger"));
+
+          const bookButtons = isBookedByOthers
+            ? `<div class="right-buttons">
+                 <span class="price">₹${slot.price}</span>
+                 <button disabled>Booked</button>
+               </div>`
+            : `<div class="right-buttons">
+                 <span class="price">₹${slot.price}</span>
+                 <button class="book-btn" onclick="confirmOfflineBooking('${slot.start}','${slot.end}')">Book (Offline)</button>
+               </div>`;
+
+          slotDiv.innerHTML = `
+            <div class="slot-header">
+              <span>${slot.start} - ${slot.end}</span>
+              ${bookButtons}
+            </div>
+            <p>${joined}/${max} players joined</p>
+            <div class="progress">
+              <div class="progress-fill" style="width:${percent}%;"></div>
+            </div>
+            <p class="status-text">${waitingText}</p>
+          `;
+
+          container.appendChild(slotDiv);
+        }
+      } catch (err) {
+        console.error("Error loading slots:", err);
+        document.getElementById("slots").innerHTML = "<p>Failed to load slots.</p>";
+      }
+    }
+
+    async function confirmOfflineBooking(start, end) {
+      const ok = confirm(`Confirm offline booking for ${start} - ${end}?`);
+      if (!ok) return;
+      await bookSlot(start, end, "normal", true);
+    }
+
+    async function bookSlot(start, end, mode = "normal", confirm_offline = false) {
+      try {
+        const res = await fetch("http://localhost:4001/bookings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            turf_id: turfId,
+            slot_date: selectedDate,
+            slot_start: start,
+            slot_end: end,
+            customer_id: user.id,
+            mode,
+            confirm_offline
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          alert(`Booked slot ${start} - ${end} ✅`);
+          loadSlotsForDate(selectedDate);
+        } else {
+          alert(data.error || "Booking failed");
+        }
+      } catch (err) {
+        console.error("Booking failed:", err);
+        alert("Booking failed. Try again.");
+      }
+    }
+
+    setupDateSelector();
+  </script>
+</body>
+</html>

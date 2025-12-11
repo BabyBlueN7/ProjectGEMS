@@ -132,12 +132,20 @@ app.get("/turfs/:id/slots", (req, res) => {
   const id = req.params.id;
   const date = req.query.date;
 
+  if (!date) return res.status(400).json({ error: "Missing date parameter" });
+
   db.get("SELECT * FROM turfs WHERE id=?", [id], (err, turf) => {
     if (err || !turf) return res.status(404).json({ error: "Turf not found" });
+
+    if (!turf.start_time || !turf.end_time) {
+      return res.status(500).json({ error: "Turf start/end time missing" });
+    }
 
     const slots = [];
     const [sh] = turf.start_time.split(":").map(Number);
     const [eh] = turf.end_time.split(":").map(Number);
+
+
 
     db.all(
       `SELECT slot_start, slot_end, mode, customer_id
@@ -310,8 +318,9 @@ app.delete("/admin/turfs/:id/remove", (req, res) => {
 
 // POST /bookings
 // mode: "normal" or "stranger"
+// Supports owner offline booking: mode="normal", owner booking his own turf -> no wallet charge, stranger refunds if not locked in
 app.post("/bookings", (req, res) => {
-  const { turf_id, slot_date, slot_start, slot_end, customer_id, mode } = req.body;
+  const { turf_id, slot_date, slot_start, slot_end, customer_id, mode, confirm_offline } = req.body;
 
   if (!["normal", "stranger"].includes(mode)) {
     return res.status(400).json({ error: "Invalid mode" });
@@ -327,7 +336,9 @@ app.post("/bookings", (req, res) => {
       if (err || !turf) return res.status(400).json({ error: "Invalid turf" });
 
       const sharePrice = Math.ceil(turf.price / turf.max_stranger_players);
-      const priceToCharge = mode === "stranger" ? sharePrice : turf.price;
+      const isOwnerBooking = turf.owner_id && customer_id === turf.owner_id && mode === "normal" && confirm_offline === true;
+
+      const priceToCharge = mode === "stranger" ? sharePrice : (isOwnerBooking ? 0 : turf.price);
 
       // Prevent duplicate booking by same user (same slot/date/time)
       db.get(
@@ -351,97 +362,119 @@ app.post("/bookings", (req, res) => {
                 return res.status(400).json({ error: "Slot already booked" });
               }
 
-              // Wallet check
-              db.get(
-                "SELECT wallet_balance FROM users WHERE id=?",
-                [customer_id],
-                (err2, user) => {
-                  if (err2 || !user) return res.status(400).json({ error: "Invalid user" });
-                  if (user.wallet_balance < priceToCharge) {
-                    return res.status(400).json({ error: "Insufficient wallet balance" });
-                  }
+              // Wallet check (skip for owner offline booking)
+              const proceedAfterWalletCheck = () => {
+                // Insert booking with slot_date
+                db.run(
+                  `INSERT INTO bookings (turf_id, slot_date, slot_start, slot_end, customer_id, mode, status, price_charged, created_at)
+                   VALUES (?,?,?,?,?,?,?,?, datetime('now'))`,
+                  [turf_id, slot_date, slot_start, slot_end, customer_id, mode, "booked", priceToCharge],
+                  function (err4) {
+                    if (err4) return res.status(500).json({ error: err4.message });
 
-                  // Deduct from customer wallet
-                  db.run(
-                    "UPDATE users SET wallet_balance = wallet_balance - ? WHERE id=?",
-                    [priceToCharge, customer_id],
-                    (err3) => {
-                      if (err3) return res.status(500).json({ error: err3.message });
+                    const bookingId = this.lastID;
 
-                      // Insert booking with slot_date
+                    if (mode === "normal") {
+                      // Handle override logic vs stranger bookings
+                      db.all(
+                        `SELECT id, customer_id, price_charged FROM bookings
+                         WHERE turf_id=? AND slot_date=? AND slot_start=? AND slot_end=? AND mode='stranger' AND status='booked'`,
+                        [turf_id, slot_date, slot_start, slot_end],
+                        (err5, strangers) => {
+                          if (err5) return res.status(500).json({ error: err5.message });
+
+                          // If stranger play already locked in (min reached), cancel this normal booking and reject
+                          if (strangers.length >= turf.min_players) {
+                            db.run("UPDATE bookings SET status='canceled' WHERE id=?", [bookingId]);
+                            return res.status(400).json({ error: "Stranger play already locked in" });
+                          }
+
+                          // Otherwise refund all stranger bookings and cancel them
+                          strangers.forEach(s => {
+                            db.run("UPDATE users SET wallet_balance = wallet_balance + ? WHERE id=?", [s.price_charged, s.customer_id]);
+                            db.run("UPDATE bookings SET status='canceled' WHERE id=?", [s.id]);
+                          });
+
+                          // Owner credit:
+                          // - For owner offline booking: do not credit owner (price_charged = 0, offline payment handled outside)
+                          // - For regular normal booking: credit owner full turf price
+                          if (!isOwnerBooking && turf.owner_id) {
+                            db.run("UPDATE users SET wallet_balance = wallet_balance + ? WHERE id=?", [turf.price, turf.owner_id]);
+                          }
+
+                          return res.json({
+                            id: bookingId,
+                            status: "booked",
+                            mode,
+                            price_charged: priceToCharge,
+                            offline: isOwnerBooking ? true : false
+                          });
+                        }
+                      );
+                    } else {
+                      // Stranger flow unchanged
                       db.run(
-                        `INSERT INTO bookings (turf_id, slot_date, slot_start, slot_end, customer_id, mode, status, price_charged, created_at)
-                         VALUES (?,?,?,?,?,?,?,?, datetime('now'))`,
-                        [turf_id, slot_date, slot_start, slot_end, customer_id, mode, "booked", priceToCharge],
-                        function (err4) {
-                          if (err4) return res.status(500).json({ error: err4.message });
+                        "INSERT INTO pending_owner_credits (booking_id, owner_id, amount, status) VALUES (?,?,?, 'pending')",
+                        [bookingId, turf.owner_id, priceToCharge],
+                        (errPOC) => {
+                          if (errPOC) return res.status(500).json({ error: errPOC.message });
 
-                          const bookingId = this.lastID;
+                          db.all(
+                            `SELECT id, price_charged FROM bookings
+                             WHERE turf_id=? AND slot_date=? AND slot_start=? AND slot_end=? AND mode='stranger' AND status='booked'`,
+                            [turf_id, slot_date, slot_start, slot_end],
+                            (err6, strangersNow) => {
+                              if (err6) return res.status(500).json({ error: err6.message });
 
-                          if (mode === "normal") {
-                            db.all(
-                              `SELECT id, customer_id, price_charged FROM bookings
-                               WHERE turf_id=? AND slot_date=? AND slot_start=? AND slot_end=? AND mode='stranger' AND status='booked'`,
-                              [turf_id, slot_date, slot_start, slot_end],
-                              (err5, strangers) => {
-                                if (err5) return res.status(500).json({ error: err5.message });
+                              const joined = strangersNow.length;
 
-                                if (strangers.length >= turf.min_players) {
-                                  db.run("UPDATE bookings SET status='canceled' WHERE id=?", [bookingId]);
-                                  return res.status(400).json({ error: "Stranger play already locked in" });
-                                }
-
-                                strangers.forEach(s => {
-                                  db.run("UPDATE users SET wallet_balance = wallet_balance + ? WHERE id=?", [s.price_charged, s.customer_id]);
-                                  db.run("UPDATE bookings SET status='canceled' WHERE id=?", [s.id]);
-                                });
-
-                                if (turf.owner_id) {
-                                  db.run("UPDATE users SET wallet_balance = wallet_balance + ? WHERE id=?", [turf.price, turf.owner_id]);
-                                }
-
-                                return res.json({ id: bookingId, status: "booked", mode, price_charged: priceToCharge });
-                              }
-                            );
-                          } else {
-                            db.run(
-                              "INSERT INTO pending_owner_credits (booking_id, owner_id, amount, status) VALUES (?,?,?, 'pending')",
-                              [bookingId, turf.owner_id, priceToCharge],
-                              (errPOC) => {
-                                if (errPOC) return res.status(500).json({ error: errPOC.message });
-
-                                db.all(
-                                  `SELECT id, price_charged FROM bookings
-                                   WHERE turf_id=? AND slot_date=? AND slot_start=? AND slot_end=? AND mode='stranger' AND status='booked'`,
-                                  [turf_id, slot_date, slot_start, slot_end],
-                                  (err6, strangersNow) => {
-                                    if (err6) return res.status(500).json({ error: err6.message });
-
-                                    const joined = strangersNow.length;
-
-                                    if (joined >= turf.min_players && turf.owner_id) {
-                                      const totalAmount = strangersNow.reduce((sum, b) => sum + (b.price_charged || 0), 0);
-                                      db.run("UPDATE users SET wallet_balance = wallet_balance + ? WHERE id=?", [totalAmount, turf.owner_id]);
-                                      db.run(
-                                        `UPDATE pending_owner_credits
-                                         SET status='credited'
-                                         WHERE booking_id IN (${strangersNow.map(() => "?").join(",")})`,
-                                        strangersNow.map(b => b.id)
-                                      );
-                                    }
-
-                                    return res.json({ id: bookingId, status: "booked", mode, price_charged: priceToCharge });
-                                  }
+                              if (joined >= turf.min_players && turf.owner_id) {
+                                const totalAmount = strangersNow.reduce((sum, b) => sum + (b.price_charged || 0), 0);
+                                db.run("UPDATE users SET wallet_balance = wallet_balance + ? WHERE id=?", [totalAmount, turf.owner_id]);
+                                db.run(
+                                  `UPDATE pending_owner_credits
+                                   SET status='credited'
+                                   WHERE booking_id IN (${strangersNow.map(() => "?").join(",")})`,
+                                  strangersNow.map(b => b.id)
                                 );
                               }
-                            );
-                          }
+
+                              return res.json({ id: bookingId, status: "booked", mode, price_charged: priceToCharge });
+                            }
+                          );
                         }
                       );
                     }
-                  );
-                }
-              );
+                  }
+                );
+              };
+
+              if (isOwnerBooking) {
+                // Skip wallet check for owner offline bookings
+                proceedAfterWalletCheck();
+              } else {
+                // Normal wallet check
+                db.get(
+                  "SELECT wallet_balance FROM users WHERE id=?",
+                  [customer_id],
+                  (err2, user) => {
+                    if (err2 || !user) return res.status(400).json({ error: "Invalid user" });
+                    if (user.wallet_balance < priceToCharge) {
+                      return res.status(400).json({ error: "Insufficient wallet balance" });
+                    }
+
+                    // Deduct from customer wallet
+                    db.run(
+                      "UPDATE users SET wallet_balance = wallet_balance - ? WHERE id=?",
+                      [priceToCharge, customer_id],
+                      (err3) => {
+                        if (err3) return res.status(500).json({ error: err3.message });
+                        proceedAfterWalletCheck();
+                      }
+                    );
+                  }
+                );
+              }
             }
           );
         }
