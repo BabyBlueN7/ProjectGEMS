@@ -236,6 +236,8 @@
             <div class="progress-fill" style="width:${percent}%;"></div>
           </div>
           <p class="status-text">${waitingText}</p>
+          <button onclick="showPlayers('${slot.start}', '${slot.end}')">See Players</button>
+<div class="player-list" id="players-${slot.start}-${slot.end}" style="margin-top:10px;"></div>
         `;
 
         container.appendChild(slotDiv);
@@ -273,6 +275,33 @@
       alert("Booking failed. Try again.");
     }
   }
+  
+  async function showPlayers(start, end) {
+  const containerId = `players-${start}-${end}`;
+  const container = document.getElementById(containerId);
+  container.innerHTML = "<p>Loading players...</p>";
+
+  try {
+    const res = await fetch(`http://localhost:4001/slots/players?turf_id=${turfId}&slot_date=${selectedDate}&slot_start=${start}&slot_end=${end}`);
+    const players = await res.json();
+
+    if (!players || players.length === 0) {
+      container.innerHTML = "<p>No stranger players in this slot.</p>";
+      return;
+    }
+
+    container.innerHTML = players.map(p => `
+      <div style="padding:6px; border-bottom:1px solid #ccc;">
+        <strong>Booking ID:</strong> #${p.booking_id}<br/>
+        <strong>Name:</strong> ${p.name}<br/>
+        <strong>Contact:</strong> ${p.contact || "N/A"}
+      </div>
+    `).join("");
+  } catch (err) {
+    console.error("Error loading players:", err);
+    container.innerHTML = "<p>Failed to load player details ❌</p>";
+  }
+}
 
   loadWallet();
   setupDateSelector();

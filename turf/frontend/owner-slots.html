@@ -92,6 +92,16 @@
       margin-top: 4px;
       font-size: 0.9em;
     }
+    .player-list {
+      background: #f1f5f9;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 6px;
+    }
+    .player-list div {
+      padding: 6px;
+      border-bottom: 1px solid #ccc;
+    }
   </style>
 </head>
 <body>
@@ -208,6 +218,8 @@
               <div class="progress-fill" style="width:${percent}%;"></div>
             </div>
             <p class="status-text">${waitingText}</p>
+            <button onclick="showPlayers('${slot.start}', '${slot.end}')">See Players</button>
+            <div class="player-list" id="players-${slot.start}-${slot.end}"></div>
           `;
 
           container.appendChild(slotDiv);
@@ -224,7 +236,7 @@
       await bookSlot(start, end, "normal", true);
     }
 
-    async function bookSlot(start, end, mode = "normal", confirm_offline = false) {
+        async function bookSlot(start, end, mode = "normal", confirm_offline = false) {
       try {
         const res = await fetch("http://localhost:4001/bookings", {
           method: "POST",
@@ -250,6 +262,33 @@
       } catch (err) {
         console.error("Booking failed:", err);
         alert("Booking failed. Try again.");
+      }
+    }
+
+    async function showPlayers(start, end) {
+      const containerId = `players-${start}-${end}`;
+      const container = document.getElementById(containerId);
+      container.innerHTML = "<p>Loading players...</p>";
+
+      try {
+        const res = await fetch(`http://localhost:4001/slots/players?turf_id=${turfId}&slot_date=${selectedDate}&slot_start=${start}&slot_end=${end}`);
+        const players = await res.json();
+
+        if (!players || players.length === 0) {
+          container.innerHTML = "<p>No stranger players in this slot.</p>";
+          return;
+        }
+
+        container.innerHTML = players.map(p => `
+          <div>
+            <strong>Booking ID:</strong> #${p.booking_id}<br/>
+            <strong>Name:</strong> ${p.name}<br/>
+            <strong>Contact:</strong> ${p.contact || "N/A"}
+          </div>
+        `).join("");
+      } catch (err) {
+        console.error("Error loading players:", err);
+        container.innerHTML = "<p>Failed to load player details ❌</p>";
       }
     }
 

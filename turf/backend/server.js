@@ -551,6 +551,22 @@ app.post("/bookings/:id/autocancel", (req, res) => {
   });
 });
 
+// see stranger players list
+app.get("/slots/players", (req, res) => {
+  const { turf_id, slot_date, slot_start, slot_end } = req.query;
+  db.all(
+    `SELECT b.id AS booking_id, u.name, u.contact
+     FROM bookings b
+     JOIN users u ON b.customer_id = u.id
+     WHERE b.turf_id = ? AND b.slot_date = ? AND b.slot_start = ? AND b.slot_end = ? AND b.mode = 'stranger'`,
+    [turf_id, slot_date, slot_start, slot_end],
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: err.message });
+      res.json(rows);
+    }
+  );
+}); 
+
 // --- Owner Routes ---
 
 // Get turfs owned by an owner
