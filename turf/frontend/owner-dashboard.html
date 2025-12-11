@@ -66,14 +66,7 @@
   <h2>My Turfs</h2>
   <div id="my-turfs">Loading...</div>
 
-  <!-- ✅ Always-visible message -->
-  <div id="verifyMessage" style="display:none; margin-top:16px; padding:12px; background:#FEF3C7; border-left:4px solid #F59E0B; border-radius:6px; color:#7C2D12; position:relative;">
-  <button onclick="closeVerifyMessage()" style="position:absolute; top:8px; right:12px; background:none; border:none; font-size:16px; cursor:pointer;">✖</button>
-  ✅ Turf added successfully!<br>
-  To verify your eligibility and make your turf visible to players, please contact <strong>Kick-Hub Team</strong>:<br>
-  📧 <strong>mrabhisanth@gmail.com</strong><br>
-  📞 <strong>+91 97780 49379</strong><br>
-  Only verified turfs will appear in the player booking system.
+ 
 </div>
 </div>
     <!-- Bookings -->
@@ -103,48 +96,57 @@
     </div>
 
     <!-- Add Turf -->
-    <div class="section" id="add-turf-section">
-      <h2>Add New Turf</h2>
-      <form id="turfForm">
-        <label for="name">Turf Name</label>
-        <input type="text" id="name" required />
+<div class="section" id="add-turf-section">
+  <h2>Add New Turf</h2>
+  <form id="turfForm">
+    <label for="name">Turf Name</label>
+    <input type="text" id="name" required />
 
-        <label for="location">Location</label>
-        <input type="text" id="location" required />
+    <label for="location">Location</label>
+    <input type="text" id="location" required />
 
-        <label for="district">District</label>
-        <input type="text" id="district" required />
+    <label for="district">District</label>
+    <input type="text" id="district" required />
 
-        <label for="sport">Sport</label>
-        <select id="sport">
-          <option value="Football 5s">Football 5s</option>
-          <option value="Football 7s">Football 7s</option>
-          <option value="Football 10s">Football 10s</option>
-          <option value="Cricket">Cricket</option>
-        </select>
+    <label for="sport">Sport</label>
+    <select id="sport">
+      <option value="Football 5s">Football 5s</option>
+      <option value="Football 7s">Football 7s</option>
+      <option value="Football 10s">Football 10s</option>
+      <option value="Cricket">Cricket</option>
+    </select>
 
-        <label for="price">Price per Hour (₹)</label>
-        <input type="number" id="price" required />
+    <label for="price">Price per Hour (₹)</label>
+    <input type="number" id="price" required />
 
-        <label for="start_time">Start Time</label>
-        <input type="text" id="start_time" value="05:00" required />
+    <label for="start_time">Start Time</label>
+    <input type="text" id="start_time" value="05:00" required />
 
-        <label for="end_time">End Time</label>
-        <input type="text" id="end_time" value="24:00" required />
+    <label for="end_time">End Time</label>
+    <input type="text" id="end_time" value="24:00" required />
 
-        <label for="minTarget">Minimum Target Players (Stranger Play)</label>
-        <input type="number" id="minTarget" required />
+    <label for="minTarget">Minimum Target Players (Stranger Play)</label>
+    <input type="number" id="minTarget" required />
 
-        <label for="maxPlayers">Maximum Stranger Players Allowed</label>
-        <input type="number" id="maxPlayers" required />
-        <p id="strangerCostMessage" style="margin: 8px 0; font-weight: bold; color: #2563eb;">
-  Stranger play cost: Full price / max stranger = ₹0</p>
-        <label for="contact">Contact Details (Phone, Email, etc.)</label>
-        <textarea id="contact" rows="3" placeholder="Enter phone numbers, email, WhatsApp…" required></textarea>
+    <label for="maxPlayers">Maximum Stranger Players Allowed</label>
+    <input type="number" id="maxPlayers" required />
+    <p id="strangerCostMessage" style="margin: 8px 0; font-weight: bold; color: #2563eb;">
+      Stranger play cost: Full price / max stranger = ₹0
+    </p>
 
-        <button type="submit">Add Turf</button>
-      </form>
-    </div>
+    <label for="contact">Contact Details (Phone, Email, etc.)</label>
+    <textarea id="contact" rows="3" placeholder="Enter phone numbers, email, WhatsApp…" required></textarea>
+
+    <button type="submit">Add Turf</button>
+  </form>
+</div>
+<!-- ✅ message notify -->
+<div style="margin-top:16px; padding:12px; background:#FEF3C7; border-left:4px solid #F59E0B; border-radius:6px; color:#7C2D12;">
+  ℹ️ <strong>Note:</strong> After adding a turf, please contact the <strong>Kick-Hub Team</strong> to verify your eligibility and make your turf visible to players.<br>
+  📧 <strong>mrabhisanth@gmail.com</strong><br>
+  📞 <strong>+91 97780 49379</strong><br>
+  Only verified turfs will appear in the player booking system.
+</div>
     <script>
   const user = JSON.parse(localStorage.getItem("user"));
 
@@ -156,16 +158,11 @@
     document.getElementById("maxPlayers").value = defaultPlayers;
   });
 
-  // Close Turf Added Message
-function closeVerifyMessage() {
-  document.getElementById("verifyMessage").style.display = "none";
-}
+ // Add Turf
+document.getElementById("turfForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-  // Add Turf
-  document.getElementById("turfForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const payload = {
+  const payload = {
     name: document.getElementById("name").value.trim(),
     location: document.getElementById("location").value.trim(),
     district: document.getElementById("district").value,
@@ -188,8 +185,7 @@ function closeVerifyMessage() {
 
     const data = await res.json();
     if (res.ok) {
-      document.getElementById("verifyMessage").style.display = "block";
-      loadTurfs(); 
+      loadTurfs(); // ✅ still refreshes turf list
     } else {
       alert("Failed to add turf ❌: " + (data.error || "Unknown error"));
     }
@@ -421,9 +417,6 @@ async function loadPendingCredits() {
     }
   }
 
-  function closeVerifyMessage() {
-  document.getElementById("verifyMessage").style.display = "none";
-}
 
 // Dynamic stranger cost message
    const priceInput = document.getElementById("price");
