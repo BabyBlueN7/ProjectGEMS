@@ -378,25 +378,26 @@ function closeVerifyMessage() {
 
   // Load Pending Credits
   async function loadPendingCredits() {
-    try {
-      const res = await fetch(`http://localhost:4001/owner/pending-credits/${user.id}`);
-      const credits = await res.json();
+  try {
+    const res = await fetch(`http://localhost:4001/owner/pending-credits/${user.id}`);
+    const credits = await res.json();
 
-      const container = document.getElementById("pending-credits");
-      container.innerHTML = credits.length
-        ? credits.map(c => `
-          <div class="turf">
-            <b>${c.location}</b> — ${c.sport}<br/>
-            Slot: ${c.slot_start} - ${c.slot_end}<br/>
-            Pending Amount: ₹${c.amount}
-          </div>
-        `).join("")
-        : "<p>No pending credits at the moment ✅</p>";
-    } catch (err) {
-      console.error("Error loading pending credits:", err);
-      document.getElementById("pending-credits").innerHTML = "<p>Failed to load pending credits ❌</p>";
-    }
+    const container = document.getElementById("pending-credits");
+    container.innerHTML = credits.length
+      ? credits.map(c => `
+        <div class="turf">
+          <b>${c.location}</b> — ${c.sport}<br/>
+          Booking ID: #${c.booking_id}<br/>
+          Slot: ${c.slot_date} ${c.slot_start} - ${c.slot_end}<br/>
+          Pending Amount: ₹${c.amount}
+        </div>
+      `).join("")
+      : "<p>No pending credits at the moment ✅</p>";
+  } catch (err) {
+    console.error("Error loading pending credits:", err);
+    document.getElementById("pending-credits").innerHTML = "<p>Failed to load pending credits ❌</p>";
   }
+}
 
    // Filters
   document.getElementById("statusFilter").addEventListener("change", loadBookings);

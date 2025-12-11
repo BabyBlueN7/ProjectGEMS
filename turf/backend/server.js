@@ -576,21 +576,35 @@ app.get("/owner/bookings/:owner_id", (req, res) => {
 // --- Booking Status Update (Owner action) ---
 app.put("/bookings/:id/status", (req, res) => {
   const { status } = req.body; // expected: "confirmed" or "canceled"
+  const bookingId = req.params.id;
+
   db.run(
     "UPDATE bookings SET status=? WHERE id=?",
-    [status, req.params.id],
+    [status, bookingId],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
 
       if (status === "canceled") {
-        console.log(`Refund triggered for booking ${req.params.id} 💸`);
+        console.log(`Refund triggered for booking ${bookingId} 💸`);
+
+        // Update pending_owner_credits status to 'refunded'
+        db.run(
+          "UPDATE pending_owner_credits SET status='refunded' WHERE booking_id=?",
+          [bookingId],
+          function (creditErr) {
+            if (creditErr) {
+              console.error("Failed to update credit status:", creditErr.message);
+            } else {
+              console.log(`Credit status updated for booking ${bookingId} ✅`);
+            }
+          }
+        );
       }
 
       res.json({ updated: this.changes });
     }
   );
 });
-
 // Update turf details
 app.put("/turfs/:id", (req, res) => {
   const { location, district, sport, price, min_players, max_stranger_players } = req.body;
