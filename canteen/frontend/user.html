@@ -53,6 +53,9 @@ button.rate-btn:hover {
 <body>
   <header>
     <h1>College Canteen</h1>
+<div id="canteen-info" style="margin-bottom: 20px; padding: 12px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 6px; color: #7c2d12;">
+  Loading canteen details…
+</div>
   </header>
 
   <nav>
@@ -250,8 +253,29 @@ async function renderMenu() {
     }
   }
 
+  async function loadCanteenInfo() {
+  try {
+    const res = await fetch(`http://localhost:4002/canteen/info/${collegeId}`);
+    const data = await res.json();
+    const container = document.getElementById("canteen-info");
+
+    if (data.error) {
+      container.innerHTML = `<p style="color:red;">${data.error}</p>`;
+    } else {
+      container.innerHTML = `
+        <strong>Canteen:</strong> ${data.name}<br>
+        <strong>Contact:</strong> ${data.contact || "Not provided"}
+      `;
+    }
+  } catch (err) {
+    console.error("Failed to load canteen info:", err);
+    document.getElementById("canteen-info").innerHTML = "<p>Unable to load canteen info ❌</p>";
+  }
+}
+
   loadCanteenUserWallet();
   renderMenu();
+  loadCanteenInfo();
 </script>
 </body>
 </html>

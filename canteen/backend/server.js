@@ -72,7 +72,7 @@ db.serialize(() => {
 
 // ✅ Signup route for owner
 app.post("/signup-owner", (req, res) => {
-  const { name, password, college_id, college_code } = req.body;
+  const { name, contact, password, college_id, college_code } = req.body;
   const normalizedCode = college_code?.trim().toLowerCase();
 
   db.get("SELECT college_code FROM colleges WHERE id=?", [college_id], (err, college) => {
@@ -91,11 +91,11 @@ app.post("/signup-owner", (req, res) => {
       }
 
       db.run(
-        "INSERT INTO users (name, admission_no, password, role, college_id) VALUES (?,?,?,?,?)",
-        [name, college_code, password, "owner", college_id],
+        "INSERT INTO users (name, admission_no, password, role, college_id, contact) VALUES (?,?,?,?,?,?)",
+        [name, college_code, password, "owner", college_id, contact],
         function (err3) {
           if (err3) return res.status(500).json({ error: "Signup failed" });
-          res.json({ id: this.lastID, name, role: "owner", college_id });
+          res.json({ id: this.lastID, name, role: "owner", college_id, contact });
         }
       );
     });
@@ -104,15 +104,15 @@ app.post("/signup-owner", (req, res) => {
 
 // ✅ Signup route for student
 app.post("/signup", (req, res) => {
-  const { name, admission_no, password, role, college_id } = req.body;
+  const { name, admission_no, password, role, college_id, contact } = req.body;
 
   if (role !== "student") {
     return res.status(400).json({ error: "Invalid role for this route" });
   }
 
   db.run(
-    "INSERT INTO users (name, admission_no, password, role, college_id) VALUES (?,?,?,?,?)",
-    [name, admission_no, password, role, college_id],
+    "INSERT INTO users (name, admission_no, password, role, college_id, contact) VALUES (?,?,?,?,?,?)",
+    [name, admission_no, password, role, college_id, contact],
     function (err) {
       if (err) {
         return res.status(500).json({ error: err.message });
@@ -122,7 +122,8 @@ app.post("/signup", (req, res) => {
         name,
         admission_no,
         role,
-        college_id
+        college_id,
+        contact
       });
     }
   );
@@ -341,6 +342,20 @@ app.get("/orders/:customer_id", (req, res) => {
   );
 });
 
+// ✅ Get canteen owner info for a college
+app.get("/canteen/info/:college_id", (req, res) => {
+  const college_id = req.params.college_id;
+  db.get(
+    "SELECT name, contact FROM users WHERE role='owner' AND college_id=?",
+    [college_id],
+    (err, row) => {
+      if (err) return res.status(500).json({ error: "Database error" });
+      if (!row) return res.status(404).json({ error: "No owner found" });
+      res.json(row);
+    }
+  );
+});
+
 // ✅ Get all colleges (public route)
 app.get("/colleges", (req, res) => {
   db.all("SELECT * FROM colleges", [], (err, rows) => {
@@ -349,11 +364,11 @@ app.get("/colleges", (req, res) => {
   });
 });
 
-// ✅ Owner: Get all orders for their college
+// ✅ Owner: Get all orders for their college (with student contact)
 app.get("/owner/orders/:college_id", (req, res) => {
   const college_id = req.params.college_id;
   db.all(
-    `SELECT o.id, u.name as student_name, m.item, o.quantity, o.status
+    `SELECT o.id, u.name AS student_name, u.contact AS student_contact, m.item, o.quantity, o.status
      FROM orders o
      JOIN users u ON o.customer_id = u.id
      JOIN menu m ON o.item_id = m.id

@@ -123,176 +123,178 @@
     <div id="slots"></div>
   </main>
 
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const turfId = params.get("id");
+ <script>
+  const params = new URLSearchParams(window.location.search);
+  const turfId = params.get("id");
 
-    if (!turfId) {
-      alert("Missing turf ID. Please open this page from the dashboard.");
-      window.location.href = "owner-dashboard.html";
-    }
+  if (!turfId) {
+    alert("Missing turf ID. Please open this page from the dashboard.");
+    window.location.href = "owner-dashboard.html";
+  }
 
-    const user = JSON.parse(localStorage.getItem("user"));
-    let selectedDate = null;
+  const user = JSON.parse(localStorage.getItem("user"));
+  let selectedDate = null;
 
-    if (!user) {
-      alert("Please log in first.");
-      window.location.href = "login.html";
-    }
+  if (!user) {
+    alert("Please log in first.");
+    window.location.href = "login.html";
+  }
 
-    document.getElementById("welcomeText").textContent = `Welcome, ${user.name}`;
+  document.getElementById("welcomeText").textContent = `Welcome, ${user.name}`;
 
-    function setupDateSelector() {
-      const selector = document.getElementById("date-selector");
-      selector.innerHTML = "";
-      for (let i = 0; i < 3; i++) {
-        const date = new Date();
-        date.setDate(date.getDate() + i);
-        const label = date.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
-        const value = date.toISOString().split("T")[0];
-        const btn = document.createElement("button");
-        btn.textContent = label;
-        btn.onclick = () => {
-          document.querySelectorAll(".date-selector button").forEach(b => b.classList.remove("selected"));
-          btn.classList.add("selected");
-          selectedDate = value;
-          loadSlotsForDate(value);
-        };
-        selector.appendChild(btn);
-        if (i === 0) {
-          btn.classList.add("selected");
-          selectedDate = value;
-          loadSlotsForDate(value);
-        }
+  function setupDateSelector() {
+    const selector = document.getElementById("date-selector");
+    selector.innerHTML = "";
+    for (let i = 0; i < 3; i++) {
+      const date = new Date();
+      date.setDate(date.getDate() + i);
+      const label = date.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+      const value = date.toISOString().split("T")[0];
+      const btn = document.createElement("button");
+      btn.textContent = label;
+      btn.onclick = () => {
+        document.querySelectorAll(".date-selector button").forEach(b => b.classList.remove("selected"));
+        btn.classList.add("selected");
+        selectedDate = value;
+        loadSlotsForDate(value);
+      };
+      selector.appendChild(btn);
+      if (i === 0) {
+        btn.classList.add("selected");
+        selectedDate = value;
+        loadSlotsForDate(value);
       }
     }
+  }
 
-    async function loadSlotsForDate(date) {
-      try {
-        const res = await fetch(`http://localhost:4001/turfs/${turfId}/slots?date=${date}`);
-        const data = await res.json();
+  async function loadSlotsForDate(date) {
+    try {
+      const res = await fetch(`http://localhost:4001/turfs/${turfId}/slots?date=${date}`);
+      const data = await res.json();
 
-        if (!data.turf) {
-          document.getElementById("slots").innerHTML = "<p>Failed to load turf info.</p>";
-          return;
-        }
-
-        document.getElementById("turfName").innerText = data.turf.name;
-        const container = document.getElementById("slots");
-        container.innerHTML = "";
-
-        for (const slot of data.slots) {
-          const joined = slot.progress.joined || 0;
-          const max = slot.max_stranger_players || 0;
-          const min = slot.min_players || 0;
-          const percent = max > 0 ? Math.min(100, (joined / max) * 100) : 0;
-          const strangerLockedIn = joined >= min;
-
-          const waitingText = strangerLockedIn
-            ? "✅ Stranger play locked in"
-            : `⏳ Minimum ${min - joined} more needed`;
-
-          const slotDiv = document.createElement("div");
-          slotDiv.className = "slot";
-
-          const hasNormalBooking = slot.bookings.some(b => b.mode === "normal");
-          const isBookedByOthers = hasNormalBooking || (strangerLockedIn && slot.bookings.some(b => b.mode === "stranger"));
-
-          const bookButtons = isBookedByOthers
-            ? `<div class="right-buttons">
-                 <span class="price">₹${slot.price}</span>
-                 <button disabled>Booked</button>
-               </div>`
-            : `<div class="right-buttons">
-                 <span class="price">₹${slot.price}</span>
-                 <button class="book-btn" onclick="confirmOfflineBooking('${slot.start}','${slot.end}')">Book (Offline)</button>
-               </div>`;
-
-          slotDiv.innerHTML = `
-            <div class="slot-header">
-              <span>${slot.start} - ${slot.end}</span>
-              ${bookButtons}
-            </div>
-            <p>${joined}/${max} players joined</p>
-            <div class="progress">
-              <div class="progress-fill" style="width:${percent}%;"></div>
-            </div>
-            <p class="status-text">${waitingText}</p>
-            <button onclick="showPlayers('${slot.start}', '${slot.end}')">See Players</button>
-            <div class="player-list" id="players-${slot.start}-${slot.end}"></div>
-          `;
-
-          container.appendChild(slotDiv);
-        }
-      } catch (err) {
-        console.error("Error loading slots:", err);
-        document.getElementById("slots").innerHTML = "<p>Failed to load slots.</p>";
+      if (!data.turf) {
+        document.getElementById("slots").innerHTML = "<p>Failed to load turf info.</p>";
+        return;
       }
-    }
 
-    async function confirmOfflineBooking(start, end) {
-      const ok = confirm(`Confirm offline booking for ${start} - ${end}?`);
-      if (!ok) return;
-      await bookSlot(start, end, "normal", true);
-    }
+      document.getElementById("turfName").innerText = data.turf.name;
+      const container = document.getElementById("slots");
+      container.innerHTML = "";
 
-        async function bookSlot(start, end, mode = "normal", confirm_offline = false) {
-      try {
-        const res = await fetch("http://localhost:4001/bookings", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            turf_id: turfId,
-            slot_date: selectedDate,
-            slot_start: start,
-            slot_end: end,
-            customer_id: user.id,
-            mode,
-            confirm_offline
-          })
-        });
+      for (const slot of data.slots) {
+        const joined = slot.progress.joined || 0;
+        const max = slot.max_stranger_players || 0;
+        const min = slot.min_players || 0;
+        const percent = max > 0 ? Math.min(100, (joined / max) * 100) : 0;
 
-        const data = await res.json();
-        if (res.ok) {
-          alert(`Booked slot ${start} - ${end} ✅`);
-          loadSlotsForDate(selectedDate);
-        } else {
-          alert(data.error || "Booking failed");
-        }
-      } catch (err) {
-        console.error("Booking failed:", err);
-        alert("Booking failed. Try again.");
-      }
-    }
+        const strangerLockedIn = joined >= min;
+        const strangerFull = joined >= max;
 
-    async function showPlayers(start, end) {
-      const containerId = `players-${start}-${end}`;
-      const container = document.getElementById(containerId);
-      container.innerHTML = "<p>Loading players...</p>";
+        const hasNormalBooking = slot.bookings.some(b => b.mode === "normal");
+        const normalBookingBlocked = hasNormalBooking || strangerLockedIn;
 
-      try {
-        const res = await fetch(`http://localhost:4001/slots/players?turf_id=${turfId}&slot_date=${selectedDate}&slot_start=${start}&slot_end=${end}`);
-        const players = await res.json();
+        const waitingText = strangerLockedIn
+          ? (strangerFull ? "✅ Stranger play full" : `✅ Locked for normal booking, ${max - joined} more can join`)
+          : `⏳ Minimum ${min - joined} more needed`;
 
-        if (!players || players.length === 0) {
-          container.innerHTML = "<p>No stranger players in this slot.</p>";
-          return;
-        }
+        const slotDiv = document.createElement("div");
+        slotDiv.className = "slot";
 
-        container.innerHTML = players.map(p => `
-          <div>
-            <strong>Booking ID:</strong> #${p.booking_id}<br/>
-            <strong>Name:</strong> ${p.name}<br/>
-            <strong>Contact:</strong> ${p.contact || "N/A"}
+        const bookButtons = normalBookingBlocked
+          ? `<div class="right-buttons">
+               <span class="price">₹${slot.price}</span>
+               <button disabled>Booked</button>
+             </div>`
+          : `<div class="right-buttons">
+               <span class="price">₹${slot.price}</span>
+               <button class="book-btn" onclick="confirmOfflineBooking('${slot.start}','${slot.end}')">Book (Offline)</button>
+             </div>`;
+
+        slotDiv.innerHTML = `
+          <div class="slot-header">
+            <span>${slot.start} - ${slot.end}</span>
+            ${bookButtons}
           </div>
-        `).join("");
-      } catch (err) {
-        console.error("Error loading players:", err);
-        container.innerHTML = "<p>Failed to load player details ❌</p>";
-      }
-    }
+          <p>${joined}/${max} players joined</p>
+          <div class="progress">
+            <div class="progress-fill" style="width:${percent}%;"></div>
+          </div>
+          <p class="status-text">${waitingText}</p>
+          <button onclick="showPlayers('${slot.start}', '${slot.end}')">See Players</button>
+          <div class="player-list" id="players-${slot.start}-${slot.end}"></div>
+        `;
 
-    setupDateSelector();
-  </script>
+        container.appendChild(slotDiv);
+      }
+    } catch (err) {
+      console.error("Error loading slots:", err);
+      document.getElementById("slots").innerHTML = "<p>Failed to load slots.</p>";
+    }
+  }
+
+  async function confirmOfflineBooking(start, end) {
+    const ok = confirm(`Confirm offline booking for ${start} - ${end}?`);
+    if (!ok) return;
+    await bookSlot(start, end, "normal", true);
+  }
+
+  async function bookSlot(start, end, mode = "normal", confirm_offline = false) {
+    try {
+      const res = await fetch("http://localhost:4001/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          turf_id: turfId,
+          slot_date: selectedDate,
+          slot_start: start,
+          slot_end: end,
+          customer_id: user.id,
+          mode,
+          confirm_offline
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        alert(`Booked slot ${start} - ${end} ✅`);
+        loadSlotsForDate(selectedDate);
+      } else {
+        alert(data.error || "Booking failed");
+      }
+    } catch (err) {
+      console.error("Booking failed:", err);
+      alert("Booking failed. Try again.");
+    }
+  }
+
+  async function showPlayers(start, end) {
+    const containerId = `players-${start}-${end}`;
+    const container = document.getElementById(containerId);
+    container.innerHTML = "<p>Loading players...</p>";
+
+    try {
+      const res = await fetch(`http://localhost:4001/slots/players?turf_id=${turfId}&slot_date=${selectedDate}&slot_start=${start}&slot_end=${end}`);
+      const players = await res.json();
+
+      if (!players || players.length === 0) {
+        container.innerHTML = "<p>No stranger players in this slot.</p>";
+        return;
+      }
+
+      container.innerHTML = players.map(p => `
+        <div>
+          <strong>Booking ID:</strong> #${p.booking_id}<br/>
+          <strong>Name:</strong> ${p.name}<br/>
+          <strong>Contact:</strong> ${p.contact || "N/A"}
+        </div>
+      `).join("");
+    } catch (err) {
+      console.error("Error loading players:", err);
+      container.innerHTML = "<p>Failed to load player details ❌</p>";
+    }
+  }
+
+  setupDateSelector();
+</script>
 </body>
 </html>

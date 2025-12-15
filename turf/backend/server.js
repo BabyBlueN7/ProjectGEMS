@@ -132,69 +132,6 @@ app.get("/turfs/by-district/:district", (req, res) => {
   );
 });
 
-// ✅ Get slots for a turf with Stranger Play progress and booking metadata
-app.get("/turfs/:id/slots", (req, res) => {
-  const id = req.params.id;
-  const date = req.query.date;
-
-  if (!date) return res.status(400).json({ error: "Missing date parameter" });
-
-  db.get("SELECT * FROM turfs WHERE id=?", [id], (err, turf) => {
-    if (err || !turf) return res.status(404).json({ error: "Turf not found" });
-
-    if (!turf.start_time || !turf.end_time) {
-      return res.status(500).json({ error: "Turf start/end time missing" });
-    }
-
-    const slots = [];
-    const [sh] = turf.start_time.split(":").map(Number);
-    const [eh] = turf.end_time.split(":").map(Number);
-
-
-
-    db.all(
-      `SELECT slot_start, slot_end, mode, customer_id
-       FROM bookings
-       WHERE turf_id=? AND slot_date=? AND status='booked'`,
-      [id, date],
-      (err2, bookings) => {
-        if (err2) return res.status(500).json({ error: err2.message });
-
-        for (let h = sh; h < eh; h++) {
-          const start = `${String(h).padStart(2, "0")}:00`;
-          const end = `${String(h + 1).padStart(2, "0")}:00`;
-
-          const slotBookings = bookings.filter(
-  b => b.slot_start === start && b.slot_end === end
-);
-
-const joined = slotBookings.filter(b => b.mode === "stranger").length;
-const hasNormalBooking = slotBookings.some(b => b.mode === "normal");
-const strangerLockedIn = joined >= turf.min_players;
-
-const isAvailable = !hasNormalBooking && !strangerLockedIn;
-
-slots.push({
-  start,
-  end,
-  price: turf.price,
-  available: isAvailable,
-  max_stranger_players: turf.max_stranger_players,
-  min_players: turf.min_players,
-  progress: { joined },
-  bookings: slotBookings.map(b => ({
-    mode: b.mode,
-    customer_id: b.customer_id
-  }))
-});
-        }
-
-        res.json({ turf, slots });
-      }
-    );
-  });
-});
-
 // ✅ Add new turf with district normalization, default player ranges, and contact info
 app.post("/turfs", (req, res) => {
   let {
@@ -487,6 +424,71 @@ app.post("/bookings", (req, res) => {
     }
   );
 });
+
+// ✅ Get slots for a turf with Stranger Play progress and booking metadata
+app.get("/turfs/:id/slots", (req, res) => {
+  const id = req.params.id;
+  const date = req.query.date;
+
+  if (!date) return res.status(400).json({ error: "Missing date parameter" });
+
+  db.get("SELECT * FROM turfs WHERE id=?", [id], (err, turf) => {
+    if (err || !turf) return res.status(404).json({ error: "Turf not found" });
+
+    if (!turf.start_time || !turf.end_time) {
+      return res.status(500).json({ error: "Turf start/end time missing" });
+    }
+
+    const slots = [];
+    const [sh] = turf.start_time.split(":").map(Number);
+    const [eh] = turf.end_time.split(":").map(Number);
+
+    db.all(
+      `SELECT slot_start, slot_end, mode, customer_id
+       FROM bookings
+       WHERE turf_id=? AND slot_date=? AND status='booked'`,
+      [id, date],
+      (err2, bookings) => {
+        if (err2) return res.status(500).json({ error: err2.message });
+
+        for (let h = sh; h < eh; h++) {
+          const start = `${String(h).padStart(2, "0")}:00`;
+          const end = `${String(h + 1).padStart(2, "0")}:00`;
+
+          const slotBookings = bookings.filter(
+            b => b.slot_start === start && b.slot_end === end
+          );
+
+          const joined = slotBookings.filter(b => b.mode === "stranger").length;
+          const hasNormalBooking = slotBookings.some(b => b.mode === "normal");
+          const strangerLockedIn = joined >= turf.min_players;
+          const strangerFull = joined >= turf.max_stranger_players;
+
+          const normalBookingBlocked = hasNormalBooking || strangerLockedIn;
+          const strangerBookingAllowed = !strangerFull;
+
+          slots.push({
+            start,
+            end,
+            price: turf.price,
+            max_stranger_players: turf.max_stranger_players,
+            min_players: turf.min_players,
+            progress: { joined },
+            bookings: slotBookings.map(b => ({
+              mode: b.mode,
+              customer_id: b.customer_id
+            })),
+            normalBookingBlocked,
+            strangerBookingAllowed
+          });
+        }
+
+        res.json({ turf, slots });
+      }
+    );
+  });
+});
+
 // Get bookings for a specific customer (My Bookings page)
 app.get("/bookings/:customer_id", (req, res) => {
   const { customer_id } = req.params;

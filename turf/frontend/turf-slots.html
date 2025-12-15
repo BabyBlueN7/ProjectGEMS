@@ -138,145 +138,143 @@
     <div id="slots"></div>
   </main>
 
-  <script>
-  const params = new URLSearchParams(window.location.search);
-  const turfId = params.get("id");
-  const user = JSON.parse(localStorage.getItem("user"));
-  let selectedDate = null;
+<script>
+const params = new URLSearchParams(window.location.search);
+const turfId = params.get("id");
+const user = JSON.parse(localStorage.getItem("user"));
+let selectedDate = null;
 
-  async function loadWallet() {
-    try {
-      const res = await fetch(`http://localhost:4001/wallet/${user.id}`);
-      const data = await res.json();
-      document.getElementById("wallet").textContent = `Wallet: ₹${data.balance}`;
-    } catch (err) {
-      console.error("Failed to load wallet:", err);
-      document.getElementById("wallet").textContent = "Wallet: ₹0";
+async function loadWallet() {
+  try {
+    const res = await fetch(`http://localhost:4001/wallet/${user.id}`);
+    const data = await res.json();
+    document.getElementById("wallet").textContent = `Wallet: ₹${data.balance}`;
+  } catch (err) {
+    console.error("Failed to load wallet:", err);
+    document.getElementById("wallet").textContent = "Wallet: ₹0";
+  }
+}
+
+welcomeText.textContent = `Welcome, ${user.name}`;
+
+function setupDateSelector() {
+  const selector = document.getElementById("date-selector");
+  selector.innerHTML = "";
+  for (let i = 0; i < 3; i++) {
+    const date = new Date();
+    date.setDate(date.getDate() + i);
+    const label = date.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+    const value = date.toISOString().split("T")[0];
+    const btn = document.createElement("button");
+    btn.textContent = label;
+    btn.onclick = () => {
+      document.querySelectorAll(".date-selector button").forEach(b => b.classList.remove("selected"));
+      btn.classList.add("selected");
+      selectedDate = value;
+      loadSlotsForDate(value);
+    };
+    selector.appendChild(btn);
+    if (i === 0) {
+      btn.classList.add("selected");
+      selectedDate = value;
+      loadSlotsForDate(value);
     }
   }
+}
 
-  welcomeText.textContent = `Welcome, ${user.name}`;
+async function loadSlotsForDate(date) {
+  try {
+    const res = await fetch(`http://localhost:4001/turfs/${turfId}/slots?date=${date}`);
+    const data = await res.json();
 
-  function setupDateSelector() {
-    const selector = document.getElementById("date-selector");
-    selector.innerHTML = "";
-    for (let i = 0; i < 3; i++) {
-      const date = new Date();
-      date.setDate(date.getDate() + i);
-      const label = date.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
-      const value = date.toISOString().split("T")[0];
-      const btn = document.createElement("button");
-      btn.textContent = label;
-      btn.onclick = () => {
-        document.querySelectorAll(".date-selector button").forEach(b => b.classList.remove("selected"));
-        btn.classList.add("selected");
-        selectedDate = value;
-        loadSlotsForDate(value);
-      };
-      selector.appendChild(btn);
-      if (i === 0) {
-        btn.classList.add("selected");
-        selectedDate = value;
-        loadSlotsForDate(value);
-      }
-    }
-  }
+    document.getElementById("turfName").innerText = data.turf.name;
+    const container = document.getElementById("slots");
+    container.innerHTML = "";
 
-  async function loadSlotsForDate(date) {
-    try {
-      const res = await fetch(`http://localhost:4001/turfs/${turfId}/slots?date=${date}`);
-      const data = await res.json();
+    for (const slot of data.slots) {
+      const joined = slot.progress.joined || 0;
+      const max = slot.max_stranger_players || 0;
+      const min = slot.min_players || 0;
+      const percent = max > 0 ? Math.min(100, (joined / max) * 100) : 0;
+      const strangerCost = max > 0 ? Math.ceil(slot.price / max) : 0;
 
-      document.getElementById("turfName").innerText = data.turf.name;
-      const container = document.getElementById("slots");
-      container.innerHTML = "";
+      const strangerLockedIn = joined >= min;
+      const strangerFull = joined >= max;
 
-      for (const slot of data.slots) {
-        const joined = slot.progress.joined || 0;
-        const max = slot.max_stranger_players || 0;
-        const min = slot.min_players || 0;
-        const percent = max > 0 ? Math.min(100, (joined / max) * 100) : 0;
-        const strangerCost = max > 0 ? Math.ceil(slot.price / max) : 0;
-        const strangerLockedIn = joined >= min;
+      const hasNormalBooking = slot.bookings.some(b => b.mode === "normal");
+      const strangerBookedByUser = slot.bookings.some(b => b.mode === "stranger" && b.customer_id === user.id);
 
-        const waitingText = strangerLockedIn
-          ? "✅ Slot locked in!"
-          : `⏳ Minimum ${min - joined} more needed`;
+      const normalBookingBlocked = strangerLockedIn || hasNormalBooking;
+      const strangerBookingAllowed = !strangerFull;
 
-        const slotDiv = document.createElement("div");
-        slotDiv.className = "slot";
+      const waitingText = strangerLockedIn
+        ? (strangerFull ? "✅ Stranger play full" : `✅ Locked for normal booking, ${max - joined} more can join`)
+        : `⏳ Minimum ${min - joined} more needed`;
 
-        const hasNormalBooking = slot.bookings.some(b => b.mode === "normal");
-        const strangerBookedByUser = slot.bookings.some(b => b.mode === "stranger" && b.customer_id === user.id);
-        const strangerBookedByOthers = slot.bookings.some(b => b.mode === "stranger" && b.customer_id !== user.id);
+      const slotDiv = document.createElement("div");
+      slotDiv.className = "slot";
 
-        const isBookedByOthers = hasNormalBooking || (strangerLockedIn && strangerBookedByOthers);
-
-        const bookButtons = isBookedByOthers
-          ? `<div class="right-buttons">
-               <span class="price">₹${slot.price}</span>
-               <button disabled>Booked</button>
-             </div>`
-          : `<div class="right-buttons">
-               <span class="price">₹${slot.price}</span>
-               <button class="book-btn" onclick="bookSlot('${slot.start}','${slot.end}', 'normal')">Book</button>
-               <div style="display: flex; align-items: center; gap: 8px;">
-                 <span style="font-weight:bold; color:#2563eb;">Stranger Play Divided Price: ₹${strangerCost}</span>
-                 <button class="stranger-btn ${strangerBookedByUser ? 'booked-by-user' : ''}" onclick="bookSlot('${slot.start}','${slot.end}', 'stranger')">Stranger Play Booking</button>
-               </div>
-             </div>`;
-
-        slotDiv.innerHTML = `
-          <div class="slot-header">
-            <span>${slot.start} - ${slot.end}</span>
-            ${bookButtons}
+      const bookButtons = `
+        <div class="right-buttons">
+          <span class="price">₹${slot.price}</span>
+          <button class="book-btn" onclick="bookSlot('${slot.start}','${slot.end}', 'normal')" ${normalBookingBlocked ? "disabled" : ""}>Book</button>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-weight:bold; color:#2563eb;">Stranger Price: ₹${strangerCost}</span>
+            <button class="stranger-btn ${strangerBookedByUser ? 'booked-by-user' : ''}" onclick="bookSlot('${slot.start}','${slot.end}', 'stranger')" ${strangerBookingAllowed ? "" : "disabled"}>Stranger Play</button>
           </div>
-          <p>${joined}/${max} players joined</p>
-          <div class="progress">
-            <div class="progress-fill" style="width:${percent}%;"></div>
-          </div>
-          <p class="status-text">${waitingText}</p>
-          <button onclick="showPlayers('${slot.start}', '${slot.end}')">See Players</button>
-<div class="player-list" id="players-${slot.start}-${slot.end}" style="margin-top:10px;"></div>
-        `;
+        </div>`;
 
-        container.appendChild(slotDiv);
-      }
-    } catch (err) {
-      console.error("Error loading slots:", err);
-      document.getElementById("slots").innerHTML = "<p>Failed to load slots.</p>";
+      slotDiv.innerHTML = `
+        <div class="slot-header">
+          <span>${slot.start} - ${slot.end}</span>
+          ${bookButtons}
+        </div>
+        <p>${joined}/${max} players joined</p>
+        <div class="progress">
+          <div class="progress-fill" style="width:${percent}%;"></div>
+        </div>
+        <p class="status-text">${waitingText}</p>
+        <button onclick="showPlayers('${slot.start}', '${slot.end}')">See Players</button>
+        <div class="player-list" id="players-${slot.start}-${slot.end}" style="margin-top:10px;"></div>
+      `;
+
+      container.appendChild(slotDiv);
     }
+  } catch (err) {
+    console.error("Error loading slots:", err);
+    document.getElementById("slots").innerHTML = "<p>Failed to load slots.</p>";
   }
+}
 
-  async function bookSlot(start, end, mode = "stranger") {
-    try {
-      const res = await fetch("http://localhost:4001/bookings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          turf_id: turfId,
-          slot_date: selectedDate,
-          slot_start: start,
-          slot_end: end,
-          customer_id: user.id,
-          mode
-        })
-      });
+async function bookSlot(start, end, mode = "stranger") {
+  try {
+    const res = await fetch("http://localhost:4001/bookings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        turf_id: turfId,
+        slot_date: selectedDate,
+        slot_start: start,
+        slot_end: end,
+        customer_id: user.id,
+        mode
+      })
+    });
 
-      const data = await res.json();
-      if (res.ok) {
-        alert(`Booked slot ${start} - ${end} ✅`);
-        loadSlotsForDate(selectedDate);
-      } else {
-        alert(data.error || "Booking failed");
-      }
-    } catch (err) {
-      console.error("Booking failed:", err);
-      alert("Booking failed. Try again.");
+    const data = await res.json();
+    if (res.ok) {
+      alert(`Booked slot ${start} - ${end} ✅`);
+      loadSlotsForDate(selectedDate);
+    } else {
+      alert(data.error || "Booking failed");
     }
+  } catch (err) {
+    console.error("Booking failed:", err);
+    alert("Booking failed. Try again.");
   }
-  
-  async function showPlayers(start, end) {
+}
+
+async function showPlayers(start, end) {
   const containerId = `players-${start}-${end}`;
   const container = document.getElementById(containerId);
   container.innerHTML = "<p>Loading players...</p>";
@@ -303,8 +301,8 @@
   }
 }
 
-  loadWallet();
-  setupDateSelector();
+loadWallet();
+setupDateSelector();
 </script>
 </body>
 </html>

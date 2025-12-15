@@ -294,40 +294,41 @@ async function loadOwnerOrders() {
     }
 
     orders.forEach(o => {
-      if (removedOrderIds.has(o.id)) return;
+  if (removedOrderIds.has(o.id)) return;
 
-      const isCanceled = o.status === "canceled";
+  const isCanceled = o.status === "canceled";
 
-      container.innerHTML += `
-        <div class="order" id="order-${o.id}">
-          <p><strong>Order ID:</strong> ${o.id}</p>
-          <p><b>${o.item}</b> × ${o.quantity} — ordered by ${o.student_name}</p>
-          <p>Status: <span class="status ${o.status}">${o.status.charAt(0).toUpperCase() + o.status.slice(1)}</span></p>
+  container.innerHTML += `
+    <div class="order" id="order-${o.id}">
+      <p><strong>Order ID:</strong> ${o.id}</p>
+      <p><b>${o.item}</b> × ${o.quantity} — ordered by ${o.student_name}</p>
+      <p><strong>Contact:</strong> ${o.student_contact || "N/A"}</p>
+      <p>Status: <span class="status ${o.status}">${o.status.charAt(0).toUpperCase() + o.status.slice(1)}</span></p>
 
-          ${isCanceled ? `
-            <button onclick="removeFromDashboard(${o.id})" style="
-              background:#ef4444;
-              color:#fff;
-              border:none;
-              padding:6px 12px;
-              border-radius:6px;
-              cursor:pointer;
-              margin-top:6px;
-            ">🗑️ Remove Canceled Order</button>
-          ` : `
-            <label>Update Status:</label>
-            <select onchange="updateStatus(${o.id}, this.value)">
-              <option value="pending" ${o.status === "pending" ? "selected" : ""}>Pending</option>
-              <option value="confirmed" ${o.status === "confirmed" ? "selected" : ""}>Confirmed</option>
-              <option value="preparing" ${o.status === "preparing" ? "selected" : ""}>Preparing</option>
-              <option value="ready" ${o.status === "ready" ? "selected" : ""}>Ready</option>
-              <option value="delivered" ${o.status === "delivered" ? "selected" : ""}>Delivered</option>
-              <option value="canceled" ${o.status === "canceled" ? "selected" : ""}>Canceled</option>
-            </select>
-          `}
-        </div>
-      `;
-    });
+      ${isCanceled ? `
+        <button onclick="removeFromDashboard(${o.id})" style="
+          background:#ef4444;
+          color:#fff;
+          border:none;
+          padding:6px 12px;
+          border-radius:6px;
+          cursor:pointer;
+          margin-top:6px;
+        ">🗑️ Remove Canceled Order</button>
+      ` : `
+        <label>Update Status:</label>
+        <select onchange="updateStatus(${o.id}, this.value)">
+          <option value="pending" ${o.status === "pending" ? "selected" : ""}>Pending</option>
+          <option value="confirmed" ${o.status === "confirmed" ? "selected" : ""}>Confirmed</option>
+          <option value="preparing" ${o.status === "preparing" ? "selected" : ""}>Preparing</option>
+          <option value="ready" ${o.status === "ready" ? "selected" : ""}>Ready</option>
+          <option value="delivered" ${o.status === "delivered" ? "selected" : ""}>Delivered</option>
+          <option value="canceled" ${o.status === "canceled" ? "selected" : ""}>Canceled</option>
+        </select>
+      `}
+    </div>
+  `;
+});
   } catch (err) {
     console.error("Error loading orders:", err);
     document.getElementById("owner-orders").innerHTML = "<p>Failed to load orders ❌</p>";

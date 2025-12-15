@@ -59,14 +59,15 @@
     <h2>Canteen Owner Sign Up</h2>
     <select id="college"></select>
     <input type="text" id="name" placeholder="Name" />
+    <input type="text" id="contact" placeholder="Contact (Phone or Email)" />
     <input type="text" id="college_code" placeholder="College Code" />
     <input type="password" id="password" placeholder="Password" />
     <button onclick="signup()">Create Owner Account</button>
     <p style="margin-top:10px;color:#374151;">
       To verify eligibility and obtain the College Code required for account registration,<br>
-      contact the Digi-Canteen Team:
-      <strong>digitcanteen@gmail.com</strong>
-      <strong>12345678</strong>
+      contact the Digi-Canteen Team:<br>
+      📧 <strong>digitcanteen@gmail.com</strong><br>
+      📞 <strong>12345678</strong>
     </p>
     <div class="links">
       <p>Already have an account? <a href="login.html">Login</a></p>
@@ -92,10 +93,11 @@
     async function signup() {
       const college_id = document.getElementById("college").value;
       const name = document.getElementById("name").value.trim();
+      const contact = document.getElementById("contact").value.trim();
       const college_code = document.getElementById("college_code").value.trim();
       const password = document.getElementById("password").value.trim();
 
-      if (!college_id || !name || !college_code || !password) {
+      if (!college_id || !name || !contact || !college_code || !password) {
         alert("Please fill all fields");
         return;
       }
@@ -104,7 +106,7 @@
         const res = await fetch("http://localhost:4002/signup-owner", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, password, college_id, college_code })
+          body: JSON.stringify({ name, contact, password, college_id, college_code })
         });
 
         const data = await res.json();
