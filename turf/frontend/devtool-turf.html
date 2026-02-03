@@ -35,6 +35,11 @@
       color: #374151;
       margin-top: 6px;
     }
+    .rating {
+      color: #f59e0b;
+      font-weight: bold;
+      margin-top: 6px;
+    }
     .actions button {
       margin-right: 8px;
       padding: 6px 12px;
@@ -103,20 +108,32 @@
         if (verified.length === 0) {
           verifiedDiv.innerHTML = "<p>No verified turfs found.</p>";
         } else {
-          verified.forEach(t => {
+          for (const t of verified) {
+            let ratingHTML = "★ No ratings yet";
+            try {
+              const ratingRes = await fetch(`http://localhost:4001/ratings/turf/${t.id}`);
+              const ratingData = await ratingRes.json();
+              if (ratingData.average) {
+                ratingHTML = `★ ${ratingData.average} (${ratingData.count})`;
+              }
+            } catch (err) {
+              console.warn("Rating fetch failed for turf", t.id);
+            }
+
             const div = document.createElement("div");
             div.className = "turf";
             div.innerHTML = `
               <h3>${t.name}</h3>
               <p>${t.sport} - ${t.location}, ${t.district}</p>
               <p>₹${t.price}/hr</p>
+              <p class="rating">${ratingHTML}</p>
               ${t.contact ? `<p class="contact"><strong>Contact:</strong> ${t.contact}</p>` : ""}
               <div class="actions">
                 <button class="remove" onclick="removeTurf(${t.id})">❌ Remove</button>
               </div>
             `;
             verifiedDiv.appendChild(div);
-          });
+          }
         }
       } catch (err) {
         console.error("Error loading turfs:", err);
