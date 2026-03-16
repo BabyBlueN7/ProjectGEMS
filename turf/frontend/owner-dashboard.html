@@ -252,7 +252,12 @@ document.getElementById("turfForm").addEventListener("submit", async (e) => {
   function showEditForm(id, name, district, sport, price, minTarget = 0, maxPlayers = 0, imageUrl = '') {
     const container = document.getElementById("my-turfs");
     const formId = `editForm-${id}`;
-    if (document.getElementById(formId)) return;
+
+    // Remove any existing edit form (so the latest selection always shows clean values)
+    const existingForm = container.querySelector('.edit-form');
+    if (existingForm) {
+      existingForm.remove();
+    }
 
     let imageHTML = '';
     if (imageUrl) {
@@ -260,7 +265,8 @@ document.getElementById("turfForm").addEventListener("submit", async (e) => {
       imageHTML = `<img src="${src}" alt="${name}" style="max-width:150px; display:block; margin-bottom:6px;">`;
     }
 
-    container.innerHTML += `
+    // Append the new form at the end of the turf list
+    container.insertAdjacentHTML('beforeend', `
       <form id="${formId}" class="edit-form" enctype="multipart/form-data">
         <h4>Edit Turf: ${name}</h4>
         ${imageHTML}
@@ -279,10 +285,10 @@ document.getElementById("turfForm").addEventListener("submit", async (e) => {
         <label>Maximum Stranger Players</label>
         <input type="number" id="edit-maxPlayers-${id}" name="max_stranger_players" value="${maxPlayers}" required />
         <p style="margin: 8px 0; font-weight: bold; color: #2563eb;">
-  Stsranger play cost for a player = Full price / max no. of stranger players (auto-calculated for players)</p>
+  Stranger play cost for a player = Full price / max no. of stranger players (auto-calculated for players)</p>
         <button type="button" onclick="updateTurf(${id})">Save</button>
       </form>
-    `;
+    `);
   }
 
   // Update Turf

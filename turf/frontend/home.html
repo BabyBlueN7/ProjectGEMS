@@ -1331,9 +1331,7 @@
                   <span class="turf-card-badge">Popular</span>
                 </div>
                 <p class="turf-card-description">${description}</p>
-                <p style="margin: 8px 0; font-size: 13px; color: #f59e0b; font-weight: 600;">${avgRating} (${ratingCount}) 
-                  <button style="background: var(--primary); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 8px;" onclick="event.stopPropagation(); openRating(${turf.id})">Rate</button>
-                </p>
+                <p style="margin: 8px 0; font-size: 13px; color: #f59e0b; font-weight: 600;">${avgRating} (${ratingCount}) ${currentUser ? `<button style="background: var(--primary); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 8px;" onclick="event.stopPropagation(); openRating(${turf.id})">Rate</button>` : ''}</p>
                 <button class="explore-btn" onclick="handleExploreClick(${turf.id || 0})">Explore & Book</button>
               </div>
             `;
@@ -1356,6 +1354,10 @@
 
     // ===== RATING FUNCTIONS =====
     function openRating(turfId) {
+      if (!currentUser) {
+        alert('Please login to rate turfs.');
+        return;
+      }
       selectedTurfId = turfId;
       const container = document.getElementById('starContainer');
       container.innerHTML = '';
@@ -1663,42 +1665,52 @@
 
         grid.innerHTML = '';
         
-        turfs.forEach((turf, index) => {
-          const card = document.createElement('div');
-          card.className = 'turf-card';
-          
-          let imageUrl = 'https://via.placeholder.com/400x220?text=Turf+Image';
-          if (turf.image_url) {
-            imageUrl = turf.image_url.startsWith('http') 
-              ? turf.image_url 
-              : `http://localhost:4001${turf.image_url}`;
-          }
+        for (const turf of turfs) {
+          try {
+            const ratingRes = await fetch(`http://localhost:4001/ratings/turf/${turf.id}`);
+            const ratingData = await ratingRes.json();
+            const avgRating = ratingData.average ? `★ ${ratingData.average}` : "★ No ratings";
+            const ratingCount = ratingData.count || 0;
 
-          const description = turf.description || `Premium sports facility with world-class amenities. Perfect for football, cricket, badminton and more.`;
+            const card = document.createElement('div');
+            card.className = 'turf-card';
+            
+            let imageUrl = 'https://via.placeholder.com/400x220?text=Turf+Image';
+            if (turf.image_url) {
+              imageUrl = turf.image_url.startsWith('http') 
+                ? turf.image_url 
+                : `http://localhost:4001${turf.image_url}`;
+            }
 
-          card.innerHTML = `
-            <img src="${imageUrl}" alt="${turf.name || 'Turf'}" class="turf-card-image" onerror="this.src='https://via.placeholder.com/400x220?text=Turf'">
-            <div class="turf-card-content">
-              <div class="turf-card-header">
-                <div>
-                  <h3 class="turf-card-name">${turf.name || 'Untitled Turf'}</h3>
-                  <p class="turf-card-place">📍 ${turf.district || turf.location || 'Location'}</p>
+            const description = turf.description || `Premium sports facility with world-class amenities. Perfect for football, cricket, badminton and more.`;
+
+            card.innerHTML = `
+              <img src="${imageUrl}" alt="${turf.name || 'Turf'}" class="turf-card-image" onerror="this.src='https://via.placeholder.com/400x220?text=Turf'">
+              <div class="turf-card-content">
+                <div class="turf-card-header">
+                  <div>
+                    <h3 class="turf-card-name">${turf.name || 'Untitled Turf'}</h3>
+                    <p class="turf-card-place">📍 ${turf.district || turf.location || 'Location'}</p>
+                  </div>
+                  <span class="turf-card-badge">Popular</span>
                 </div>
-                <span class="turf-card-badge">Popular</span>
+                <p class="turf-card-description">${description}</p>
+                <p style="margin: 8px 0; font-size: 13px; color: #f59e0b; font-weight: 600;">${avgRating} (${ratingCount}) ${currentUser ? `<button style="background: var(--primary); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 8px;" onclick="event.stopPropagation(); openRating(${turf.id})">Rate</button>` : ''}</p>
+                <button class="explore-btn" onclick="handleExploreClick(${turf.id || 0})">Explore & Book</button>
               </div>
-              <p class="turf-card-description">${description}</p>
-              <button class="explore-btn" onclick="handleExploreClick(${turf.id || index})">Explore & Book</button>
-            </div>
-          `;
+            `;
 
-          // Toggle expand on card click
-          card.addEventListener('click', function(e) {
-            if (e.target.classList.contains('explore-btn')) return;
-            this.classList.toggle('expanded');
-          });
+            // Toggle expand on card click
+            card.addEventListener('click', function(e) {
+              if (e.target.classList.contains('explore-btn')) return;
+              this.classList.toggle('expanded');
+            });
 
-          grid.appendChild(card);
-        });
+            grid.appendChild(card);
+          } catch (err) {
+            console.error('Error processing turf:', err);
+          }
+        }
       } catch (error) {
         console.error('Error loading turfs:', error);
         grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color: var(--text-light); padding: 40px;">Unable to load turfs. Please try again later.</p>';

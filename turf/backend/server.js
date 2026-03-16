@@ -106,6 +106,24 @@ db.serialize(() => {
     status TEXT DEFAULT 'booked',
     mode TEXT DEFAULT 'single' -- "single" or "stranger"
   )`);
+
+  // Turf ratings table
+  db.run(`CREATE TABLE IF NOT EXISTS turf_ratings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    turf_id INTEGER,
+    user_id INTEGER,
+    rating INTEGER,
+    UNIQUE(turf_id, user_id)
+  )`);
+
+  // Pending owner credits table
+  db.run(`CREATE TABLE IF NOT EXISTS pending_owner_credits (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    booking_id INTEGER,
+    owner_id INTEGER,
+    amount INTEGER,
+    status TEXT DEFAULT 'pending'
+  )`);
 });
 
 // --- Routes ---
