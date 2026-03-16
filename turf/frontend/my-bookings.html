@@ -2,30 +2,322 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>My Turf Bookings</title>
   <style>
-    :root{ --bg:#f6f8fb; --card:#ffffff; --primary:#2563eb; --muted:#6b7280; --text:#071233; --radius:12px; --shadow:0 8px 24px rgba(7,18,51,0.06) }
-    body{ font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial; margin:0; padding:0; background:var(--bg); color:var(--text) }
-    header{ background:linear-gradient(90deg,var(--primary), #1f4ed8); color:#fff; padding:18px; text-align:center }
-    nav{ background:transparent; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; max-width:1100px; margin:0 auto }
-    nav a{ color:#fff; font-weight:600; text-decoration:none }
-    main{ padding:24px; max-width:1100px; margin:0 auto }
-    .booking{ background:var(--card); padding:14px; margin:10px 0; border-radius:10px; box-shadow:var(--shadow); border:1px solid rgba(7,18,51,0.04) }
-    .status{ font-weight:700 }
-    .booked, .pending{ color:#f59e0b }
-    .confirmed{ color:#10b981 }
-    .canceled{ color:#ef4444 }
-    .empty{ color:var(--muted); font-weight:600 }
+    :root {
+      --bg: #f0f4f8;
+      --card: #ffffff;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --secondary: #10b981;
+      --muted: #64748b;
+      --text: #0f172a;
+      --border: #e2e8f0;
+      --radius: 16px;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* Header Styles */
+    header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: #fff;
+      padding: 0;
+      box-shadow: var(--shadow-lg);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px 24px;
+    }
+
+    #welcomeText {
+      font-size: 1.1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #welcomeText::before {
+      content: "👋";
+      font-size: 1.3rem;
+    }
+
+    nav .nav-links {
+      display: flex;
+      gap: 16px;
+    }
+
+    nav a {
+      color: #fff;
+      font-weight: 500;
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    nav a:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
+    }
+
+    /* Main Content */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+
+    h2 {
+      font-size: 2rem;
+      margin-bottom: 32px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    h2::before {
+      content: "📅";
+      font-size: 2rem;
+    }
+
+    /* Bookings Grid */
+    #bookings {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 24px;
+    }
+
+    /* Booking Card */
+    .booking {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .booking::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--primary);
+    }
+
+    .booking:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .booking-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .booking-id {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--primary);
+      background: rgba(37, 99, 235, 0.1);
+      padding: 6px 12px;
+      border-radius: 20px;
+    }
+
+    .booking-content {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .booking-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .booking-row strong {
+      min-width: 90px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .booking-row span {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .turf-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .sport-badge {
+      display: inline-block;
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--secondary);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .price {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .mode-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      background: rgba(37, 99, 235, 0.1);
+      color: var(--primary);
+    }
+
+    /* Status Styles */
+    .status {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 10px;
+      font-weight: 700;
+      text-align: center;
+      text-transform: uppercase;
+      font-size: 0.85rem;
+      letter-spacing: 0.5px;
+    }
+
+    .booked, .pending {
+      background: rgba(245, 158, 11, 0.1);
+      color: #f59e0b;
+      border: 2px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .confirmed {
+      background: rgba(16, 185, 129, 0.1);
+      color: #10b981;
+      border: 2px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .canceled {
+      background: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+      border: 2px solid rgba(239, 68, 68, 0.3);
+    }
+
+    /* Empty State */
+    .empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--muted);
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .empty::before {
+      content: "📭";
+      display: block;
+      font-size: 4rem;
+      margin-bottom: 16px;
+    }
+
+    /* Loading State */
+    .loading {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 80px 20px;
+      color: var(--muted);
+      font-size: 1.2rem;
+    }
+
+    .loading::before {
+      content: "⏳";
+      display: block;
+      font-size: 4rem;
+      margin-bottom: 16px;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      #bookings {
+        grid-template-columns: 1fr;
+      }
+
+      h2 {
+        font-size: 1.5rem;
+      }
+
+      nav {
+        flex-direction: column;
+        gap: 12px;
+        text-align: center;
+      }
+
+      .booking-row {
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .booking-row strong {
+        min-width: auto;
+      }
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1>My Bookings</h1>
     <nav>
       <span id="welcomeText">Welcome</span>
-      <div>
-        <a href="home.html">Home</a>
-        <a href="login.html">Logout</a>
+      <div class="nav-links">
+        <a href="home.html">🏠 Home</a>
+        <a href="login.html">🚪 Logout</a>
       </div>
     </nav>
   </header>
@@ -47,7 +339,7 @@
 
     async function loadBookings() {
       const container = document.getElementById("bookings");
-      container.innerHTML = "<p>Loading...</p>";
+      container.innerHTML = "<p class='loading'>Loading your bookings...</p>";
 
       try {
         const res = await fetch(`http://localhost:4001/bookings/${user.id}`);
@@ -57,32 +349,55 @@
         container.innerHTML = "";
 
         if (!bookings || bookings.length === 0) {
-          container.innerHTML = "<p class='empty'>No bookings yet.</p>";
+          container.innerHTML = "<p class='empty'>No bookings yet. Time to book a turf!</p>";
           return;
         }
 
         bookings.forEach(b => {
-  const modeLabel =
-    b.mode === "stranger"
-      ? "Stranger Play"
-      : (b.price_charged === 0 ? "Offline Booking" : "Normal Booking");
+          const modeLabel =
+            b.mode === "stranger"
+              ? "👥 Stranger Play"
+              : (b.price_charged === 0 ? "📝 Offline Booking" : "⚽ Normal Booking");
 
-  container.innerHTML += `
-    <div class="booking">
-      <p><strong>Booking ID:</strong> #${b.booking_id || b.id}</p>
-      <p><strong>Customer:</strong> ${user.name}</p>
-      <p><strong>Turf:</strong> ${b.turf_name} (${b.sport})</p>
-      <p><strong>Location:</strong> ${b.location}</p>
-      <p><strong>Slot:</strong> ${b.slot_start} - ${b.slot_end}</p>
-      <p><strong>Price:</strong> ₹${b.price_charged}</p>
-      <p><strong>Mode:</strong> ${modeLabel}</p>
-      <p class="status ${b.status}">Status: ${b.status}</p>
-    </div>
-  `;
-});
+          const bookingCard = document.createElement('div');
+          bookingCard.className = 'booking';
+          bookingCard.innerHTML = `
+            <div class="booking-header">
+              <div class="booking-id">#${b.booking_id || b.id}</div>
+            </div>
+            <div class="booking-content">
+              <div>
+                <div class="turf-name">${b.turf_name}</div>
+                <span class="sport-badge">${b.sport}</span>
+              </div>
+              <div class="booking-row">
+                <strong>📍 Location:</strong>
+                <span>${b.location}</span>
+              </div>
+              <div class="booking-row">
+                <strong>👤 Customer:</strong>
+                <span>${user.name}</span>
+              </div>
+              <div class="booking-row">
+                <strong>⏰ Slot:</strong>
+                <span>${b.slot_start} - ${b.slot_end}</span>
+              </div>
+              <div class="booking-row">
+                <strong>💰 Price:</strong>
+                <span class="price">₹${b.price_charged}</span>
+              </div>
+              <div class="booking-row">
+                <strong>🎮 Mode:</strong>
+                <span class="mode-badge">${modeLabel}</span>
+              </div>
+            </div>
+            <div class="status ${b.status}">● ${b.status}</div>
+          `;
+          container.appendChild(bookingCard);
+        });
       } catch (err) {
         console.error("Error loading bookings:", err);
-        container.innerHTML = "<p class='empty'>Failed to load bookings ❌</p>";
+        container.innerHTML = "<p class='empty'>Failed to load bookings. Please try again later. ❌</p>";
       }
     }
 
