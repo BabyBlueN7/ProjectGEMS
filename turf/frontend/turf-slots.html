@@ -128,8 +128,9 @@ async function loadSlotsForDate(date) {
       const hasNormalBooking = slot.bookings.some(b => b.mode === "normal");
       const strangerBookedByUser = slot.bookings.some(b => b.mode === "stranger" && b.customer_id === user.id);
 
+      // Once a normal booking exists, disable further stranger bookings.
       const normalBookingBlocked = strangerLockedIn || hasNormalBooking;
-      const strangerBookingAllowed = !strangerFull;
+      const strangerBookingAllowed = !strangerFull && !hasNormalBooking;
 
       const waitingText = strangerLockedIn
         ? (strangerFull ? "✅ Stranger play full" : `✅ Locked for normal booking, ${max - joined} more can join`)
@@ -153,7 +154,7 @@ async function loadSlotsForDate(date) {
           <span>${slot.start} - ${slot.end}</span>
           ${bookButtons}
         </div>
-        <p>${joined}/${max} players joined</p>
+        <p>${max > 0 ? `${joined}/${max} players joined` : `${joined} players joined`}</p>
         <div class="progress">
           <div class="progress-fill" style="width:${percent}%;"></div>
         </div>

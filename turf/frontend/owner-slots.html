@@ -138,7 +138,7 @@
             <span>${slot.start} - ${slot.end}</span>
             ${bookButtons}
           </div>
-          <p>${joined}/${max} players joined</p>
+          <p>${max > 0 ? `${joined}/${max} players joined` : `${joined} players joined`}</p>
           <div class="progress">
             <div class="progress-fill" style="width:${percent}%;"></div>
           </div>
