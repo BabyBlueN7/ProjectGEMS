@@ -967,13 +967,13 @@
           <div class="filters-bar">
             <select class="filter-select" id="statusFilter">
               <option value="">All Status</option>
-              <option value="pending">Pending</option>
+              <option value="booked">Pending</option>
               <option value="confirmed">Confirmed</option>
               <option value="canceled">Canceled</option>
             </select>
             <select class="filter-select" id="modeFilter">
               <option value="">All Modes</option>
-              <option value="single">Single</option>
+              <option value="normal">Normal</option>
               <option value="stranger">Stranger</option>
             </select>
           </div>
@@ -1369,7 +1369,18 @@
 
         const totalBookings = bookings.length;
 
-        if (statusFilter) bookings = bookings.filter(b => b.status === statusFilter);
+        // Smart filtering based on pending/confirmed distinction
+        if (statusFilter === "booked") {
+          // Pending = bookings with pending credits (stranger bookings not yet locked)
+          bookings = bookings.filter(b => b.credit_status === "pending");
+        } else if (statusFilter === "confirmed") {
+          // Confirmed = bookings with credited credits (locked stones) OR normal bookings
+          bookings = bookings.filter(b => b.credit_status === "credited" || b.mode === "normal");
+        } else if (statusFilter) {
+          // For other filters (canceled, etc), use direct status match
+          bookings = bookings.filter(b => b.status === statusFilter);
+        }
+        
         if (modeFilter) bookings = bookings.filter(b => b.mode === modeFilter);
 
         bookings.sort((a, b) => new Date(a.slot_start) - new Date(b.slot_start));
@@ -1440,6 +1451,7 @@
         }
 
         loadBookings();
+        loadPendingCredits();
       } catch (err) {
         console.error("Error updating booking status:", err);
         alert("Failed to update booking ❌");

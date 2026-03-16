@@ -1,407 +1,630 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>My Turf Bookings</title>
-  <style>
-    :root {
-      --bg: #f0f4f8;
-      --card: #ffffff;
-      --primary: #2563eb;
-      --primary-dark: #1d4ed8;
-      --secondary: #10b981;
-      --muted: #64748b;
-      --text: #0f172a;
-      --border: #e2e8f0;
-      --radius: 16px;
-      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    }
-
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-    }
-
-    /* Header Styles */
-    header {
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-      color: #fff;
-      padding: 0;
-      box-shadow: var(--shadow-lg);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    nav {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 20px 24px;
-    }
-
-    #welcomeText {
-      font-size: 1.1rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    #welcomeText::before {
-      content: "👋";
-      font-size: 1.3rem;
-    }
-
-    nav .nav-links {
-      display: flex;
-      gap: 16px;
-    }
-
-    nav a {
-      color: #fff;
-      font-weight: 500;
-      text-decoration: none;
-      padding: 8px 16px;
-      border-radius: 8px;
-      transition: all 0.3s ease;
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    nav a:hover {
-      background: rgba(255, 255, 255, 0.2);
-      transform: translateY(-2px);
-    }
-
-    /* Main Content */
-    main {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 40px 24px;
-    }
-
-    h2 {
-      font-size: 2rem;
-      margin-bottom: 32px;
-      color: var(--text);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    h2::before {
-      content: "📅";
-      font-size: 2rem;
-    }
-
-    /* Bookings Grid */
-    #bookings {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-      gap: 24px;
-    }
-
-    /* Booking Card */
-    .booking {
-      background: var(--card);
-      border-radius: var(--radius);
-      padding: 24px;
-      box-shadow: var(--shadow);
-      border: 1px solid var(--border);
-      transition: all 0.3s ease;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .booking::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 4px;
-      height: 100%;
-      background: var(--primary);
-    }
-
-    .booking:hover {
-      transform: translateY(-4px);
-      box-shadow: var(--shadow-lg);
-    }
-
-    .booking-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 16px;
-      padding-bottom: 16px;
-      border-bottom: 2px solid var(--border);
-    }
-
-    .booking-id {
-      font-size: 0.9rem;
-      font-weight: 700;
-      color: var(--primary);
-      background: rgba(37, 99, 235, 0.1);
-      padding: 6px 12px;
-      border-radius: 20px;
-    }
-
-    .booking-content {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .booking-row {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-    }
-
-    .booking-row strong {
-      min-width: 90px;
-      color: var(--muted);
-      font-size: 0.9rem;
-      font-weight: 600;
-    }
-
-    .booking-row span {
-      color: var(--text);
-      font-weight: 500;
-    }
-
-    .turf-name {
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 4px;
-    }
-
-    .sport-badge {
-      display: inline-block;
-      background: rgba(16, 185, 129, 0.1);
-      color: var(--secondary);
-      padding: 4px 10px;
-      border-radius: 12px;
-      font-size: 0.85rem;
-      font-weight: 600;
-    }
-
-    .price {
-      font-size: 1.4rem;
-      font-weight: 700;
-      color: var(--primary);
-    }
-
-    .mode-badge {
-      display: inline-block;
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      background: rgba(37, 99, 235, 0.1);
-      color: var(--primary);
-    }
-
-    /* Status Styles */
-    .status {
-      margin-top: 16px;
-      padding: 12px;
-      border-radius: 10px;
-      font-weight: 700;
-      text-align: center;
-      text-transform: uppercase;
-      font-size: 0.85rem;
-      letter-spacing: 0.5px;
-    }
-
-    .booked, .pending {
-      background: rgba(245, 158, 11, 0.1);
-      color: #f59e0b;
-      border: 2px solid rgba(245, 158, 11, 0.3);
-    }
-
-    .confirmed {
-      background: rgba(16, 185, 129, 0.1);
-      color: #10b981;
-      border: 2px solid rgba(16, 185, 129, 0.3);
-    }
-
-    .canceled {
-      background: rgba(239, 68, 68, 0.1);
-      color: #ef4444;
-      border: 2px solid rgba(239, 68, 68, 0.3);
-    }
-
-    /* Empty State */
-    .empty {
-      grid-column: 1 / -1;
-      text-align: center;
-      padding: 80px 20px;
-      color: var(--muted);
-      font-size: 1.2rem;
-      font-weight: 600;
-    }
-
-    .empty::before {
-      content: "📭";
-      display: block;
-      font-size: 4rem;
-      margin-bottom: 16px;
-    }
-
-    /* Loading State */
-    .loading {
-      grid-column: 1 / -1;
-      text-align: center;
-      padding: 80px 20px;
-      color: var(--muted);
-      font-size: 1.2rem;
-    }
-
-    .loading::before {
-      content: "⏳";
-      display: block;
-      font-size: 4rem;
-      margin-bottom: 16px;
-      animation: pulse 1.5s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-
-    /* Responsive Design */
-    @media (max-width: 768px) {
-      #bookings {
-        grid-template-columns: 1fr;
+  <!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My Bookings | KICKHUB</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --bg-dark: #0a0f0d;
+        --bg-card: #111916;
+        --bg-card-hover: #162019;
+        --primary: #10b981;
+        --primary-light: #34d399;
+        --primary-dark: #059669;
+        --secondary: #14532d;
+        --accent: #22c55e;
+        --neon: #4ade80;
+        --text: #f0fdf4;
+        --text-muted: #86efac;
+        --text-dim: #6b7280;
+        --border: #1f3d2a;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --info: #0ea5e9;
+        --gradient: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+        --gradient-dark: linear-gradient(135deg, #0a0f0d 0%, #111916 50%, #14532d 100%);
+        --glow: 0 0 40px rgba(16, 185, 129, 0.3);
+        --glow-strong: 0 0 60px rgba(16, 185, 129, 0.5);
       }
 
-      h2 {
-        font-size: 1.5rem;
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html, body {
+        min-height: 100%;
+      }
+
+      body {
+        font-family: 'Poppins', sans-serif;
+        background: var(--bg-dark);
+        color: var(--text);
+        overflow-x: hidden;
+      }
+
+      /* Animated Background - EXACT from login */
+      .bg-animation {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+        overflow: hidden;
+      }
+
+      .bg-animation::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(ellipse at center, rgba(16, 185, 129, 0.08) 0%, transparent 50%);
+        animation: rotate 30s linear infinite;
+      }
+
+      .bg-animation::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        right: -30%;
+        width: 80%;
+        height: 80%;
+        background: radial-gradient(ellipse at center, rgba(34, 197, 94, 0.05) 0%, transparent 60%);
+        animation: float 20s ease-in-out infinite;
+      }
+
+      @keyframes rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+
+      @keyframes float {
+        0%, 100% { transform: translateY(0) scale(1); }
+        50% { transform: translateY(-50px) scale(1.1); }
+      }
+
+      /* Grid Pattern Overlay - EXACT from login */
+      .grid-pattern {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: 
+          linear-gradient(rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+        background-size: 50px 50px;
+        z-index: 1;
+      }
+
+      /* Floating Elements - EXACT from login */
+      .floating-elements {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+        pointer-events: none;
+      }
+
+      .floating-ball {
+        position: absolute;
+        font-size: 2rem;
+        opacity: 0.1;
+        animation: floatBall 15s ease-in-out infinite;
+      }
+
+      .floating-ball:nth-child(1) { top: 10%; left: 10%; animation-delay: 0s; }
+      .floating-ball:nth-child(2) { top: 20%; right: 15%; animation-delay: 3s; }
+      .floating-ball:nth-child(3) { bottom: 30%; left: 5%; animation-delay: 6s; }
+      .floating-ball:nth-child(4) { bottom: 15%; right: 10%; animation-delay: 9s; }
+      .floating-ball:nth-child(5) { top: 50%; left: 20%; animation-delay: 12s; }
+
+      @keyframes floatBall {
+        0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.1; }
+        50% { transform: translateY(-30px) rotate(180deg); opacity: 0.2; }
+      }
+
+      /* Header - matching login card style */
+      header {
+        position: relative;
+        z-index: 10;
+        background: linear-gradient(145deg, rgba(17, 25, 22, 0.95) 0%, rgba(10, 15, 13, 0.98) 100%);
+        border-bottom: 1px solid var(--border);
+        backdrop-filter: blur(20px);
+      }
+
+      header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gradient);
       }
 
       nav {
-        flex-direction: column;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px 24px;
+      }
+
+      .logo-container {
+        display: flex;
+        align-items: center;
         gap: 12px;
+      }
+
+      .logo-icon {
+        width: 45px;
+        height: 45px;
+        background: var(--gradient);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        box-shadow: var(--glow);
+        animation: pulse-glow 3s ease-in-out infinite;
+      }
+
+      @keyframes pulse-glow {
+        0%, 100% { box-shadow: var(--glow); }
+        50% { box-shadow: var(--glow-strong); }
+      }
+
+      .logo-text {
+        font-size: 1.5rem;
+        font-weight: 800;
+        letter-spacing: 1px;
+        background: var(--gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      #welcomeText {
+        font-size: 0.95rem;
+        font-weight: 500;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 12px;
+      }
+
+      .nav-links a {
+        color: var(--text);
+        font-weight: 600;
+        text-decoration: none;
+        padding: 12px 20px;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        border: 2px solid var(--border);
+        background: rgba(10, 15, 13, 0.5);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9rem;
+      }
+
+      .nav-links a:hover {
+        border-color: var(--primary);
+        background: rgba(16, 185, 129, 0.1);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(16, 185, 129, 0.2);
+      }
+
+      /* Main Content */
+      main {
+        position: relative;
+        z-index: 10;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 24px;
+      }
+
+      /* Page Header */
+      .page-header {
         text-align: center;
+        margin-bottom: 40px;
+      }
+
+      .page-header h2 {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: var(--text);
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+      }
+
+      .page-header p {
+        color: var(--text-dim);
+        font-size: 1rem;
+      }
+
+      /* Bookings Container */
+      #bookings {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+        gap: 24px;
+      }
+
+      /* Booking Card - styled like login-card */
+      .booking {
+        background: linear-gradient(145deg, rgba(17, 25, 22, 0.95) 0%, rgba(10, 15, 13, 0.98) 100%);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 28px;
+        backdrop-filter: blur(20px);
+        box-shadow: 
+          0 25px 50px rgba(0, 0, 0, 0.5),
+          0 0 100px rgba(16, 185, 129, 0.05),
+          inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        position: relative;
+        overflow: hidden;
+        transition: all 0.3s ease;
+      }
+
+      .booking::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--gradient);
+        border-radius: 20px 20px 0 0;
+      }
+
+      .booking::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle at 30% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 40%);
+        pointer-events: none;
+      }
+
+      .booking:hover {
+        transform: translateY(-5px);
+        border-color: var(--primary);
+        box-shadow: 
+          0 30px 60px rgba(0, 0, 0, 0.6),
+          0 0 80px rgba(16, 185, 129, 0.15);
+      }
+
+      .booking-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border);
+        position: relative;
+        z-index: 1;
+      }
+
+      .booking-id {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--primary);
+        background: rgba(16, 185, 129, 0.1);
+        padding: 8px 16px;
+        border-radius: 25px;
+        border: 1px solid rgba(16, 185, 129, 0.2);
+      }
+
+      .booking-content {
+        position: relative;
+        z-index: 1;
+      }
+
+      .turf-name {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 6px;
+      }
+
+      .sport-badge {
+        display: inline-block;
+        background: rgba(16, 185, 129, 0.15);
+        color: var(--neon);
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        margin-bottom: 16px;
+        border: 1px solid rgba(16, 185, 129, 0.2);
       }
 
       .booking-row {
-        flex-direction: column;
-        gap: 4px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+        padding: 10px 14px;
+        background: rgba(10, 15, 13, 0.6);
+        border-radius: 10px;
+        border: 1px solid var(--border);
       }
 
       .booking-row strong {
-        min-width: auto;
+        min-width: 85px;
+        color: var(--text-dim);
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
       }
-    }
-  </style>
-</head>
-<body>
-  <header>
-    <nav>
-      <span id="welcomeText">Welcome</span>
-      <div class="nav-links">
-        <a href="home.html">🏠 Home</a>
-        <a href="login.html">🚪 Logout</a>
-      </div>
-    </nav>
-  </header>
 
-  <main>
-    <h2>My Bookings</h2>
-    <div id="bookings"></div>
-  </main>
+      .booking-row span {
+        color: var(--text);
+        font-weight: 500;
+      }
 
-  <script>
-    const user = JSON.parse(localStorage.getItem("user"));
+      .price {
+        font-size: 1.3rem;
+        font-weight: 800;
+        background: var(--gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
 
-    if (!user) {
-      alert("Please log in first.");
-      window.location.href = "login.html";
-    }
+      .mode-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        background: rgba(14, 165, 233, 0.15);
+        color: #38bdf8;
+        border: 1px solid rgba(14, 165, 233, 0.2);
+      }
 
-    document.getElementById("welcomeText").textContent = `Welcome, ${user.name}`;
+      /* Status Badges */
+      .status {
+        margin-top: 20px;
+        padding: 14px;
+        border-radius: 12px;
+        font-weight: 700;
+        text-align: center;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 1px;
+        position: relative;
+        z-index: 1;
+      }
 
-    async function loadBookings() {
-      const container = document.getElementById("bookings");
-      container.innerHTML = "<p class='loading'>Loading your bookings...</p>";
+      .booked, .pending {
+        background: rgba(245, 158, 11, 0.15);
+        color: #fbbf24;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+      }
 
-      try {
-        const res = await fetch(`http://localhost:4001/bookings/${user.id}`);
-        if (!res.ok) throw new Error("Failed to fetch bookings");
+      .confirmed {
+        background: rgba(16, 185, 129, 0.15);
+        color: var(--neon);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+      }
 
-        const bookings = await res.json();
-        container.innerHTML = "";
+      .canceled {
+        background: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+      }
 
-        if (!bookings || bookings.length === 0) {
-          container.innerHTML = "<p class='empty'>No bookings yet. Time to book a turf!</p>";
-          return;
+      /* Empty State */
+      .empty {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 80px 30px;
+        background: linear-gradient(145deg, rgba(17, 25, 22, 0.95) 0%, rgba(10, 15, 13, 0.98) 100%);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        color: var(--text-dim);
+        font-size: 1.1rem;
+      }
+
+      .empty::before {
+        content: "📭";
+        display: block;
+        font-size: 4rem;
+        margin-bottom: 20px;
+      }
+
+      /* Loading State */
+      .loading {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 80px 30px;
+        color: var(--text-muted);
+        font-size: 1.1rem;
+      }
+
+      .loading::before {
+        content: "⏳";
+        display: block;
+        font-size: 4rem;
+        margin-bottom: 20px;
+        animation: pulse 1.5s ease-in-out infinite;
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        #bookings {
+          grid-template-columns: 1fr;
         }
 
-        bookings.forEach(b => {
-          const modeLabel =
-            b.mode === "stranger"
-              ? "👥 Stranger Play"
-              : (b.price_charged === 0 ? "📝 Offline Booking" : "⚽ Normal Booking");
+        nav {
+          flex-direction: column;
+          gap: 16px;
+        }
 
-          const bookingCard = document.createElement('div');
-          bookingCard.className = 'booking';
-          bookingCard.innerHTML = `
-            <div class="booking-header">
-              <div class="booking-id">#${b.booking_id || b.id}</div>
-            </div>
-            <div class="booking-content">
-              <div>
+        .nav-links {
+          width: 100%;
+          justify-content: center;
+        }
+
+        .page-header h2 {
+          font-size: 1.6rem;
+        }
+
+        .booking {
+          padding: 22px;
+        }
+
+        .booking-row {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 4px;
+        }
+
+        .booking-row strong {
+          min-width: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Animated Background -->
+    <div class="bg-animation"></div>
+    <div class="grid-pattern"></div>
+    
+    <!-- Floating Elements -->
+    <div class="floating-elements">
+      <span class="floating-ball">⚽</span>
+      <span class="floating-ball">⚽</span>
+      <span class="floating-ball">⚽</span>
+      <span class="floating-ball">⚽</span>
+      <span class="floating-ball">⚽</span>
+    </div>
+
+    <header>
+      <nav>
+        <div class="logo-container">
+          <div class="logo-icon">⚽</div>
+          <span class="logo-text">KICKHUB</span>
+        </div>
+        <span id="welcomeText">👋 Welcome</span>
+        <div class="nav-links">
+          <a href="home.html">🏠 Home</a>
+          <a href="login.html">🚪 Logout</a>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <div class="page-header">
+        <h2>📅 My Bookings</h2>
+        <p>View all your turf reservations</p>
+      </div>
+      <div id="bookings"></div>
+    </main>
+
+    <script>
+      const user = JSON.parse(localStorage.getItem("user"));
+
+      if (!user) {
+        alert("Please log in first.");
+        window.location.href = "login.html";
+      }
+
+      document.getElementById("welcomeText").textContent = `👋 Welcome, ${user.name}`;
+
+      async function loadBookings() {
+        const container = document.getElementById("bookings");
+        container.innerHTML = "<p class='loading'>Loading your bookings...</p>";
+
+        try {
+          const res = await fetch(`http://localhost:4001/bookings/${user.id}`);
+          if (!res.ok) throw new Error("Failed to fetch bookings");
+
+          const bookings = await res.json();
+          container.innerHTML = "";
+
+          if (!bookings || bookings.length === 0) {
+            container.innerHTML = "<p class='empty'>No bookings yet. Time to book a turf!</p>";
+            return;
+          }
+
+          bookings.forEach(b => {
+            const modeLabel =
+              b.mode === "stranger"
+                ? "👥 Stranger Play"
+                : (b.price_charged === 0 ? "📝 Offline Booking" : "⚽ Normal Booking");
+
+            const bookingCard = document.createElement('div');
+            bookingCard.className = 'booking';
+            bookingCard.innerHTML = `
+              <div class="booking-header">
+                <div class="booking-id">#${b.booking_id || b.id}</div>
+              </div>
+              <div class="booking-content">
                 <div class="turf-name">${b.turf_name}</div>
                 <span class="sport-badge">${b.sport}</span>
+                
+                <div class="booking-row">
+                  <strong>📍 Location</strong>
+                  <span>${b.location}</span>
+                </div>
+                <div class="booking-row">
+                  <strong>👤 Customer</strong>
+                  <span>${user.name}</span>
+                </div>
+                <div class="booking-row">
+                  <strong>⏰ Slot</strong>
+                  <span>${b.slot_start} - ${b.slot_end}</span>
+                </div>
+                <div class="booking-row">
+                  <strong>💰 Price</strong>
+                  <span class="price">₹${b.price_charged}</span>
+                </div>
+                <div class="booking-row">
+                  <strong>🎮 Mode</strong>
+                  <span class="mode-badge">${modeLabel}</span>
+                </div>
               </div>
-              <div class="booking-row">
-                <strong>📍 Location:</strong>
-                <span>${b.location}</span>
-              </div>
-              <div class="booking-row">
-                <strong>👤 Customer:</strong>
-                <span>${user.name}</span>
-              </div>
-              <div class="booking-row">
-                <strong>⏰ Slot:</strong>
-                <span>${b.slot_start} - ${b.slot_end}</span>
-              </div>
-              <div class="booking-row">
-                <strong>💰 Price:</strong>
-                <span class="price">₹${b.price_charged}</span>
-              </div>
-              <div class="booking-row">
-                <strong>🎮 Mode:</strong>
-                <span class="mode-badge">${modeLabel}</span>
-              </div>
-            </div>
-            <div class="status ${b.status}">● ${b.status}</div>
-          `;
-          container.appendChild(bookingCard);
-        });
-      } catch (err) {
-        console.error("Error loading bookings:", err);
-        container.innerHTML = "<p class='empty'>Failed to load bookings. Please try again later. ❌</p>";
+              <div class="status ${b.status}">● ${b.status}</div>
+            `;
+            container.appendChild(bookingCard);
+          });
+        } catch (err) {
+          console.error("Error loading bookings:", err);
+          container.innerHTML = "<p class='empty'>Failed to load bookings. Please try again later. ❌</p>";
+        }
       }
-    }
 
-    loadBookings();
-  </script>
-</body>
-</html>
+      loadBookings();
+    </script>
+  </body>
+  </html>

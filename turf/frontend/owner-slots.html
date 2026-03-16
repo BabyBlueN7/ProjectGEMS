@@ -4,85 +4,512 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Owner Slot Manager</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    :root{ --bg:#f6f8fb; --card:#fff; --primary:#2563eb; --accent:#10b981; --muted:#6b7280; --text:#071233; --radius:12px; --shadow:0 10px 30px rgba(7,18,51,0.06) }
-    body{ margin:0; font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial; background:var(--bg); color:var(--text) }
-    header h1{ margin:0; padding:18px; background:linear-gradient(90deg,var(--primary), #1f4ed8); color:#fff; text-align:center }
-    nav{ background:transparent; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; max-width:1100px; margin:0 auto }
-    nav a{
+    :root {
+      --bg: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      --card: rgba(30, 41, 59, 0.8);
+      --card-border: rgba(148, 163, 184, 0.1);
+      --primary: #3b82f6;
+      --primary-glow: rgba(59, 130, 246, 0.4);
+      --accent: #10b981;
+      --accent-glow: rgba(16, 185, 129, 0.4);
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      --glass: rgba(255, 255, 255, 0.05);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* Animated Background */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        radial-gradient(ellipse at 20% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(16, 185, 129, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Header */
+    header {
+      position: relative;
+      z-index: 10;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(16, 185, 129, 0.1) 100%);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--card-border);
+      padding: 20px 0;
+    }
+
+    header h1 {
+      text-align: center;
+      font-size: 1.8rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 16px;
+    }
+
+    nav {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    #welcomeText {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      background: var(--glass);
+      padding: 12px 18px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--card-border);
+    }
+
+    #welcomeText .role {
+      font-size: 0.7rem;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-weight: 600;
+    }
+
+    #welcomeText .name {
+      font-size: 0.95rem;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    nav > div {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    nav a {
       color: #fff;
       text-decoration: none;
       font-weight: 600;
-      padding: 8px 12px;
-      margin-left: 10px;
-      background: var(--primary);
-      border-radius: 999px;
-      display: inline-block;
-      box-shadow: 0 4px 12px rgba(37,99,235,0.12);
-      transition: transform .08s ease, box-shadow .12s ease;
+      font-size: 0.85rem;
+      padding: 10px 18px;
+      background: linear-gradient(135deg, var(--primary), #2563eb);
+      border-radius: 50px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 15px var(--primary-glow);
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255,255,255,0.1);
     }
-    nav a:hover{ transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37,99,235,0.16); }
-    #welcomeText{
-      color: var(--text);
+
+    nav a:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px var(--primary-glow);
+    }
+
+    /* Main Content */
+    main {
+      position: relative;
+      z-index: 10;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    h2::after {
+      content: '';
+      flex: 1;
+      height: 2px;
+      background: linear-gradient(90deg, var(--card-border), transparent);
+      border-radius: 2px;
+    }
+
+    /* Date Selector */
+    .date-selector {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+
+    .date-selector button {
+      padding: 14px 24px;
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      background: var(--glass);
+      color: var(--text-muted);
+      cursor: pointer;
       font-weight: 600;
-      background: #fff;
-      padding: 8px 14px;
-      border-radius: 10px;
-      border: 1px solid rgba(7,18,51,0.06);
-      box-shadow: 0 2px 6px rgba(7,18,51,0.04);
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .date-selector button:hover {
+      background: rgba(59, 130, 246, 0.1);
+      border-color: var(--primary);
+      color: var(--text);
+    }
+
+    .date-selector button.selected {
+      background: linear-gradient(135deg, var(--primary), #2563eb);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 8px 25px var(--primary-glow);
+    }
+
+    /* Slot Cards */
+    .slot {
+      background: var(--card);
+      backdrop-filter: blur(20px);
+      padding: 24px;
+      margin: 16px 0;
+      border-radius: var(--radius);
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow);
+      transition: all 0.3s ease;
+    }
+
+    .slot:hover {
+      transform: translateY(-4px);
+      border-color: rgba(59, 130, 246, 0.3);
+      box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6);
+    }
+
+    .slot-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .slot-header > span {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.05));
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .slot-header .right-buttons {
       display: flex;
       flex-direction: column;
-      line-height: 1.3;
+      align-items: flex-end;
+      gap: 10px;
     }
-    #welcomeText .role{
-      font-size: 0.75em;
-      color: var(--primary);
+
+    .price {
+      font-weight: 800;
+      font-size: 1.4rem;
+      color: var(--accent);
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.05));
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .book-btn {
+      background: linear-gradient(135deg, var(--accent), #059669);
+      color: #fff;
+      border: none;
+      padding: 12px 24px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 20px var(--accent-glow);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .book-btn:hover:not([disabled]) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px var(--accent-glow);
+    }
+
+    button[disabled] {
+      background: rgba(100, 116, 139, 0.3) !important;
+      color: var(--text-dim) !important;
+      cursor: not-allowed !important;
+      box-shadow: none !important;
+      border: 1px solid var(--card-border);
+    }
+
+    /* Players Count */
+    .players-count {
+      margin: 18px 0 12px 0;
+      font-weight: 600;
+      color: var(--text);
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Progress Bar */
+    .progress {
+      background: rgba(100, 116, 139, 0.2);
+      border-radius: 20px;
+      height: 10px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+      animation: shimmer 2s infinite;
+    }
+
+    @keyframes shimmer {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .progress-fill {
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      height: 100%;
+      border-radius: 20px;
+      transition: width 0.5s ease;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Status Text */
+    .status-text {
+      margin-top: 14px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      background: var(--glass);
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--card-border);
+    }
+
+    /* See Players Button */
+    .see-players-btn {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.05));
+      color: #a78bfa;
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      transition: all 0.3s ease;
+      margin-top: 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .see-players-btn:hover {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(139, 92, 246, 0.1));
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(139, 92, 246, 0.3);
+    }
+
+    /* Player List */
+    .player-list {
+      background: rgba(15, 23, 42, 0.6);
+      padding: 16px;
+      margin-top: 16px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--card-border);
+      display: none;
+    }
+
+    .player-list.show {
+      display: block;
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .player-list div {
+      padding: 14px;
+      border-bottom: 1px solid var(--card-border);
+      transition: background 0.2s ease;
+      border-radius: var(--radius-sm);
+    }
+
+    .player-list div:hover {
+      background: var(--glass);
+    }
+
+    .player-list div:last-child {
+      border-bottom: none;
+    }
+
+    .player-list strong {
+      color: var(--text-dim);
+      font-size: 0.8rem;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
-    #welcomeText .name{
-      font-size: 1em;
-      color: var(--text);
-    }
-    main{ padding:20px; max-width:1100px; margin:0 auto }
-    h2{ color: var(--text); margin-bottom: 20px; }
-    .date-selector{ display:flex; gap:10px; margin-bottom:20px; flex-wrap: wrap; }
-    .date-selector button{ padding:10px 16px; border:none; border-radius:10px; background:rgba(7,18,51,0.06); color:var(--muted); cursor:pointer; font-weight: 600; transition: all 0.2s ease; }
-    .date-selector button:hover{ background: rgba(7,18,51,0.1); }
-    .date-selector button.selected{ background:var(--primary); color:#fff; box-shadow: 0 4px 12px rgba(37,99,235,0.2); }
-    .slot{ background:var(--card); padding:18px; margin:12px 0; border-radius:12px; box-shadow:var(--shadow); border:1px solid rgba(7,18,51,0.04); transition: transform 0.2s ease, box-shadow 0.2s ease; }
-    .slot:hover{ transform: translateY(-2px); box-shadow: 0 14px 40px rgba(7,18,51,0.1); }
-    .slot-header{ display:flex; justify-content:space-between; align-items:flex-start; flex-wrap: wrap; gap: 10px; }
-    .slot-header > span{ font-size: 1.1em; font-weight: 700; color: var(--text); background: rgba(37,99,235,0.08); padding: 6px 12px; border-radius: 8px; }
-    .slot-header .right-buttons{ display:flex; flex-direction:column; align-items:flex-end; gap: 6px; }
-    .price{ font-weight:700; color:var(--accent); font-size: 1.2em; margin-bottom:6px; background: rgba(16,185,129,0.1); padding: 4px 10px; border-radius: 8px; }
-    .book-btn{ background:var(--accent); color:#fff; border:none; padding:10px 16px; border-radius:10px; cursor:pointer; font-weight: 600; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(16,185,129,0.2); }
-    .book-btn:hover:not([disabled]){ transform: translateY(-2px); box-shadow: 0 6px 16px rgba(16,185,129,0.3); }
-    button[disabled]{ background: #e6e9ef; color:var(--muted); cursor:not-allowed; box-shadow: none; }
-    .progress{ background:#e9eef6; border-radius:10px; height:14px; margin-top:12px; overflow:hidden }
-    .progress-fill{ background: linear-gradient(90deg, var(--primary), #3b82f6); height:100%; border-radius:10px; transition: width 0.4s ease; }
-    .status-text{ margin-top:10px; font-size:0.95em; color: var(--muted); font-weight: 500; }
-    .players-count{ margin: 12px 0 8px 0; font-weight: 600; color: var(--text); }
-    .see-players-btn{ background: rgba(37,99,235,0.1); color: var(--primary); border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s ease; margin-top: 10px; }
-    .see-players-btn:hover{ background: rgba(37,99,235,0.2); }
-    .player-list{ background:#fbfdff; padding:12px; margin-top:12px; border-radius:10px; border:1px solid rgba(7,18,51,0.06); display: none; }
-    .player-list.show{ display: block; }
-    .player-list div{ padding:10px; border-bottom:1px solid rgba(7,18,51,0.06); }
-    .player-list div:last-child{ border-bottom: none; }
-    .player-list strong{ color: var(--muted); font-size: 0.9em; }
 
-    @media (max-width: 600px) {
-      nav{ flex-direction: column; gap: 12px; }
-      nav > div{ display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-      nav a{ margin-left: 0; }
-      .slot-header{ flex-direction: column; align-items: flex-start; }
-      .slot-header .right-buttons{ align-items: flex-start; width: 100%; }
+    .player-list p {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    /* Empty State */
+    #slots p {
+      color: var(--text-muted);
+      text-align: center;
+      padding: 40px;
+      font-size: 1rem;
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      header h1 {
+        font-size: 1.4rem;
+      }
+
+      nav {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+      }
+
+      nav > div {
+        justify-content: center;
+      }
+
+      nav a {
+        padding: 8px 14px;
+        font-size: 0.8rem;
+      }
+
+      main {
+        padding: 20px 16px;
+      }
+
+      h2 {
+        font-size: 1.2rem;
+      }
+
+      .date-selector {
+        justify-content: center;
+      }
+
+      .date-selector button {
+        padding: 12px 18px;
+        font-size: 0.85rem;
+      }
+
+      .slot {
+        padding: 18px;
+      }
+
+      .slot-header {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .slot-header > span {
+        justify-content: center;
+      }
+
+      .slot-header .right-buttons {
+        align-items: stretch;
+        flex-direction: row;
+        justify-content: space-between;
+      }
+
+      .price {
+        font-size: 1.2rem;
+      }
+
+      .book-btn {
+        flex: 1;
+        justify-content: center;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .slot-header .right-buttons {
+        flex-direction: column;
+      }
+
+      nav a {
+        flex: 1;
+        justify-content: center;
+        text-align: center;
+      }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1 id="turfName">Owner Slot Manager</h1>
+    <h1 id="turfName">🏟️ Owner Slot Manager</h1>
     <nav>
       <span id="welcomeText">
         <span class="role">🏟️ Turf Owner</span>
@@ -159,7 +586,7 @@
           return;
         }
 
-        document.getElementById("turfName").innerText = data.turf.name;
+        document.getElementById("turfName").innerText = `🏟️ ${data.turf.name}`;
         const container = document.getElementById("slots");
         container.innerHTML = "";
 
@@ -185,7 +612,7 @@
           const bookButtons = normalBookingBlocked
             ? `<div class="right-buttons">
                  <span class="price">₹${slot.price}</span>
-                 <button disabled>Booked</button>
+                 <button disabled>🔒 Booked</button>
                </div>`
             : `<div class="right-buttons">
                  <span class="price">₹${slot.price}</span>
@@ -197,7 +624,7 @@
               <span>🕐 ${slot.start} - ${slot.end}</span>
               ${bookButtons}
             </div>
-            <p class="players-count">${max > 0 ? `👥 ${joined}/${max} players joined` : `👥 ${joined} players joined`}</p>
+            <p class="players-count">👥 ${max > 0 ? `${joined}/${max} players joined` : `${joined} players joined`}</p>
             <div class="progress">
               <div class="progress-fill" style="width:${percent}%;"></div>
             </div>
@@ -290,4 +717,4 @@
     setupDateSelector();
   </script>
 </body>
-</html>
+</html> 

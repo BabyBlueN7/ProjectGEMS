@@ -4,125 +4,393 @@
   <meta charset="utf-8" />
   <title>Wallet — Kick-Hub</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    :root{ --bg:#f6f8fb; --card:#ffffff; --primary:#2563eb; --accent:#10b981; --muted:#6b7280; --text:#071233; --radius:12px; --shadow:0 12px 36px rgba(7,18,51,0.08) }
-    *{box-sizing:border-box}
-    body{ margin:0; font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial; background:var(--bg); color:var(--text) }
-    header{ padding:18px; background:linear-gradient(90deg,var(--primary), #1f4ed8); color:#fff }
-    header h1{ margin:0; font-size:18px }
-    .container{ max-width:980px; margin:24px auto; padding:0 16px }
-    .wallet-wrap{ display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap }
-    .wallet-card{ background:var(--card); padding:22px; border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid rgba(7,18,51,0.04); width:320px }
-    .wallet-balance{ font-size:28px; font-weight:800; color:var(--primary); margin:6px 0 }
-    .wallet-sub{ color:var(--muted); margin-bottom:12px }
-    .quick-add{ display:flex; gap:8px; margin:12px 0 }
-    .quick-add button{ flex:1; padding:10px; border-radius:10px; border:none; cursor:pointer; background:#eef6ff; color:var(--primary); font-weight:700 }
-    .add-form{ display:flex; gap:8px; margin-top:8px }
-    .add-form input{ flex:1; padding:10px; border-radius:10px; border:1px solid rgba(7,18,51,0.06) }
-    .add-form button{ padding:10px 14px; background:var(--primary); color:#fff; border:none; border-radius:10px; cursor:pointer }
-    .transactions{ flex:1; min-width:320px }
-    .tx-card{ background:var(--card); padding:16px; border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid rgba(7,18,51,0.04) }
-    .tx-item{ display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(7,18,51,0.04) }
-    .tx-item:last-child{ border-bottom:none }
-    .tx-type{ font-weight:700 }
-    .empty{ color:var(--muted); text-align:center; padding:20px }
-    @media (max-width:760px){ .wallet-wrap{ flex-direction:column } }
+    :root {
+      --bg-dark: #0a0f0d;
+      --bg-card: #111916;
+      --primary: #10b981;
+      --primary-light: #34d399;
+      --primary-dark: #059669;
+      --accent: #22c55e;
+      --neon: #4ade80;
+      --text: #f0fdf4;
+      --text-muted: #86efac;
+      --text-dim: #6b7280;
+      --border: #1f3d2a;
+      --danger: #ef4444;
+      --gradient: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+      --glow: 0 0 40px rgba(16,185,129,0.3);
+      --glow-strong: 0 0 60px rgba(16,185,129,0.5);
+    }
+ 
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { min-height: 100%; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+ 
+    /* Animated background */
+    .bg-animation {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 0; overflow: hidden;
+    }
+    .bg-animation::before {
+      content: ''; position: absolute; top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: radial-gradient(ellipse at center, rgba(16,185,129,0.08) 0%, transparent 50%);
+      animation: rotate 30s linear infinite;
+    }
+    .bg-animation::after {
+      content: ''; position: absolute; top: 50%; right: -30%;
+      width: 80%; height: 80%;
+      background: radial-gradient(ellipse at center, rgba(34,197,94,0.05) 0%, transparent 60%);
+      animation: floatBg 20s ease-in-out infinite;
+    }
+    @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes floatBg {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-50px) scale(1.1); }
+    }
+ 
+    .grid-pattern {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-image:
+        linear-gradient(rgba(16,185,129,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(16,185,129,0.03) 1px, transparent 1px);
+      background-size: 50px 50px; z-index: 1;
+    }
+ 
+    .floating-elements {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 1; pointer-events: none;
+    }
+    .floating-coin {
+      position: absolute; font-size: 1.8rem; opacity: 0.07;
+      animation: floatCoin 15s ease-in-out infinite;
+    }
+    .floating-coin:nth-child(1) { top: 8%;  left: 8%;   animation-delay: 0s; }
+    .floating-coin:nth-child(2) { top: 18%; right: 12%; animation-delay: 3s; }
+    .floating-coin:nth-child(3) { bottom: 28%; left: 6%; animation-delay: 6s; }
+    .floating-coin:nth-child(4) { bottom: 12%; right: 8%; animation-delay: 9s; }
+    .floating-coin:nth-child(5) { top: 55%; left: 22%; animation-delay: 12s; }
+    @keyframes floatCoin {
+      0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.07; }
+      50%       { transform: translateY(-28px) rotate(18deg); opacity: 0.15; }
+    }
+ 
+    /* Header */
+    header {
+      position: relative; z-index: 10;
+      background: linear-gradient(145deg, rgba(17,25,22,0.95) 0%, rgba(10,15,13,0.98) 100%);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+    }
+    header::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 3px; background: var(--gradient);
+    }
+    nav {
+      display: flex; justify-content: space-between; align-items: center;
+      max-width: 1200px; margin: 0 auto; padding: 20px 24px;
+    }
+    .logo-container { display: flex; align-items: center; gap: 12px; }
+    .logo-icon {
+      width: 45px; height: 45px; background: var(--gradient);
+      border-radius: 12px; display: flex; align-items: center; justify-content: center;
+      font-size: 22px; box-shadow: var(--glow);
+      animation: pulseGlow 3s ease-in-out infinite;
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: var(--glow); }
+      50% { box-shadow: var(--glow-strong); }
+    }
+    .logo-text {
+      font-size: 1.5rem; font-weight: 800; letter-spacing: 1px;
+      background: var(--gradient);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    #welcomeText {
+      font-size: 0.95rem; font-weight: 500; color: var(--text-muted);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .nav-links { display: flex; gap: 12px; }
+    .nav-links a {
+      color: var(--text); font-weight: 600; text-decoration: none;
+      padding: 12px 20px; border-radius: 12px;
+      transition: all 0.3s ease;
+      border: 2px solid var(--border);
+      background: rgba(10,15,13,0.5);
+      display: flex; align-items: center; gap: 8px; font-size: 0.9rem;
+    }
+    .nav-links a:hover {
+      border-color: var(--primary); background: rgba(16,185,129,0.1);
+      transform: translateY(-2px); box-shadow: 0 5px 20px rgba(16,185,129,0.2);
+    }
+ 
+    /* Main */
+    main {
+      position: relative; z-index: 10;
+      max-width: 1100px; margin: 0 auto; padding: 40px 24px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .page-header { text-align: center; margin-bottom: 40px; }
+    .page-header h2 {
+      font-size: 2.2rem; font-weight: 800; color: var(--text);
+      margin-bottom: 8px;
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+    }
+    .page-header p { color: var(--text-dim); font-size: 1rem; }
+ 
+    .wallet-wrap {
+      display: flex;
+      justify-content: center;
+      width: 100%;
+    }
+ 
+    /* Glass card shell */
+    .glass-card {
+      background: linear-gradient(145deg, rgba(17,25,22,0.95) 0%, rgba(10,15,13,0.98) 100%);
+      border: 1px solid var(--border); border-radius: 20px;
+      backdrop-filter: blur(20px);
+      box-shadow:
+        0 25px 50px rgba(0,0,0,0.5),
+        0 0 100px rgba(16,185,129,0.05),
+        inset 0 1px 0 rgba(255,255,255,0.05);
+      position: relative;
+      transition: all 0.3s ease;
+    }
+    .glass-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0;
+      height: 3px; background: var(--gradient);
+    }
+    .glass-card::after {
+      content: ''; position: absolute; top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: radial-gradient(circle at 30% 20%, rgba(16,185,129,0.06) 0%, transparent 40%);
+      pointer-events: none;
+    }
+ 
+    /* Wallet panel */
+    .wallet-card { padding: 36px; width: 440px; }
+ 
+    .balance-section {
+      text-align: center;
+      padding: 26px 0 22px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+      position: relative; z-index: 1;
+    }
+    .balance-label {
+      font-size: 0.7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 2px;
+      color: var(--text-dim); margin-bottom: 10px;
+    }
+    .balance-amount {
+      font-size: 3rem; font-weight: 900; line-height: 1;
+      background: var(--gradient);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .balance-currency {
+      font-size: 1.5rem; font-weight: 700; vertical-align: super;
+      background: var(--gradient);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .balance-sub { margin-top: 8px; font-size: 0.78rem; color: var(--text-dim); }
+ 
+    .section-label {
+      font-size: 0.7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1.5px;
+      color: var(--text-dim); margin-bottom: 10px;
+      position: relative; z-index: 1;
+    }
+ 
+    .quick-add { display: flex; gap: 10px; margin-bottom: 22px; position: relative; z-index: 1; }
+    .quick-add button {
+      flex: 1; padding: 11px 6px; border-radius: 12px;
+      border: 1px solid rgba(16,185,129,0.25); cursor: pointer;
+      background: rgba(16,185,129,0.08); color: var(--neon);
+      font-weight: 700; font-family: 'Poppins', sans-serif; font-size: 0.85rem;
+      transition: all 0.25s ease;
+    }
+    .quick-add button:hover {
+      background: rgba(16,185,129,0.18); border-color: var(--primary);
+      transform: translateY(-2px); box-shadow: 0 4px 16px rgba(16,185,129,0.2);
+    }
+    .quick-add button:active { transform: translateY(0); }
+ 
+    .add-form { display: flex; gap: 10px; margin-bottom: 18px; position: relative; z-index: 1; overflow: visible; }
+    .add-form input {
+      flex: 1; padding: 12px 14px; border-radius: 12px;
+      border: 1px solid var(--border); background: rgba(10,15,13,0.7);
+      color: var(--text); font-family: 'Poppins', sans-serif; font-size: 0.9rem;
+      outline: none; transition: border-color 0.2s;
+    }
+    .add-form input::placeholder { color: var(--text-dim); }
+    .add-form input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(16,185,129,0.12); }
+    .add-form button {
+      padding: 12px 0; width: 90px; flex-shrink: 0; background: var(--gradient); color: #fff;
+      border: none; border-radius: 12px; cursor: pointer;
+      font-family: 'Poppins', sans-serif; font-weight: 700; font-size: 0.95rem;
+      transition: all 0.25s ease; white-space: nowrap;
+    }
+    .add-form button:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(16,185,129,0.35); }
+    .add-form button:active { transform: translateY(0); }
+ 
+ 
+    /* Transactions */
+    .tx-card { padding: 28px; }
+    .tx-list { position: relative; z-index: 1; }
+    .tx-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 16px;
+      background: rgba(10,15,13,0.5);
+      border: 1px solid var(--border); border-radius: 12px;
+      margin-bottom: 10px; transition: all 0.2s ease;
+    }
+    .tx-item:last-child { margin-bottom: 0; }
+    .tx-item:hover {
+      border-color: rgba(16,185,129,0.3);
+      background: rgba(16,185,129,0.05);
+    }
+    .tx-left { display: flex; align-items: center; gap: 12px; }
+    .tx-icon {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; flex-shrink: 0;
+    }
+    .tx-type { font-weight: 700; font-size: 0.9rem; color: var(--text); }
+    .tx-note { font-size: 0.75rem; color: var(--text-dim); margin-top: 2px; }
+    .tx-amount { font-weight: 800; font-size: 1rem; }
+    .tx-amount.credit {
+      background: var(--gradient);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .tx-amount.debit { color: #f87171; }
+ 
+    .empty {
+      text-align: center; padding: 60px 30px;
+      color: var(--text-dim); font-size: 0.95rem;
+      position: relative; z-index: 1;
+    }
+    .empty::before {
+      content: "💳"; display: block; font-size: 3.5rem;
+      margin-bottom: 16px; opacity: 0.35;
+    }
+ 
+    @media (max-width: 820px) {
+      .wallet-wrap { grid-template-columns: 1fr; }
+      nav { flex-direction: column; gap: 16px; }
+      .nav-links { width: 100%; justify-content: center; }
+      .page-header h2 { font-size: 1.6rem; }
+    }
   </style>
 </head>
 <body>
+  <div class="bg-animation"></div>
+  <div class="grid-pattern"></div>
+  <div class="floating-elements">
+    <span class="floating-coin">💰</span>
+    <span class="floating-coin">₹</span>
+    <span class="floating-coin">💳</span>
+    <span class="floating-coin">💰</span>
+    <span class="floating-coin">₹</span>
+  </div>
+ 
   <header>
-    <h1>Kick-Hub Wallet</h1>
+    <nav>
+      <div class="logo-container">
+        <div class="logo-icon">⚽</div>
+        <span class="logo-text">KICKHUB</span>
+      </div>
+      <span id="welcomeText">👋 Welcome</span>
+      <div class="nav-links">
+        <a href="home.html">🏠 Home</a>
+        <a href="login.html">🚪 Logout</a>
+      </div>
+    </nav>
   </header>
-
-  <div class="container">
+ 
+  <main>
+    <div class="page-header">
+      <h2>💳 My Wallet</h2>
+      <p>Manage your KickHub balance</p>
+    </div>
+ 
     <div class="wallet-wrap">
-      <div class="wallet-card">
-        <div class="wallet-sub">Available Balance</div>
-        <div class="wallet-balance">₹<span id="balance">0</span></div>
-        <div class="wallet-sub">Quick add</div>
+ 
+      <div class="glass-card wallet-card">
+        <div class="balance-section">
+          <div class="balance-label">Available Balance</div>
+          <div class="balance-amount">
+            <span class="balance-currency">₹</span><span id="balance">0</span>
+          </div>
+          <div class="balance-sub">KickHub Wallet</div>
+        </div>
+ 
+        <div class="section-label">Quick Add</div>
         <div class="quick-add">
           <button onclick="quickAdd(50)">+₹50</button>
           <button onclick="quickAdd(100)">+₹100</button>
           <button onclick="quickAdd(200)">+₹200</button>
         </div>
-
-        <div class="wallet-sub">Add custom amount</div>
+ 
+        <div class="section-label">Custom Amount</div>
         <div class="add-form">
-          <input id="amount" type="number" placeholder="Enter amount" min="1" />
+          <input id="amount" type="number" placeholder="Enter amount (₹)" min="1" />
           <button id="addBtn">Add</button>
         </div>
-        <p class="wallet-sub" style="margin-top:12px; font-size:13px;">Note: This demo calls the backend `/wallet/add` endpoint to increase the balance.</p>
+ 
       </div>
-
-      <div class="transactions">
-        <div class="tx-card">
-          <h3 style="margin-top:0">Recent Activity</h3>
-          <div id="txList" class="tx-list">
-            <div class="empty">No transactions yet</div>
-          </div>
-        </div>
-      </div>
+ 
     </div>
-  </div>
-
+  </main>
+ 
   <script>
     const user = JSON.parse(localStorage.getItem('user') || 'null');
     if (!user?.id) {
       alert('Please log in first.');
       window.location.href = 'login.html';
     }
-
-    const balanceEl = document.getElementById('balance');
-    const txListEl = document.getElementById('txList');
+ 
+    document.getElementById('welcomeText').textContent = `👋 Welcome, ${user?.name || ''}`;
+ 
+    const balanceEl   = document.getElementById('balance');
     const amountInput = document.getElementById('amount');
-
-    let transactions = [];
-
+ 
     async function loadBalance() {
       try {
-        const res = await fetch(`http://localhost:4001/wallet/${user.id}`);
+        const res  = await fetch(`http://localhost:4001/wallet/${user.id}`);
         const data = await res.json();
         balanceEl.textContent = data.balance ?? 0;
       } catch (err) {
         console.error('Failed to load balance', err);
       }
     }
-
-    function renderTx() {
-      if (!transactions.length) {
-        txListEl.innerHTML = '<div class="empty">No transactions yet</div>';
-        return;
-      }
-      txListEl.innerHTML = transactions.map(t => `
-        <div class="tx-item">
-          <div>
-            <div class="tx-type">${t.type}</div>
-            <div style="font-size:12px;color:var(--muted)">${t.note}</div>
-          </div>
-          <div style="font-weight:700; color:${t.amount>0?"var(--accent)":"#ef4444"}">₹${t.amount}</div>
-        </div>
-      `).join('');
-    }
-
+ 
     async function addMoney(amount) {
       try {
-        const res = await fetch('http://localhost:4001/wallet/add', {
+        const res  = await fetch('http://localhost:4001/wallet/add', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ user_id: user.id, amount })
         });
         const data = await res.json();
         balanceEl.textContent = data.balance ?? balanceEl.textContent;
-        transactions.unshift({ type: 'Top-up', amount, note: 'Added via Wallet page' });
-        renderTx();
       } catch (err) {
         console.error('Add money failed', err);
         alert('Failed to add money. Check console.');
       }
     }
-
+ 
     function quickAdd(a) { amountInput.value = a; addBtn.click(); }
-
+ 
     const addBtn = document.getElementById('addBtn');
     addBtn.addEventListener('click', () => {
       const amt = parseInt(amountInput.value);
@@ -130,8 +398,7 @@
       addMoney(amt);
       amountInput.value = '';
     });
-
-    // initial load
+ 
     loadBalance();
     renderTx();
   </script>

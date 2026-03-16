@@ -13,21 +13,21 @@
       --bg-card: #111916;
       --bg-card-hover: #162019;
       --bg-input: #0d1210;
-      --primary: #10b948;
-      --primary-light: #34d399;
-      --primary-dark: #059669;
-      --accent: #22c55e;
-      --neon: #4ade80;
+      --primary: #10d47a;
+      --primary-light: #36f5a0;
+      --primary-dark: #0bb865;
+      --accent: #0ce684;
+      --neon: #2dfc9f;
       --secondary: #0ea5e9;
       --warning: #f59e0b;
       --danger: #ef4444;
       --text: #f0fdf4;
-      --text-muted: #86efac;
+      --text-muted: #6ee7b7;
       --text-dim: #6b7280;
-      --border: #1f3d2a;
-      --gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      --border: #1a3528;
+      --gradient: linear-gradient(135deg, #10d47a 0%, #0bb865 100%);
       --gradient-blue: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
-      --glow: 0 0 30px rgba(16, 185, 129, 0.2);
+      --glow: 0 0 30px rgba(16, 212, 122, 0.22);
     }
 
     * {
@@ -62,7 +62,7 @@
       left: -50%;
       width: 200%;
       height: 200%;
-      background: radial-gradient(ellipse at center, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
+      background: radial-gradient(ellipse at center, rgba(16, 212, 122, 0.05) 0%, transparent 50%);
       animation: rotate 40s linear infinite;
     }
 
@@ -78,8 +78,8 @@
       width: 100%;
       height: 100%;
       background-image: 
-        linear-gradient(rgba(16, 185, 129, 0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(16, 185, 129, 0.02) 1px, transparent 1px);
+        linear-gradient(rgba(16, 212, 122, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(16, 212, 122, 0.02) 1px, transparent 1px);
       background-size: 50px 50px;
       z-index: 1;
       pointer-events: none;
@@ -103,6 +103,14 @@
       font-size: 1.4rem;
       font-weight: 700;
       color: #fff;
+      margin-bottom: 6px;
+    }
+
+    .header-top .turf-contact {
+      font-size: 0.50rem;
+      color: rgba(255,255,255,0.85);
+      margin: 0;
+      opacity: 0.9;
     }
 
     nav {
@@ -154,8 +162,8 @@
     }
 
     .wallet-badge {
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.3);
+      background: rgba(16, 212, 122, 0.1);
+      border: 1px solid rgba(16, 212, 122, 0.3);
       padding: 8px 14px;
       border-radius: 10px;
       color: var(--accent);
@@ -187,7 +195,7 @@
     }
 
     .nav-link.primary:hover {
-      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+      box-shadow: 0 4px 15px rgba(16, 212, 122, 0.3);
     }
 
     /* Main Content */
@@ -236,7 +244,7 @@
       background: var(--gradient);
       border-color: transparent;
       color: #fff;
-      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+      box-shadow: 0 4px 15px rgba(16, 212, 122, 0.3);
     }
 
     /* Slot Card */
@@ -305,7 +313,7 @@
     }
 
     .book-btn:hover:not(:disabled) {
-      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+      box-shadow: 0 4px 15px rgba(16, 212, 122, 0.4);
       transform: translateY(-2px);
     }
 
@@ -513,6 +521,7 @@
   <header>
     <div class="header-top">
       <h1 id="turfName">Book Slots</h1>
+      <p id="turfContact" class="turf-contact">Contact: —</p>
     </div>
     <nav>
       <div class="welcome-section">
@@ -601,6 +610,7 @@
         const data = await res.json();
 
         document.getElementById("turfName").innerText = data.turf.name;
+        document.getElementById("turfContact").innerText = data.turf.contact ? `Contact: ${data.turf.contact}` : "Contact: —";
         container.innerHTML = "";
 
         if (!data.slots || data.slots.length === 0) {
