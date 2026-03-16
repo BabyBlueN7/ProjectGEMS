@@ -2,232 +2,759 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Turf Slots</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Book Slots | KICKHUB</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    :root{ --bg:#f6f8fb; --card:#fff; --primary:#2563eb; --accent:#10b981; --muted:#6b7280; --text:#071233; --radius:12px; --shadow:0 10px 30px rgba(7,18,51,0.06) }
-    body{ margin:0; font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial; background:var(--bg); color:var(--text) }
-    header h1{ margin:0; padding:18px; background:linear-gradient(90deg,var(--primary), #1f4ed8); color:#fff; text-align:center }
-    nav{ background:transparent; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; max-width:1100px; margin:0 auto }
-    /* Nav links as high-contrast pill buttons */
-    nav a{
-      color: #fff;
-      text-decoration: none;
-      font-weight: 600;
-      padding: 8px 12px;
-      margin-left: 10px;
-      background: var(--primary);
-      border-radius: 999px;
-      display: inline-block;
-      box-shadow: 0 4px 12px rgba(37,99,235,0.12);
-      transition: transform .08s ease, box-shadow .12s ease;
+    :root {
+      --bg-dark: #0a0f0d;
+      --bg-card: #111916;
+      --bg-card-hover: #162019;
+      --bg-input: #0d1210;
+      --primary: #10b948;
+      --primary-light: #34d399;
+      --primary-dark: #059669;
+      --accent: #22c55e;
+      --neon: #4ade80;
+      --secondary: #0ea5e9;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text: #f0fdf4;
+      --text-muted: #86efac;
+      --text-dim: #6b7280;
+      --border: #1f3d2a;
+      --gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      --gradient-blue: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+      --glow: 0 0 30px rgba(16, 185, 129, 0.2);
     }
-    nav a:hover{ transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37,99,235,0.16); }
-    /* Wallet badge styling */
-    nav #wallet{ background: #fff; padding:6px 10px; border-radius:10px; color:#10b981; font-weight:700; margin-right:12px; display:inline-block; border:1px solid rgba(7,18,51,0.06); box-shadow:0 2px 6px rgba(7,18,51,0.04) }
-    main{ padding:20px; max-width:1100px; margin:0 auto }
-    .date-selector{ display:flex; gap:10px; margin-bottom:20px }
-    .date-selector button{ padding:8px 12px; border:none; border-radius:10px; background:rgba(7,18,51,0.06); color:var(--muted); cursor:pointer }
-    .date-selector button.selected{ background:var(--primary); color:#fff }
-    .slot{ background:var(--card); padding:14px; margin:10px 0; border-radius:12px; box-shadow:var(--shadow); border:1px solid rgba(7,18,51,0.04) }
-    .slot-header{ display:flex; justify-content:space-between; align-items:flex-start }
-    .slot-header .right-buttons{ display:flex; flex-direction:column; align-items:flex-end }
-    .price{ font-weight:700; color:var(--accent); margin-bottom:6px }
-    .book-btn{ background:var(--accent); color:#fff; border:none; padding:8px 12px; border-radius:10px; cursor:pointer; margin-bottom:6px }
-    .stranger-btn{ background:var(--primary); color:#fff; border:none; padding:8px 12px; border-radius:10px; cursor:pointer }
-    .stranger-btn.booked-by-user{ background:var(--accent) }
-    button[disabled]{ background:#e6e9ef; color:var(--muted); cursor:not-allowed }
-    .progress{ background:#e9eef6; border-radius:10px; height:12px; margin-top:8px; overflow:hidden }
-    .progress-fill{ background:var(--primary); height:100%; border-radius:10px }
-    .status-text{ margin-top:6px; font-size:0.95em }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* Background Effects */
+    .bg-animation {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .bg-animation::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(ellipse at center, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
+      animation: rotate 40s linear infinite;
+    }
+
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .grid-pattern {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        linear-gradient(rgba(16, 185, 129, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(16, 185, 129, 0.02) 1px, transparent 1px);
+      background-size: 50px 50px;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* Header */
+    header {
+      position: relative;
+      z-index: 10;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-top {
+      background: var(--gradient);
+      padding: 20px;
+      text-align: center;
+    }
+
+    .header-top h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    nav {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .welcome-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      background: var(--gradient);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .welcome-info h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .welcome-info p {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .wallet-badge {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      padding: 8px 14px;
+      border-radius: 10px;
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .nav-link {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .nav-link:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .nav-link.primary {
+      background: var(--gradient);
+      border: none;
+      color: #fff;
+    }
+
+    .nav-link.primary:hover {
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    }
+
+    /* Main Content */
+    main {
+      position: relative;
+      z-index: 10;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    .page-title {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 24px;
+    }
+
+    /* Date Selector */
+    .date-selector {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .date-selector button {
+      padding: 12px 20px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg-card);
+      color: var(--text-dim);
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .date-selector button:hover {
+      border-color: var(--primary);
+      color: var(--text);
+    }
+
+    .date-selector button.selected {
+      background: var(--gradient);
+      border-color: transparent;
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    }
+
+    /* Slot Card */
+    .slot {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 16px;
+      transition: all 0.2s ease;
+    }
+
+    .slot:hover {
+      border-color: var(--border);
+      box-shadow: var(--glow);
+    }
+
+    .slot-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .slot-time {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .slot-time-badge {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: 8px;
+    }
+
+    .right-buttons {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 10px;
+    }
+
+    .price {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .book-btn {
+      background: var(--gradient);
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .book-btn:hover:not(:disabled) {
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .book-btn:disabled {
+      background: var(--bg-dark);
+      color: var(--text-dim);
+      cursor: not-allowed;
+      border: 1px solid var(--border);
+    }
+
+    .stranger-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .stranger-price {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--secondary);
+    }
+
+    .stranger-btn {
+      background: var(--gradient-blue);
+      color: #fff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .stranger-btn:hover:not(:disabled) {
+      box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .stranger-btn:disabled {
+      background: var(--bg-dark);
+      color: var(--text-dim);
+      cursor: not-allowed;
+      border: 1px solid var(--border);
+    }
+
+    .stranger-btn.booked-by-user {
+      background: var(--gradient);
+    }
+
+    /* Progress */
+    .slot-info {
+      margin-top: 16px;
+    }
+
+    .players-count {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .progress {
+      background: var(--bg-dark);
+      border-radius: 10px;
+      height: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .progress-fill {
+      background: var(--gradient);
+      height: 100%;
+      border-radius: 10px;
+      transition: width 0.3s ease;
+    }
+
+    .status-text {
+      margin-top: 10px;
+      font-size: 0.85rem;
+      color: var(--text-dim);
+    }
+
+    .status-text.success {
+      color: var(--accent);
+    }
+
+    .status-text.waiting {
+      color: var(--warning);
+    }
+
+    /* See Players Button */
+    .see-players-btn {
+      margin-top: 14px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .see-players-btn:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    /* Player List */
+    .player-list {
+      margin-top: 12px;
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      display: none;
+    }
+
+    .player-list.show {
+      display: block;
+    }
+
+    .player-item {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+
+    .player-item:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .player-item strong {
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    .player-item span {
+      color: var(--text);
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      color: var(--text-dim);
+    }
+
+    /* Loading */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-dim);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      nav {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .nav-right {
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .slot-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .right-buttons {
+        align-items: flex-start;
+        width: 100%;
+      }
+
+      .book-btn, .stranger-btn {
+        width: 100%;
+        text-align: center;
+      }
+
+      .stranger-row {
+        width: 100%;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
   </style>
 </head>
 <body>
+  <!-- Background -->
+  <div class="bg-animation"></div>
+  <div class="grid-pattern"></div>
+
+  <!-- Header -->
   <header>
-    <h1 id="turfName">Turf Slots</h1>
+    <div class="header-top">
+      <h1 id="turfName">Book Slots</h1>
+    </div>
     <nav>
-      <span id="welcomeText">Welcome, Player</span>
-      <div>
-        <a href="home.html">Home</a>
-        <span id="wallet" style="font-weight:bold; color:#10b981; margin-right: 20px;"></span>
-        <a href="wallet.html">Add Money</a>
-        <a href="my-bookings.html">My Bookings</a>
-        <a href="login.html">Logout</a>
+      <div class="welcome-section">
+        <div class="user-avatar" id="userInitial">P</div>
+        <div class="welcome-info">
+          <h3 id="welcomeText">Welcome, Player</h3>
+          <p>Book your next game</p>
+        </div>
+      </div>
+      <div class="nav-right">
+        <div class="wallet-badge" id="wallet">₹0</div>
+        <a href="wallet.html" class="nav-link primary">Add Money</a>
+        <a href="home.html" class="nav-link">Home</a>
+        <a href="my-bookings.html" class="nav-link">My Bookings</a>
+        <a href="login.html" class="nav-link">Logout</a>
       </div>
     </nav>
   </header>
 
+  <!-- Main -->
   <main>
-    <h2>Available Slots</h2>
+    <h2 class="page-title">Available Slots</h2>
     <div class="date-selector" id="date-selector"></div>
-    <div id="slots"></div>
+    <div id="slots">
+      <div class="loading">Loading slots...</div>
+    </div>
   </main>
 
-<script>
-const params = new URLSearchParams(window.location.search);
-const turfId = params.get("id");
-const user = JSON.parse(localStorage.getItem("user"));
-let selectedDate = null;
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const turfId = params.get("id");
+    const user = JSON.parse(localStorage.getItem("user"));
+    let selectedDate = null;
 
-async function loadWallet() {
-  try {
-    const res = await fetch(`http://localhost:4001/wallet/${user.id}`);
-    const data = await res.json();
-    document.getElementById("wallet").textContent = `Wallet: ₹${data.balance}`;
-  } catch (err) {
-    console.error("Failed to load wallet:", err);
-    document.getElementById("wallet").textContent = "Wallet: ₹0";
-  }
-}
-
-welcomeText.textContent = `Welcome, ${user.name}`;
-
-function setupDateSelector() {
-  const selector = document.getElementById("date-selector");
-  selector.innerHTML = "";
-  for (let i = 0; i < 3; i++) {
-    const date = new Date();
-    date.setDate(date.getDate() + i);
-    const label = date.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
-    const value = date.toISOString().split("T")[0];
-    const btn = document.createElement("button");
-    btn.textContent = label;
-    btn.onclick = () => {
-      document.querySelectorAll(".date-selector button").forEach(b => b.classList.remove("selected"));
-      btn.classList.add("selected");
-      selectedDate = value;
-      loadSlotsForDate(value);
-    };
-    selector.appendChild(btn);
-    if (i === 0) {
-      btn.classList.add("selected");
-      selectedDate = value;
-      loadSlotsForDate(value);
+    if (!user) {
+      alert("Please log in first.");
+      window.location.href = "login.html";
     }
-  }
-}
 
-async function loadSlotsForDate(date) {
-  try {
-    const res = await fetch(`http://localhost:4001/turfs/${turfId}/slots?date=${date}`);
-    const data = await res.json();
+    // Set user info
+    document.getElementById("welcomeText").textContent = `Welcome, ${user.name}`;
+    document.getElementById("userInitial").textContent = user.name.charAt(0).toUpperCase();
 
-    document.getElementById("turfName").innerText = data.turf.name;
-    const container = document.getElementById("slots");
-    container.innerHTML = "";
+    async function loadWallet() {
+      try {
+        const res = await fetch(`http://localhost:4001/wallet/${user.id}`);
+        const data = await res.json();
+        document.getElementById("wallet").textContent = `₹${data.balance}`;
+      } catch (err) {
+        console.error("Failed to load wallet:", err);
+        document.getElementById("wallet").textContent = "₹0";
+      }
+    }
 
-    for (const slot of data.slots) {
-      const joined = slot.progress.joined || 0;
-      const max = slot.max_stranger_players || 0;
-      const min = slot.min_players || 0;
-      const percent = max > 0 ? Math.min(100, (joined / max) * 100) : 0;
-      const strangerCost = max > 0 ? Math.ceil(slot.price / max) : 0;
+    function setupDateSelector() {
+      const selector = document.getElementById("date-selector");
+      selector.innerHTML = "";
+      for (let i = 0; i < 3; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() + i);
+        const label = date.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+        const value = date.toISOString().split("T")[0];
+        const btn = document.createElement("button");
+        btn.textContent = label;
+        btn.onclick = () => {
+          document.querySelectorAll(".date-selector button").forEach(b => b.classList.remove("selected"));
+          btn.classList.add("selected");
+          selectedDate = value;
+          loadSlotsForDate(value);
+        };
+        selector.appendChild(btn);
+        if (i === 0) {
+          btn.classList.add("selected");
+          selectedDate = value;
+          loadSlotsForDate(value);
+        }
+      }
+    }
 
-      const strangerLockedIn = joined >= min;
-      const strangerFull = joined >= max;
+    async function loadSlotsForDate(date) {
+      const container = document.getElementById("slots");
+      container.innerHTML = '<div class="loading">Loading slots...</div>';
 
-      const hasNormalBooking = slot.bookings.some(b => b.mode === "normal");
-      const strangerBookedByUser = slot.bookings.some(b => b.mode === "stranger" && b.customer_id === user.id);
+      try {
+        const res = await fetch(`http://localhost:4001/turfs/${turfId}/slots?date=${date}`);
+        const data = await res.json();
 
-      // Once a normal booking exists, disable further stranger bookings.
-      const normalBookingBlocked = strangerLockedIn || hasNormalBooking;
-      const strangerBookingAllowed = !strangerFull && !hasNormalBooking;
+        document.getElementById("turfName").innerText = data.turf.name;
+        container.innerHTML = "";
 
-      const waitingText = strangerLockedIn
-        ? (strangerFull ? "✅ Stranger play full" : `✅ Locked for normal booking, ${max - joined} more can join`)
-        : `⏳ Minimum ${min - joined} more needed`;
+        if (!data.slots || data.slots.length === 0) {
+          container.innerHTML = '<div class="empty-state">No slots available for this date</div>';
+          return;
+        }
 
-      const slotDiv = document.createElement("div");
-      slotDiv.className = "slot";
+        for (const slot of data.slots) {
+          const joined = slot.progress.joined || 0;
+          const max = slot.max_stranger_players || 0;
+          const min = slot.min_players || 0;
+          const percent = max > 0 ? Math.min(100, (joined / max) * 100) : 0;
+          const strangerCost = max > 0 ? Math.ceil(slot.price / max) : 0;
 
-      const bookButtons = `
-        <div class="right-buttons">
-          <span class="price">₹${slot.price}</span>
-          <button class="book-btn" onclick="bookSlot('${slot.start}','${slot.end}', 'normal')" ${normalBookingBlocked ? "disabled" : ""}>Book</button>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-weight:bold; color:#2563eb;">Stranger Price: ₹${strangerCost}</span>
-            <button class="stranger-btn ${strangerBookedByUser ? 'booked-by-user' : ''}" onclick="bookSlot('${slot.start}','${slot.end}', 'stranger')" ${strangerBookingAllowed ? "" : "disabled"}>Stranger Play</button>
+          const strangerLockedIn = joined >= min;
+          const strangerFull = joined >= max;
+
+          const hasNormalBooking = slot.bookings.some(b => b.mode === "normal");
+          const strangerBookedByUser = slot.bookings.some(b => b.mode === "stranger" && b.customer_id === user.id);
+
+          const normalBookingBlocked = strangerLockedIn || hasNormalBooking;
+          const strangerBookingAllowed = !strangerFull && !hasNormalBooking;
+
+          let statusText = "";
+          let statusClass = "";
+          if (strangerLockedIn) {
+            if (strangerFull) {
+              statusText = "Stranger play is full";
+              statusClass = "success";
+            } else {
+              statusText = `Locked for normal booking · ${max - joined} more can join`;
+              statusClass = "success";
+            }
+          } else {
+            statusText = `Minimum ${min - joined} more needed to confirm`;
+            statusClass = "waiting";
+          }
+
+          const slotDiv = document.createElement("div");
+          slotDiv.className = "slot";
+
+          slotDiv.innerHTML = `
+            <div class="slot-header">
+              <div class="slot-time">
+                <span class="slot-time-badge">${slot.start} - ${slot.end}</span>
+              </div>
+              <div class="right-buttons">
+                <span class="price">₹${slot.price}</span>
+                <button class="book-btn" onclick="bookSlot('${slot.start}','${slot.end}', 'normal')" ${normalBookingBlocked ? "disabled" : ""}>
+                  ${normalBookingBlocked ? "Unavailable" : "Book Full Slot"}
+                </button>
+                <div class="stranger-row">
+                  <span class="stranger-price">Stranger: ₹${strangerCost}</span>
+                  <button class="stranger-btn ${strangerBookedByUser ? 'booked-by-user' : ''}" onclick="bookSlot('${slot.start}','${slot.end}', 'stranger')" ${strangerBookingAllowed ? "" : "disabled"}>
+                    ${strangerBookedByUser ? "Already Joined" : strangerFull ? "Full" : "Join Stranger Play"}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="slot-info">
+              <p class="players-count">${max > 0 ? `${joined}/${max} players joined` : `${joined} players joined`}</p>
+              <div class="progress">
+                <div class="progress-fill" style="width:${percent}%;"></div>
+              </div>
+              <p class="status-text ${statusClass}">${statusText}</p>
+            </div>
+            <button class="see-players-btn" onclick="togglePlayers('${slot.start}', '${slot.end}')">See Players</button>
+            <div class="player-list" id="players-${slot.start}-${slot.end}"></div>
+          `;
+
+          container.appendChild(slotDiv);
+        }
+      } catch (err) {
+        console.error("Error loading slots:", err);
+        container.innerHTML = '<div class="empty-state">Failed to load slots. Please try again.</div>';
+      }
+    }
+
+    async function bookSlot(start, end, mode = "stranger") {
+      const confirmMsg = mode === "normal" 
+        ? `Book full slot ${start} - ${end}?` 
+        : `Join stranger play for ${start} - ${end}?`;
+      
+      if (!confirm(confirmMsg)) return;
+
+      try {
+        const res = await fetch("http://localhost:4001/bookings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            turf_id: turfId,
+            slot_date: selectedDate,
+            slot_start: start,
+            slot_end: end,
+            customer_id: user.id,
+            mode
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          alert(`Booking confirmed for ${start} - ${end}`);
+          loadSlotsForDate(selectedDate);
+          loadWallet();
+        } else {
+          alert(data.error || "Booking failed");
+        }
+      } catch (err) {
+        console.error("Booking failed:", err);
+        alert("Booking failed. Please try again.");
+      }
+    }
+
+    async function togglePlayers(start, end) {
+      const containerId = `players-${start}-${end}`;
+      const container = document.getElementById(containerId);
+
+      if (container.classList.contains("show")) {
+        container.classList.remove("show");
+        return;
+      }
+
+      container.classList.add("show");
+      container.innerHTML = "<p style='color: var(--text-dim);'>Loading...</p>";
+
+      try {
+        const res = await fetch(`http://localhost:4001/slots/players?turf_id=${turfId}&slot_date=${selectedDate}&slot_start=${start}&slot_end=${end}`);
+        const players = await res.json();
+
+        if (!players || players.length === 0) {
+          container.innerHTML = "<p style='color: var(--text-dim);'>No players in this slot yet</p>";
+          return;
+        }
+
+        container.innerHTML = players.map(p => `
+          <div class="player-item">
+            <strong>Booking:</strong> <span>#${p.booking_id}</span><br/>
+            <strong>Name:</strong> <span>${p.name}</span><br/>
+            <strong>Contact:</strong> <span>${p.contact || "N/A"}</span>
           </div>
-        </div>`;
-
-      slotDiv.innerHTML = `
-        <div class="slot-header">
-          <span>${slot.start} - ${slot.end}</span>
-          ${bookButtons}
-        </div>
-        <p>${max > 0 ? `${joined}/${max} players joined` : `${joined} players joined`}</p>
-        <div class="progress">
-          <div class="progress-fill" style="width:${percent}%;"></div>
-        </div>
-        <p class="status-text">${waitingText}</p>
-        <button onclick="showPlayers('${slot.start}', '${slot.end}')">See Players</button>
-        <div class="player-list" id="players-${slot.start}-${slot.end}" style="margin-top:10px;"></div>
-      `;
-
-      container.appendChild(slotDiv);
-    }
-  } catch (err) {
-    console.error("Error loading slots:", err);
-    document.getElementById("slots").innerHTML = "<p>Failed to load slots.</p>";
-  }
-}
-
-async function bookSlot(start, end, mode = "stranger") {
-  try {
-    const res = await fetch("http://localhost:4001/bookings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        turf_id: turfId,
-        slot_date: selectedDate,
-        slot_start: start,
-        slot_end: end,
-        customer_id: user.id,
-        mode
-      })
-    });
-
-    const data = await res.json();
-    if (res.ok) {
-      alert(`Booked slot ${start} - ${end} ✅`);
-      loadSlotsForDate(selectedDate);
-    } else {
-      alert(data.error || "Booking failed");
-    }
-  } catch (err) {
-    console.error("Booking failed:", err);
-    alert("Booking failed. Try again.");
-  }
-}
-
-async function showPlayers(start, end) {
-  const containerId = `players-${start}-${end}`;
-  const container = document.getElementById(containerId);
-  container.innerHTML = "<p>Loading players...</p>";
-
-  try {
-    const res = await fetch(`http://localhost:4001/slots/players?turf_id=${turfId}&slot_date=${selectedDate}&slot_start=${start}&slot_end=${end}`);
-    const players = await res.json();
-
-    if (!players || players.length === 0) {
-      container.innerHTML = "<p>No stranger players in this slot.</p>";
-      return;
+        `).join("");
+      } catch (err) {
+        console.error("Error loading players:", err);
+        container.innerHTML = "<p style='color: var(--danger);'>Failed to load players</p>";
+      }
     }
 
-    container.innerHTML = players.map(p => `
-      <div style="padding:6px; border-bottom:1px solid #ccc;">
-        <strong>Booking ID:</strong> #${p.booking_id}<br/>
-        <strong>Name:</strong> ${p.name}<br/>
-        <strong>Contact:</strong> ${p.contact || "N/A"}
-      </div>
-    `).join("");
-  } catch (err) {
-    console.error("Error loading players:", err);
-    container.innerHTML = "<p>Failed to load player details ❌</p>";
-  }
-}
+    // Keep backward compatibility
+    function showPlayers(start, end) {
+      togglePlayers(start, end);
+    }
 
-loadWallet();
-setupDateSelector();
-</script>
+    loadWallet();
+    setupDateSelector();
+  </script>
 </body>
 </html>

@@ -2,222 +2,292 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Owner Slot Manager</title>
   <style>
     :root{ --bg:#f6f8fb; --card:#fff; --primary:#2563eb; --accent:#10b981; --muted:#6b7280; --text:#071233; --radius:12px; --shadow:0 10px 30px rgba(7,18,51,0.06) }
     body{ margin:0; font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial; background:var(--bg); color:var(--text) }
     header h1{ margin:0; padding:18px; background:linear-gradient(90deg,var(--primary), #1f4ed8); color:#fff; text-align:center }
     nav{ background:transparent; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; max-width:1100px; margin:0 auto }
-    nav a{ color:#fff; text-decoration:none; font-weight:600 }
+    nav a{
+      color: #fff;
+      text-decoration: none;
+      font-weight: 600;
+      padding: 8px 12px;
+      margin-left: 10px;
+      background: var(--primary);
+      border-radius: 999px;
+      display: inline-block;
+      box-shadow: 0 4px 12px rgba(37,99,235,0.12);
+      transition: transform .08s ease, box-shadow .12s ease;
+    }
+    nav a:hover{ transform: translateY(-2px); box-shadow: 0 8px 24px rgba(37,99,235,0.16); }
+    #welcomeText{
+      color: var(--text);
+      font-weight: 600;
+      background: #fff;
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(7,18,51,0.06);
+      box-shadow: 0 2px 6px rgba(7,18,51,0.04);
+      display: flex;
+      flex-direction: column;
+      line-height: 1.3;
+    }
+    #welcomeText .role{
+      font-size: 0.75em;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    #welcomeText .name{
+      font-size: 1em;
+      color: var(--text);
+    }
     main{ padding:20px; max-width:1100px; margin:0 auto }
-    .date-selector{ display:flex; gap:10px; margin-bottom:18px }
-    .date-selector button{ padding:8px 12px; border:none; border-radius:10px; background:rgba(7,18,51,0.06); color:var(--muted); cursor:pointer }
-    .date-selector button.selected{ background:var(--primary); color:#fff }
-    .slot{ background:var(--card); padding:14px; margin:10px 0; border-radius:12px; box-shadow:var(--shadow); border:1px solid rgba(7,18,51,0.04) }
-    .slot-header{ display:flex; justify-content:space-between; align-items:flex-start }
-    .slot-header .right-buttons{ display:flex; flex-direction:column; align-items:flex-end }
-    .price{ font-weight:700; color:var(--accent); margin-bottom:6px }
-    .book-btn{ background:var(--accent); color:#fff; border:none; padding:8px 12px; border-radius:10px; cursor:pointer; margin-bottom:6px }
-    button[disabled]{ background: #e6e9ef; color:var(--muted); cursor:not-allowed }
-    .progress{ background:#e9eef6; border-radius:10px; height:12px; margin-top:8px; overflow:hidden }
-    .progress-fill{ background:var(--primary); height:100%; border-radius:10px }
-    .status-text{ margin-top:6px; font-size:0.95em }
-    .player-list{ background:#fbfdff; padding:10px; margin-top:10px; border-radius:10px; border:1px solid rgba(7,18,51,0.03) }
-    .player-list div{ padding:8px; border-bottom:1px solid rgba(7,18,51,0.04) }
+    h2{ color: var(--text); margin-bottom: 20px; }
+    .date-selector{ display:flex; gap:10px; margin-bottom:20px; flex-wrap: wrap; }
+    .date-selector button{ padding:10px 16px; border:none; border-radius:10px; background:rgba(7,18,51,0.06); color:var(--muted); cursor:pointer; font-weight: 600; transition: all 0.2s ease; }
+    .date-selector button:hover{ background: rgba(7,18,51,0.1); }
+    .date-selector button.selected{ background:var(--primary); color:#fff; box-shadow: 0 4px 12px rgba(37,99,235,0.2); }
+    .slot{ background:var(--card); padding:18px; margin:12px 0; border-radius:12px; box-shadow:var(--shadow); border:1px solid rgba(7,18,51,0.04); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .slot:hover{ transform: translateY(-2px); box-shadow: 0 14px 40px rgba(7,18,51,0.1); }
+    .slot-header{ display:flex; justify-content:space-between; align-items:flex-start; flex-wrap: wrap; gap: 10px; }
+    .slot-header > span{ font-size: 1.1em; font-weight: 700; color: var(--text); background: rgba(37,99,235,0.08); padding: 6px 12px; border-radius: 8px; }
+    .slot-header .right-buttons{ display:flex; flex-direction:column; align-items:flex-end; gap: 6px; }
+    .price{ font-weight:700; color:var(--accent); font-size: 1.2em; margin-bottom:6px; background: rgba(16,185,129,0.1); padding: 4px 10px; border-radius: 8px; }
+    .book-btn{ background:var(--accent); color:#fff; border:none; padding:10px 16px; border-radius:10px; cursor:pointer; font-weight: 600; transition: all 0.2s ease; box-shadow: 0 4px 12px rgba(16,185,129,0.2); }
+    .book-btn:hover:not([disabled]){ transform: translateY(-2px); box-shadow: 0 6px 16px rgba(16,185,129,0.3); }
+    button[disabled]{ background: #e6e9ef; color:var(--muted); cursor:not-allowed; box-shadow: none; }
+    .progress{ background:#e9eef6; border-radius:10px; height:14px; margin-top:12px; overflow:hidden }
+    .progress-fill{ background: linear-gradient(90deg, var(--primary), #3b82f6); height:100%; border-radius:10px; transition: width 0.4s ease; }
+    .status-text{ margin-top:10px; font-size:0.95em; color: var(--muted); font-weight: 500; }
+    .players-count{ margin: 12px 0 8px 0; font-weight: 600; color: var(--text); }
+    .see-players-btn{ background: rgba(37,99,235,0.1); color: var(--primary); border: none; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s ease; margin-top: 10px; }
+    .see-players-btn:hover{ background: rgba(37,99,235,0.2); }
+    .player-list{ background:#fbfdff; padding:12px; margin-top:12px; border-radius:10px; border:1px solid rgba(7,18,51,0.06); display: none; }
+    .player-list.show{ display: block; }
+    .player-list div{ padding:10px; border-bottom:1px solid rgba(7,18,51,0.06); }
+    .player-list div:last-child{ border-bottom: none; }
+    .player-list strong{ color: var(--muted); font-size: 0.9em; }
+
+    @media (max-width: 600px) {
+      nav{ flex-direction: column; gap: 12px; }
+      nav > div{ display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+      nav a{ margin-left: 0; }
+      .slot-header{ flex-direction: column; align-items: flex-start; }
+      .slot-header .right-buttons{ align-items: flex-start; width: 100%; }
+    }
   </style>
 </head>
 <body>
   <header>
     <h1 id="turfName">Owner Slot Manager</h1>
     <nav>
-      <span id="welcomeText">Welcome, Owner</span>
+      <span id="welcomeText">
+        <span class="role">🏟️ Turf Owner</span>
+        <span class="name">Welcome</span>
+      </span>
       <div>
-        <a href="home.html">Home</a>
-        <a href="owner-dashboard.html">Dashboard</a>
-        <a href="my-bookings.html">My Bookings</a>
-        <a href="login.html">Logout</a>
+        <a href="owner-dashboard.html">📊 Dashboard</a>
+        <a href="my-bookings.html">📋 My Bookings</a>
+        <a href="login.html">🚪 Logout</a>
       </div>
     </nav>
   </header>
 
   <main>
-    <h2>Manage Slots</h2>
+    <h2>📅 Manage Slots</h2>
     <div class="date-selector" id="date-selector"></div>
     <div id="slots"></div>
   </main>
 
- <script>
-  const params = new URLSearchParams(window.location.search);
-  const turfId = params.get("id");
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const turfId = params.get("id");
 
-  if (!turfId) {
-    alert("Missing turf ID. Please open this page from the dashboard.");
-    window.location.href = "owner-dashboard.html";
-  }
+    if (!turfId) {
+      alert("Missing turf ID. Please open this page from the dashboard.");
+      window.location.href = "owner-dashboard.html";
+    }
 
-  const user = JSON.parse(localStorage.getItem("user"));
-  let selectedDate = null;
+    const user = JSON.parse(localStorage.getItem("user"));
+    let selectedDate = null;
 
-  if (!user) {
-    alert("Please log in first.");
-    window.location.href = "login.html";
-  }
+    if (!user) {
+      alert("Please log in first.");
+      window.location.href = "login.html";
+    }
 
-  document.getElementById("welcomeText").textContent = `Welcome, ${user.name}`;
+    document.getElementById("welcomeText").innerHTML = `
+      <span class="role">🏟️ Turf Owner</span>
+      <span class="name">Welcome, ${user.name}</span>
+    `;
 
-  function setupDateSelector() {
-    const selector = document.getElementById("date-selector");
-    selector.innerHTML = "";
-    for (let i = 0; i < 3; i++) {
-      const date = new Date();
-      date.setDate(date.getDate() + i);
-      const label = date.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
-      const value = date.toISOString().split("T")[0];
-      const btn = document.createElement("button");
-      btn.textContent = label;
-      btn.onclick = () => {
-        document.querySelectorAll(".date-selector button").forEach(b => b.classList.remove("selected"));
-        btn.classList.add("selected");
-        selectedDate = value;
-        loadSlotsForDate(value);
-      };
-      selector.appendChild(btn);
-      if (i === 0) {
-        btn.classList.add("selected");
-        selectedDate = value;
-        loadSlotsForDate(value);
+    function setupDateSelector() {
+      const selector = document.getElementById("date-selector");
+      selector.innerHTML = "";
+      for (let i = 0; i < 3; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() + i);
+        const label = date.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+        const value = date.toISOString().split("T")[0];
+        const btn = document.createElement("button");
+        btn.textContent = label;
+        btn.onclick = () => {
+          document.querySelectorAll(".date-selector button").forEach(b => b.classList.remove("selected"));
+          btn.classList.add("selected");
+          selectedDate = value;
+          loadSlotsForDate(value);
+        };
+        selector.appendChild(btn);
+        if (i === 0) {
+          btn.classList.add("selected");
+          selectedDate = value;
+          loadSlotsForDate(value);
+        }
       }
     }
-  }
 
-  async function loadSlotsForDate(date) {
-    try {
-      const res = await fetch(`http://localhost:4001/turfs/${turfId}/slots?date=${date}`);
-      const data = await res.json();
+    async function loadSlotsForDate(date) {
+      try {
+        const res = await fetch(`http://localhost:4001/turfs/${turfId}/slots?date=${date}`);
+        const data = await res.json();
 
-      if (!data.turf) {
-        document.getElementById("slots").innerHTML = "<p>Failed to load turf info.</p>";
+        if (!data.turf) {
+          document.getElementById("slots").innerHTML = "<p>Failed to load turf info.</p>";
+          return;
+        }
+
+        document.getElementById("turfName").innerText = data.turf.name;
+        const container = document.getElementById("slots");
+        container.innerHTML = "";
+
+        for (const slot of data.slots) {
+          const joined = slot.progress.joined || 0;
+          const max = slot.max_stranger_players || 0;
+          const min = slot.min_players || 0;
+          const percent = max > 0 ? Math.min(100, (joined / max) * 100) : 0;
+
+          const strangerLockedIn = joined >= min;
+          const strangerFull = joined >= max;
+
+          const hasNormalBooking = slot.bookings.some(b => b.mode === "normal");
+          const normalBookingBlocked = hasNormalBooking || strangerLockedIn;
+
+          const waitingText = strangerLockedIn
+            ? (strangerFull ? "✅ Stranger play full" : `✅ Locked for normal booking, ${max - joined} more can join`)
+            : `⏳ Minimum ${min - joined} more needed`;
+
+          const slotDiv = document.createElement("div");
+          slotDiv.className = "slot";
+
+          const bookButtons = normalBookingBlocked
+            ? `<div class="right-buttons">
+                 <span class="price">₹${slot.price}</span>
+                 <button disabled>Booked</button>
+               </div>`
+            : `<div class="right-buttons">
+                 <span class="price">₹${slot.price}</span>
+                 <button class="book-btn" onclick="confirmOfflineBooking('${slot.start}','${slot.end}')">📝 Book (Offline)</button>
+               </div>`;
+
+          slotDiv.innerHTML = `
+            <div class="slot-header">
+              <span>🕐 ${slot.start} - ${slot.end}</span>
+              ${bookButtons}
+            </div>
+            <p class="players-count">${max > 0 ? `👥 ${joined}/${max} players joined` : `👥 ${joined} players joined`}</p>
+            <div class="progress">
+              <div class="progress-fill" style="width:${percent}%;"></div>
+            </div>
+            <p class="status-text">${waitingText}</p>
+            <button class="see-players-btn" onclick="togglePlayers('${slot.start}', '${slot.end}')">👀 See Players</button>
+            <div class="player-list" id="players-${slot.start}-${slot.end}"></div>
+          `;
+
+          container.appendChild(slotDiv);
+        }
+      } catch (err) {
+        console.error("Error loading slots:", err);
+        document.getElementById("slots").innerHTML = "<p>Failed to load slots.</p>";
+      }
+    }
+
+    async function confirmOfflineBooking(start, end) {
+      const ok = confirm(`Confirm offline booking for ${start} - ${end}?`);
+      if (!ok) return;
+      await bookSlot(start, end, "normal", true);
+    }
+
+    async function bookSlot(start, end, mode = "normal", confirm_offline = false) {
+      try {
+        const res = await fetch("http://localhost:4001/bookings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            turf_id: turfId,
+            slot_date: selectedDate,
+            slot_start: start,
+            slot_end: end,
+            customer_id: user.id,
+            mode,
+            confirm_offline
+          })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+          alert(`Booked slot ${start} - ${end} ✅`);
+          loadSlotsForDate(selectedDate);
+        } else {
+          alert(data.error || "Booking failed");
+        }
+      } catch (err) {
+        console.error("Booking failed:", err);
+        alert("Booking failed. Try again.");
+      }
+    }
+
+    async function togglePlayers(start, end) {
+      const containerId = `players-${start}-${end}`;
+      const container = document.getElementById(containerId);
+      
+      if (container.classList.contains("show")) {
+        container.classList.remove("show");
         return;
       }
+      
+      container.classList.add("show");
+      container.innerHTML = "<p>Loading players...</p>";
 
-      document.getElementById("turfName").innerText = data.turf.name;
-      const container = document.getElementById("slots");
-      container.innerHTML = "";
+      try {
+        const res = await fetch(`http://localhost:4001/slots/players?turf_id=${turfId}&slot_date=${selectedDate}&slot_start=${start}&slot_end=${end}`);
+        const players = await res.json();
 
-      for (const slot of data.slots) {
-        const joined = slot.progress.joined || 0;
-        const max = slot.max_stranger_players || 0;
-        const min = slot.min_players || 0;
-        const percent = max > 0 ? Math.min(100, (joined / max) * 100) : 0;
+        if (!players || players.length === 0) {
+          container.innerHTML = "<p>No stranger players in this slot.</p>";
+          return;
+        }
 
-        const strangerLockedIn = joined >= min;
-        const strangerFull = joined >= max;
-
-        const hasNormalBooking = slot.bookings.some(b => b.mode === "normal");
-        const normalBookingBlocked = hasNormalBooking || strangerLockedIn;
-
-        const waitingText = strangerLockedIn
-          ? (strangerFull ? "✅ Stranger play full" : `✅ Locked for normal booking, ${max - joined} more can join`)
-          : `⏳ Minimum ${min - joined} more needed`;
-
-        const slotDiv = document.createElement("div");
-        slotDiv.className = "slot";
-
-        const bookButtons = normalBookingBlocked
-          ? `<div class="right-buttons">
-               <span class="price">₹${slot.price}</span>
-               <button disabled>Booked</button>
-             </div>`
-          : `<div class="right-buttons">
-               <span class="price">₹${slot.price}</span>
-               <button class="book-btn" onclick="confirmOfflineBooking('${slot.start}','${slot.end}')">Book (Offline)</button>
-             </div>`;
-
-        slotDiv.innerHTML = `
-          <div class="slot-header">
-            <span>${slot.start} - ${slot.end}</span>
-            ${bookButtons}
+        container.innerHTML = players.map(p => `
+          <div>
+            <strong>Booking ID:</strong> #${p.booking_id}<br/>
+            <strong>Name:</strong> ${p.name}<br/>
+            <strong>Contact:</strong> ${p.contact || "N/A"}
           </div>
-          <p>${max > 0 ? `${joined}/${max} players joined` : `${joined} players joined`}</p>
-          <div class="progress">
-            <div class="progress-fill" style="width:${percent}%;"></div>
-          </div>
-          <p class="status-text">${waitingText}</p>
-          <button onclick="showPlayers('${slot.start}', '${slot.end}')">See Players</button>
-          <div class="player-list" id="players-${slot.start}-${slot.end}"></div>
-        `;
-
-        container.appendChild(slotDiv);
+        `).join("");
+      } catch (err) {
+        console.error("Error loading players:", err);
+        container.innerHTML = "<p>Failed to load player details ❌</p>";
       }
-    } catch (err) {
-      console.error("Error loading slots:", err);
-      document.getElementById("slots").innerHTML = "<p>Failed to load slots.</p>";
     }
-  }
 
-  async function confirmOfflineBooking(start, end) {
-    const ok = confirm(`Confirm offline booking for ${start} - ${end}?`);
-    if (!ok) return;
-    await bookSlot(start, end, "normal", true);
-  }
-
-  async function bookSlot(start, end, mode = "normal", confirm_offline = false) {
-    try {
-      const res = await fetch("http://localhost:4001/bookings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          turf_id: turfId,
-          slot_date: selectedDate,
-          slot_start: start,
-          slot_end: end,
-          customer_id: user.id,
-          mode,
-          confirm_offline
-        })
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        alert(`Booked slot ${start} - ${end} ✅`);
-        loadSlotsForDate(selectedDate);
-      } else {
-        alert(data.error || "Booking failed");
-      }
-    } catch (err) {
-      console.error("Booking failed:", err);
-      alert("Booking failed. Try again.");
+    function showPlayers(start, end) {
+      togglePlayers(start, end);
     }
-  }
 
-  async function showPlayers(start, end) {
-    const containerId = `players-${start}-${end}`;
-    const container = document.getElementById(containerId);
-    container.innerHTML = "<p>Loading players...</p>";
-
-    try {
-      const res = await fetch(`http://localhost:4001/slots/players?turf_id=${turfId}&slot_date=${selectedDate}&slot_start=${start}&slot_end=${end}`);
-      const players = await res.json();
-
-      if (!players || players.length === 0) {
-        container.innerHTML = "<p>No stranger players in this slot.</p>";
-        return;
-      }
-
-      container.innerHTML = players.map(p => `
-        <div>
-          <strong>Booking ID:</strong> #${p.booking_id}<br/>
-          <strong>Name:</strong> ${p.name}<br/>
-          <strong>Contact:</strong> ${p.contact || "N/A"}
-        </div>
-      `).join("");
-    } catch (err) {
-      console.error("Error loading players:", err);
-      container.innerHTML = "<p>Failed to load player details ❌</p>";
-    }
-  }
-
-  setupDateSelector();
-</script>
+    setupDateSelector();
+  </script>
 </body>
 </html>

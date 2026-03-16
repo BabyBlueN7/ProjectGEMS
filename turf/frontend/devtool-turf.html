@@ -2,38 +2,484 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Kick-Hub Devtool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel | KICKHUB</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    :root{ --bg:hsl(180, 11%, 96%); --card:#ffffff; --primary:#2563eb; --accent:#10b981; --muted:#6b7280; --text:#071233; --radius:12px; --shadow:0 8px 24px rgba(7,18,51,0.06); }
-    body{ font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial; margin:0; padding:0; background:var(--bg); color:var(--text) }
-    header h1,h3  { margin:0; padding:18px 16px; background:linear-gradient(90deg,var(--primary), #311265); color:#fff; text-align:center; font-weight:700 }
-    section{ padding:20px; max-width:1100px; margin:0 auto }
-    .turf{ background:var(--card); padding:16px; margin:12px 0; border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid rgba(7,18,51,0.04) }
-    .turf{ display:flex; align-items:center; justify-content:space-between; gap:12px }
-    .turf .turf-info{ flex:1 }
-    .turf img{ width:150px; height:100px; object-fit:cover; border-radius:8px; margin-left:12px }
-    .turf p{ margin:6px 0 }
-    .contact{ color:var(--muted); font-size:14px; margin-top:6px }
-    .rating{ color:#f59e0b; font-weight:700; margin-top:6px }
-    .actions button{ margin-right:8px; padding:8px 12px; border-radius:10px; border:none; cursor:pointer; font-weight:600 }
-    .verify{ background:var(--accent); color:#fff }
-    .reject, .remove{ background:#ef4444; color:#fff }
-    .actions{ margin-top:10px }
+    :root {
+      --bg-dark: #0a0f0d;
+      --bg-card: #111916;
+      --bg-card-hover: #162019;
+      --primary: #10b981;
+      --primary-light: #34d399;
+      --primary-dark: #059669;
+      --accent: #22c55e;
+      --neon: #4ade80;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --text: #f0fdf4;
+      --text-muted: #86efac;
+      --text-dim: #6b7280;
+      --border: #1f3d2a;
+      --gradient: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+      --gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      --glow: 0 0 40px rgba(16, 185, 129, 0.3);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* Animated Background */
+    .bg-animation {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .bg-animation::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(ellipse at center, rgba(16, 185, 129, 0.06) 0%, transparent 50%);
+      animation: rotate 40s linear infinite;
+    }
+
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Grid Pattern */
+    .grid-pattern {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        linear-gradient(rgba(16, 185, 129, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(16, 185, 129, 0.02) 1px, transparent 1px);
+      background-size: 50px 50px;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* Header */
+    header {
+      position: relative;
+      z-index: 10;
+      background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-dark) 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 24px 32px;
+    }
+
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-icon {
+      width: 50px;
+      height: 50px;
+      background: var(--gradient);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      box-shadow: var(--glow);
+    }
+
+    .logo-text {
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .header-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--danger);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .logout-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      font-family: inherit;
+    }
+
+    .logout-btn:hover {
+      background: var(--danger);
+      border-color: var(--danger);
+      color: #fff;
+    }
+
+    /* Main Content */
+    main {
+      position: relative;
+      z-index: 10;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+
+    /* Section */
+    .section {
+      margin-bottom: 40px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-title .count {
+      background: var(--primary);
+      color: #fff;
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+
+    .section-title.danger .count {
+      background: var(--warning);
+    }
+
+    /* Turf Card */
+    .turf {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
+      transition: all 0.2s ease;
+    }
+
+    .turf:hover {
+      border-color: var(--border);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .turf-image {
+      width: 140px;
+      height: 100px;
+      border-radius: 10px;
+      object-fit: cover;
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .turf-image-placeholder {
+      width: 140px;
+      height: 100px;
+      border-radius: 10px;
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-dim);
+      font-size: 0.8rem;
+      flex-shrink: 0;
+    }
+
+    .turf-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .turf-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .turf-details {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+    }
+
+    .turf-price {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 6px;
+    }
+
+    .turf-rating {
+      font-size: 0.85rem;
+      color: var(--warning);
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+
+    .turf-contact {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+      padding: 8px 12px;
+      background: var(--bg-dark);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .turf-contact strong {
+      color: var(--text-muted);
+    }
+
+    /* Actions */
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .btn {
+      padding: 10px 18px;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-verify {
+      background: var(--gradient);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-verify:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-reject, .btn-remove {
+      background: rgba(239, 68, 68, 0.1);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-reject:hover, .btn-remove:hover {
+      background: var(--danger);
+      color: #fff;
+      border-color: var(--danger);
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      color: var(--text-dim);
+    }
+
+    .empty-state p {
+      font-size: 0.95rem;
+    }
+
+    /* Stats Bar */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .stat-card.accent .stat-value { color: var(--accent); }
+    .stat-card.warning .stat-value { color: var(--warning); }
+    .stat-card.danger .stat-value { color: var(--danger); }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header-content {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+      }
+
+      .turf {
+        flex-direction: column;
+      }
+
+      .turf-image, .turf-image-placeholder {
+        width: 100%;
+        height: 160px;
+      }
+
+      .stats-bar {
+        grid-template-columns: 1fr;
+      }
+
+      .actions {
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
   </style>
 </head>
 <body>
+  <!-- Background Effects -->
+  <div class="bg-animation"></div>
+  <div class="grid-pattern"></div>
+
+  <!-- Header -->
   <header>
-    <h1>KICK-HUB</h1>
-    <h3>Admin Panel</h3>
+    <div class="header-content">
+      <div class="logo">
+        <div class="logo-icon">⚽</div>
+        <span class="logo-text">KICKHUB</span>
+      </div>
+      
+      <div class="header-badge">
+        Admin Panel
+      </div>
+
+      <a href="login.html" class="logout-btn">Sign Out</a>
+    </div>
   </header>
 
-  <section>
-    <h2>Unverified Turf Requests</h2>
-    <div id="unverified"></div>
+  <!-- Main Content -->
+  <main>
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+      <div class="stat-card warning">
+        <div class="stat-value" id="stat-pending">0</div>
+        <div class="stat-label">Pending Requests</div>
+      </div>
+      <div class="stat-card accent">
+        <div class="stat-value" id="stat-verified">0</div>
+        <div class="stat-label">Verified Turfs</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-total">0</div>
+        <div class="stat-label">Total Turfs</div>
+      </div>
+    </div>
 
-    <h2>Active Verified Turfs</h2>
-    <div id="verified"></div>
-  </section>
+    <!-- Unverified Section -->
+    <div class="section">
+      <div class="section-header">
+        <h2 class="section-title danger">
+          Pending Verification
+          <span class="count" id="pending-count">0</span>
+        </h2>
+      </div>
+      <div id="unverified"></div>
+    </div>
+
+    <!-- Verified Section -->
+    <div class="section">
+      <div class="section-header">
+        <h2 class="section-title">
+          Active Turfs
+          <span class="count" id="verified-count">0</span>
+        </h2>
+      </div>
+      <div id="verified"></div>
+    </div>
+  </main>
 
   <script>
     async function loadTurfs() {
@@ -44,6 +490,13 @@
         const unverified = await unverifiedRes.json();
         const verified = await verifiedRes.json();
 
+        // Update stats
+        document.getElementById("stat-pending").textContent = unverified.length;
+        document.getElementById("stat-verified").textContent = verified.length;
+        document.getElementById("stat-total").textContent = unverified.length + verified.length;
+        document.getElementById("pending-count").textContent = unverified.length;
+        document.getElementById("verified-count").textContent = verified.length;
+
         const unverifiedDiv = document.getElementById("unverified");
         const verifiedDiv = document.getElementById("verified");
 
@@ -51,19 +504,33 @@
         verifiedDiv.innerHTML = "";
 
         if (unverified.length === 0) {
-          unverifiedDiv.innerHTML = "<p>No unverified turfs found.</p>";
+          unverifiedDiv.innerHTML = `
+            <div class="empty-state">
+              <p>No pending verification requests</p>
+            </div>
+          `;
         } else {
           unverified.forEach(t => {
             const div = document.createElement("div");
             div.className = "turf";
+            
+            let imageTag = `<div class="turf-image-placeholder">No Image</div>`;
+            if (t.image_url) {
+              const src = t.image_url.startsWith('http') ? t.image_url : 'http://localhost:4001' + t.image_url;
+              imageTag = `<img src="${src}" alt="${t.name}" class="turf-image">`;
+            }
+
             div.innerHTML = `
-              <h3>${t.name}</h3>
-              <p>${t.sport} - ${t.location}, ${t.district}</p>
-              <p>₹${t.price}/hr</p>
-              ${t.contact ? `<p class="contact"><strong>Contact:</strong> ${t.contact}</p>` : ""}
-              <div class="actions">
-                <button class="verify" onclick="verifyTurf(${t.id})">✅ Verify</button>
-                <button class="reject" onclick="rejectTurf(${t.id})">❌ Reject</button>
+              ${imageTag}
+              <div class="turf-info">
+                <div class="turf-name">${t.name}</div>
+                <div class="turf-details">${t.sport} · ${t.location}, ${t.district}</div>
+                <div class="turf-price">₹${t.price}/hr</div>
+                ${t.contact ? `<div class="turf-contact"><strong>Contact:</strong> ${t.contact}</div>` : ""}
+                <div class="actions">
+                  <button class="btn btn-verify" onclick="verifyTurf(${t.id})">Verify</button>
+                  <button class="btn btn-reject" onclick="rejectTurf(${t.id})">Reject</button>
+                </div>
               </div>
             `;
             unverifiedDiv.appendChild(div);
@@ -71,15 +538,19 @@
         }
 
         if (verified.length === 0) {
-          verifiedDiv.innerHTML = "<p>No verified turfs found.</p>";
+          verifiedDiv.innerHTML = `
+            <div class="empty-state">
+              <p>No verified turfs yet</p>
+            </div>
+          `;
         } else {
           for (const t of verified) {
-            let ratingHTML = "★ No ratings yet";
+            let ratingHTML = "No ratings yet";
             try {
               const ratingRes = await fetch(`http://localhost:4001/ratings/turf/${t.id}`);
               const ratingData = await ratingRes.json();
               if (ratingData.average) {
-                ratingHTML = `★ ${ratingData.average} (${ratingData.count})`;
+                ratingHTML = `★ ${ratingData.average} (${ratingData.count} reviews)`;
               }
             } catch (err) {
               console.warn("Rating fetch failed for turf", t.id);
@@ -87,24 +558,25 @@
 
             const div = document.createElement("div");
             div.className = "turf";
-            let imageTag = '';
+            
+            let imageTag = `<div class="turf-image-placeholder">No Image</div>`;
             if (t.image_url) {
-              const src = (typeof t.image_url === 'string' && t.image_url.startsWith('http')) ? t.image_url : 'http://localhost:4001' + t.image_url;
-              imageTag = `<img src="${src}" alt="${t.name}">`;
+              const src = t.image_url.startsWith('http') ? t.image_url : 'http://localhost:4001' + t.image_url;
+              imageTag = `<img src="${src}" alt="${t.name}" class="turf-image">`;
             }
 
             div.innerHTML = `
+              ${imageTag}
               <div class="turf-info">
-                <h3>${t.name}</h3>
-                <p>${t.sport} - ${t.location}, ${t.district}</p>
-                <p>₹${t.price}/hr</p>
-                <p class="rating">${ratingHTML}</p>
-                ${t.contact ? `<p class="contact"><strong>Contact:</strong> ${t.contact}</p>` : ""}
+                <div class="turf-name">${t.name}</div>
+                <div class="turf-details">${t.sport} · ${t.location}, ${t.district}</div>
+                <div class="turf-price">₹${t.price}/hr</div>
+                <div class="turf-rating">${ratingHTML}</div>
+                ${t.contact ? `<div class="turf-contact"><strong>Contact:</strong> ${t.contact}</div>` : ""}
                 <div class="actions">
-                  <button class="remove" onclick="removeTurf(${t.id})">❌ Remove</button>
+                  <button class="btn btn-remove" onclick="removeTurf(${t.id})">Remove</button>
                 </div>
               </div>
-              ${imageTag}
             `;
             verifiedDiv.appendChild(div);
           }
@@ -115,16 +587,18 @@
     }
 
     async function verifyTurf(id) {
+      if (!confirm("Verify this turf and make it visible to players?")) return;
       try {
         await fetch(`http://localhost:4001/admin/turfs/${id}/verify`, { method: "POST" });
         loadTurfs();
       } catch (err) {
         console.error("Error verifying turf:", err);
-        alert("Failed to verify turf ❌");
+        alert("Failed to verify turf");
       }
     }
 
     async function rejectTurf(id) {
+      if (!confirm("Reject and remove this turf request?")) return;
       try {
         const res = await fetch(`http://localhost:4001/admin/turfs/${id}/remove`, {
           method: "DELETE"
@@ -132,24 +606,25 @@
 
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          alert("Failed to reject turf ❌" + (err.error ? `: ${err.error}` : ""));
+          alert("Failed to reject turf" + (err.error ? `: ${err.error}` : ""));
           return;
         }
 
         loadTurfs();
       } catch (e) {
         console.error("Reject turf error:", e);
-        alert("Failed to reject turf ❌");
+        alert("Failed to reject turf");
       }
     }
 
     async function removeTurf(id) {
+      if (!confirm("Remove this turf from the platform?")) return;
       try {
         await fetch(`http://localhost:4001/admin/turfs/${id}/remove`, { method: "DELETE" });
         loadTurfs();
       } catch (err) {
         console.error("Error removing turf:", err);
-        alert("Failed to remove turf ❌");
+        alert("Failed to remove turf");
       }
     }
 

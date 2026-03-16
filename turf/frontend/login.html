@@ -2,44 +2,801 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Turf Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login | KICKHUB - Book Your Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
-    :root{ --bg:#f6f8fb; --card:#fff; --primary:#2563eb; --muted:#6b7280; --text:#071233; --radius:12px; --shadow:0 12px 30px rgba(7,18,51,0.06) }
-    html,body{height:100%}
-    body{ margin:0; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial; background:var(--bg); color:var(--text); display:flex; align-items:center; justify-content:center }
-    .box{ background:var(--card); padding:28px; width:380px; border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid rgba(7,18,51,0.04) }
-    h2{ text-align:center; margin:0 0 14px; font-weight:700 }
-    input{ width:100%; padding:10px 12px; margin:8px 0; border-radius:10px; border:1px solid rgba(7,18,51,0.06); background:#fbfdff }
-    button{ width:100%; padding:10px; margin-top:10px; background:var(--primary); color:#fff; border:none; border-radius:10px; cursor:pointer; font-weight:600 }
-    button:hover{ filter:brightness(.96) }
-    .links{ text-align:center; margin-top:12px; color:var(--muted) }
-    .links a{ color:var(--primary); text-decoration:none }
-    .devtool-link{ position:fixed; bottom:16px; left:16px; font-size:13px }
-    .devtool-link a{ color:var(--muted); text-decoration:none }
+    :root {
+      --bg-dark: #0a0f0d;
+      --bg-card: #111916;
+      --bg-card-hover: #162019;
+      --primary: #10b981;
+      --primary-light: #34d399;
+      --primary-dark: #059669;
+      --secondary: #14532d;
+      --accent: #22c55e;
+      --neon: #4ade80;
+      --text: #f0fdf4;
+      --text-muted: #86efac;
+      --text-dim: #6b7280;
+      --border: #1f3d2a;
+      --gradient: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
+      --gradient-dark: linear-gradient(135deg, #0a0f0d 0%, #111916 50%, #14532d 100%);
+      --glow: 0 0 40px rgba(16, 185, 129, 0.3);
+      --glow-strong: 0 0 60px rgba(16, 185, 129, 0.5);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* Animated Background */
+    .bg-animation {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .bg-animation::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(ellipse at center, rgba(16, 185, 129, 0.08) 0%, transparent 50%);
+      animation: rotate 30s linear infinite;
+    }
+
+    .bg-animation::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      right: -30%;
+      width: 80%;
+      height: 80%;
+      background: radial-gradient(ellipse at center, rgba(34, 197, 94, 0.05) 0%, transparent 60%);
+      animation: float 20s ease-in-out infinite;
+    }
+
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-50px) scale(1.1); }
+    }
+
+    /* Grid Pattern Overlay */
+    .grid-pattern {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        linear-gradient(rgba(16, 185, 129, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(16, 185, 129, 0.03) 1px, transparent 1px);
+      background-size: 50px 50px;
+      z-index: 1;
+    }
+
+    /* Floating Elements */
+    .floating-elements {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .floating-ball {
+      position: absolute;
+      font-size: 2rem;
+      opacity: 0.1;
+      animation: floatBall 15s ease-in-out infinite;
+    }
+
+    .floating-ball:nth-child(1) { top: 10%; left: 10%; animation-delay: 0s; }
+    .floating-ball:nth-child(2) { top: 20%; right: 15%; animation-delay: 3s; }
+    .floating-ball:nth-child(3) { bottom: 30%; left: 5%; animation-delay: 6s; }
+    .floating-ball:nth-child(4) { bottom: 15%; right: 10%; animation-delay: 9s; }
+    .floating-ball:nth-child(5) { top: 50%; left: 20%; animation-delay: 12s; }
+
+    @keyframes floatBall {
+      0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.1; }
+      50% { transform: translateY(-30px) rotate(180deg); opacity: 0.2; }
+    }
+
+    /* Main Container */
+    .main-container {
+      position: relative;
+      z-index: 10;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    /* Login Card */
+    .login-card {
+      width: 100%;
+      max-width: 480px;
+      background: linear-gradient(145deg, rgba(17, 25, 22, 0.95) 0%, rgba(10, 15, 13, 0.98) 100%);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 50px 40px;
+      backdrop-filter: blur(20px);
+      box-shadow: 
+        0 25px 50px rgba(0, 0, 0, 0.5),
+        0 0 100px rgba(16, 185, 129, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .login-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--gradient);
+      border-radius: 24px 24px 0 0;
+    }
+
+    .login-card::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 30% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 40%);
+      pointer-events: none;
+    }
+
+    /* Logo Section */
+    .logo-section {
+      text-align: center;
+      margin-bottom: 40px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .logo-container {
+      display: inline-flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .logo-icon {
+      width: 70px;
+      height: 70px;
+      background: var(--gradient);
+      border-radius: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      box-shadow: var(--glow);
+      position: relative;
+      animation: pulse-glow 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: var(--glow); }
+      50% { box-shadow: var(--glow-strong); }
+    }
+
+    .logo-text {
+      font-size: 2.8rem;
+      font-weight: 900;
+      letter-spacing: 2px;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 0 40px rgba(16, 185, 129, 0.3);
+    }
+
+    .logo-tagline {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      font-weight: 400;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    /* Welcome Text */
+    .welcome-text {
+      text-align: center;
+      margin-bottom: 35px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .welcome-text h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .welcome-text p {
+      color: var(--text-dim);
+      font-size: 0.95rem;
+    }
+
+    /* Form Styles */
+    .login-form {
+      position: relative;
+      z-index: 1;
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 10px;
+      letter-spacing: 0.5px;
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    .input-wrapper .icon {
+      position: absolute;
+      left: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1.2rem;
+      color: var(--text-dim);
+      transition: all 0.3s ease;
+      z-index: 2;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 18px 18px 18px 54px;
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      font-size: 1rem;
+      font-family: 'Poppins', sans-serif;
+      color: var(--text);
+      background: rgba(10, 15, 13, 0.8);
+      transition: all 0.3s ease;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: rgba(16, 185, 129, 0.05);
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1), var(--glow);
+    }
+
+    .form-group input:focus + .icon,
+    .form-group input:focus ~ .icon {
+      color: var(--primary);
+    }
+
+    .form-group input::placeholder {
+      color: var(--text-dim);
+    }
+
+    .password-toggle {
+      position: absolute;
+      right: 18px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      color: var(--text-dim);
+      transition: all 0.3s ease;
+      z-index: 2;
+    }
+
+    .password-toggle:hover {
+      color: var(--primary);
+      transform: translateY(-50%) scale(1.1);
+    }
+
+    /* Form Options */
+    .form-options {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+
+    .remember-me {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+    }
+
+    .remember-me input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--primary);
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    .remember-me span {
+      font-size: 0.9rem;
+      color: var(--text-dim);
+    }
+
+    .forgot-password {
+      font-size: 0.9rem;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+
+    .forgot-password:hover {
+      color: var(--neon);
+      text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+    }
+
+    /* Login Button */
+    .login-btn {
+      width: 100%;
+      padding: 18px;
+      background: var(--gradient);
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      font-family: 'Poppins', sans-serif;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 8px 30px rgba(16, 185, 129, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      letter-spacing: 0.5px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .login-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s ease;
+    }
+
+    .login-btn:hover::before {
+      left: 100%;
+    }
+
+    .login-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(16, 185, 129, 0.5);
+    }
+
+    .login-btn:active {
+      transform: translateY(-1px);
+    }
+
+    .btn-arrow {
+      font-size: 1.3rem;
+      transition: transform 0.3s ease;
+    }
+
+    .login-btn:hover .btn-arrow {
+      transform: translateX(5px);
+    }
+
+    /* Divider */
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 35px 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+    }
+
+    .divider span {
+      padding: 0 20px;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    /* Signup Options */
+    .signup-options {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .signup-btn {
+      width: 100%;
+      padding: 16px;
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: 'Poppins', sans-serif;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text);
+      background: rgba(10, 15, 13, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .signup-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--gradient);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: -1;
+    }
+
+    .signup-btn:hover::before {
+      opacity: 0.1;
+    }
+
+    .signup-btn:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(16, 185, 129, 0.2);
+    }
+
+    .signup-btn .icon {
+      font-size: 1.4rem;
+    }
+
+    .signup-btn.customer {
+      border-color: rgba(14, 165, 233, 0.3);
+    }
+
+    .signup-btn.customer:hover {
+      border-color: #0ea5e9;
+      box-shadow: 0 5px 20px rgba(14, 165, 233, 0.2);
+    }
+
+    .signup-btn.owner {
+      border-color: rgba(234, 179, 8, 0.3);
+    }
+
+    .signup-btn.owner:hover {
+      border-color: #eab308;
+      box-shadow: 0 5px 20px rgba(234, 179, 8, 0.2);
+    }
+
+    /* Footer */
+    .form-footer {
+      text-align: center;
+      margin-top: 30px;
+      padding-top: 25px;
+      border-top: 1px solid var(--border);
+      position: relative;
+      z-index: 1;
+    }
+
+    .form-footer p {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+
+    .form-footer a {
+      color: var(--primary);
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+
+    .form-footer a:hover {
+      color: var(--neon);
+    }
+
+    /* Devtool Link */
+    .devtool-link {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      font-size: 12px;
+      z-index: 100;
+    }
+
+    .devtool-link a {
+      color: var(--text-dim);
+      text-decoration: none;
+      opacity: 0.3;
+      transition: opacity 0.3s;
+    }
+
+    .devtool-link a:hover {
+      opacity: 1;
+      color: var(--primary);
+    }
+
+    /* Loading State */
+    .login-btn.loading {
+      pointer-events: none;
+    }
+
+    .spinner {
+      width: 24px;
+      height: 24px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Error State */
+    .form-group.error input {
+      border-color: #ef4444;
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .error-message {
+      color: #ef4444;
+      font-size: 0.85rem;
+      margin-top: 8px;
+      display: none;
+      padding-left: 4px;
+    }
+
+    .form-group.error .error-message {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Success Animation */
+    @keyframes success-pulse {
+      0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+      70% { box-shadow: 0 0 0 20px rgba(34, 197, 94, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+    }
+
+    .login-btn.success {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      animation: success-pulse 1s ease-out;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 540px) {
+      .login-card {
+        padding: 40px 28px;
+        border-radius: 20px;
+      }
+
+      .logo-container {
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .logo-text {
+        font-size: 2.2rem;
+      }
+
+      .welcome-text h1 {
+        font-size: 1.5rem;
+      }
+
+      .form-options {
+        flex-direction: column;
+        gap: 14px;
+        align-items: flex-start;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="box">
-    <h2>Turf Login</h2>
-    <input type="email" id="email" placeholder="Email" />
-    <input type="password" id="password" placeholder="Password" />
-    <button onclick="login()">Login</button>
+  <!-- Animated Background -->
+  <div class="bg-animation"></div>
+  <div class="grid-pattern"></div>
+  
+  <!-- Floating Elements -->
+  <div class="floating-elements">
+    <span class="floating-ball">⚽</span>
+    <span class="floating-ball">⚽</span>
+    <span class="floating-ball">⚽</span>
+    <span class="floating-ball">⚽</span>
+    <span class="floating-ball">⚽</span>
+  </div>
 
-    <div class="links">
-      <p>No account? <a href="signup-customer.html">Sign up as Customer</a></p>
-      <p>Are you a turf owner? <a href="signup-owner.html">Sign up as Owner</a></p>
+  <!-- Main Container -->
+  <div class="main-container">
+    <div class="login-card">
+      <!-- Logo Section -->
+      <div class="logo-section">
+        <div class="logo-container">
+          <div class="logo-icon">⚽</div>
+          <span class="logo-text">KICKHUB</span>
+        </div>
+        <p class="logo-tagline">Book • Play • Win</p>
+      </div>
+
+      <!-- Welcome Text -->
+      <div class="welcome-text">
+        <h1>Welcome Back! 👋</h1>
+        <p>Sign in to book your next game</p>
+      </div>
+
+      <!-- Login Form -->
+      <form class="login-form" id="loginForm" onsubmit="login(event)">
+        <div class="form-group" id="emailGroup">
+          <label for="email">Email Address</label>
+          <div class="input-wrapper">
+            <input type="email" id="email" placeholder="Enter your email" required />
+            <span class="icon">📧</span>
+          </div>
+          <p class="error-message">⚠️ Please enter a valid email address</p>
+        </div>
+
+        <div class="form-group" id="passwordGroup">
+          <label for="password">Password</label>
+          <div class="input-wrapper">
+            <input type="password" id="password" placeholder="Enter your password" required />
+            <span class="icon">🔒</span>
+            <button type="button" class="password-toggle" onclick="togglePassword()">👁️</button>
+          </div>
+          <p class="error-message">⚠️ Password is required</p>
+        </div>
+
+        <div class="form-options">
+          <label class="remember-me">
+            <input type="checkbox" id="rememberMe" />
+            <span>Remember me</span>
+          </label>
+          <a href="#" class="forgot-password">Forgot Password?</a>
+        </div>
+
+        <button type="submit" class="login-btn" id="loginBtn">
+          <span>Sign In to KICKHUB</span>
+          <span class="btn-arrow">→</span>
+        </button>
+      </form>
+
+      <!-- Divider -->
+      <div class="divider">
+        <span>New Here?</span>
+      </div>
+
+      <!-- Signup Options -->
+      <div class="signup-options">
+        <a href="signup-customer.html" class="signup-btn customer">
+          <span class="icon">🎮</span>
+          <span>Create Player Account</span>
+        </a>
+        <a href="signup-owner.html" class="signup-btn owner">
+          <span class="icon">🏟️</span>
+          <span>Register as Turf Owner</span>
+        </a>
+      </div>
+
+      <!-- Footer -->
+      <div class="form-footer">
+        <p>By signing in, you agree to our <a href="#">Terms</a> & <a href="#">Privacy Policy</a></p>
+      </div>
     </div>
   </div>
 
-  <!-- 🔐 Devtool Access (hidden in corner) -->
+  <!-- Devtool Access -->
   <div class="devtool-link">
-    <a href="devtool-login-turf.html">Devtool Access</a>
+    <a href="devtool-login-turf.html">🔧 Dev Access</a>
   </div>
 
   <script>
-    async function login() {
-      const email = document.getElementById("email").value;
+    // Toggle Password Visibility
+    function togglePassword() {
+      const passwordInput = document.getElementById('password');
+      const toggleBtn = document.querySelector('.password-toggle');
+      
+      if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        toggleBtn.textContent = '🙈';
+      } else {
+        passwordInput.type = 'password';
+        toggleBtn.textContent = '👁️';
+      }
+    }
+
+    // Login Function
+    async function login(event) {
+      event.preventDefault();
+      
+      const email = document.getElementById("email").value.trim();
       const password = document.getElementById("password").value;
+      const loginBtn = document.getElementById("loginBtn");
+      
+      // Clear previous errors
+      document.getElementById("emailGroup").classList.remove("error");
+      document.getElementById("passwordGroup").classList.remove("error");
+
+      // Validation
+      let hasError = false;
+      
+      if (!email || !email.includes('@')) {
+        document.getElementById("emailGroup").classList.add("error");
+        hasError = true;
+      }
+      
+      if (!password) {
+        document.getElementById("passwordGroup").classList.add("error");
+        hasError = true;
+      }
+      
+      if (hasError) return;
+
+      // Show loading state
+      loginBtn.innerHTML = '<div class="spinner"></div><span>Signing in...</span>';
+      loginBtn.classList.add("loading");
 
       try {
         const res = await fetch("http://localhost:4001/login", {
@@ -52,25 +809,72 @@
 
         if (res.ok && !data.error) {
           localStorage.setItem("user", JSON.stringify(data));
+          
           // Set login cookie (expires in 7 days)
           const expiry = new Date();
           expiry.setTime(expiry.getTime() + (7 * 24 * 60 * 60 * 1000));
           document.cookie = `kickhub_user=${data.id}; expires=${expiry.toUTCString()}; path=/`;
-          alert("Welcome, " + data.name + " (" + data.role + ")");
-
-          if (data.role === "owner") {
-            window.location.href = `owner-dashboard.html?id=${data.id}`;
-          } else {
-            window.location.href = `home.html`;
-          }
+          
+          // Success feedback
+          loginBtn.classList.add("success");
+          loginBtn.innerHTML = '<span>✓ Welcome, ' + data.name + '!</span>';
+          
+          setTimeout(() => {
+            if (data.role === "owner") {
+              window.location.href = `owner-dashboard.html?id=${data.id}`;
+            } else {
+              window.location.href = `home.html`;
+            }
+          }, 1200);
         } else {
-          alert(data.error || "Login failed");
+          // Error feedback
+          loginBtn.classList.remove("loading");
+          loginBtn.innerHTML = '<span>Sign In to KICKHUB</span><span class="btn-arrow">→</span>';
+          
+          // Shake animation on error
+          loginBtn.style.animation = 'shake 0.5s ease';
+          setTimeout(() => loginBtn.style.animation = '', 500);
+          
+          alert(data.error || "Invalid email or password. Please try again.");
         }
       } catch (err) {
         console.error("Login error:", err);
-        alert("Something went wrong. Try again.");
+        loginBtn.classList.remove("loading");
+        loginBtn.innerHTML = '<span>Sign In to KICKHUB</span><span class="btn-arrow">→</span>';
+        alert("Connection error. Please check your internet and try again.");
       }
     }
+
+    // Shake animation for errors
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        20%, 60% { transform: translateX(-10px); }
+        40%, 80% { transform: translateX(10px); }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Add Enter key support
+    document.getElementById("password").addEventListener("keypress", function(e) {
+      if (e.key === "Enter") {
+        document.getElementById("loginForm").dispatchEvent(new Event('submit'));
+      }
+    });
+
+    // Auto-focus email field
+    document.getElementById("email").focus();
+
+    // Add glow effect on input focus
+    document.querySelectorAll('input').forEach(input => {
+      input.addEventListener('focus', () => {
+        input.closest('.input-wrapper').style.filter = 'drop-shadow(0 0 8px rgba(16, 185, 129, 0.3))';
+      });
+      input.addEventListener('blur', () => {
+        input.closest('.input-wrapper').style.filter = 'none';
+      });
+    });
   </script>
 </body>
 </html>
