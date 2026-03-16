@@ -4,68 +4,18 @@
   <meta charset="UTF-8" />
   <title>Turf Login</title>
   <style>
-    body {
-      font-family: Arial;
-      background: #f3f5f7;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .box {
-      background: #fff;
-      padding: 28px;
-      width: 340px;
-      border-radius: 12px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-      position: relative;
-    }
-    h2 {
-      text-align: center;
-      margin: 0 0 18px;
-    }
-    input {
-      width: 100%;
-      padding: 10px;
-      margin: 8px 0;
-      border: 1px solid #cdd4da;
-      border-radius: 8px;
-    }
-    button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      background: #2563eb;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #1e4fd6;
-    }
-    .links {
-      text-align: center;
-      margin-top: 12px;
-      font-size: 14px;
-    }
-    .links a {
-      color: #2563eb;
-      text-decoration: none;
-    }
-    .devtool-link {
-      position: fixed;
-      bottom: 10px;
-      left: 10px;
-      font-size: 13px;
-    }
-    .devtool-link a {
-      color: #6b7280;
-      text-decoration: none;
-    }
-    .devtool-link a:hover {
-      text-decoration: underline;
-    }
+    :root{ --bg:#f6f8fb; --card:#fff; --primary:#2563eb; --muted:#6b7280; --text:#071233; --radius:12px; --shadow:0 12px 30px rgba(7,18,51,0.06) }
+    html,body{height:100%}
+    body{ margin:0; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial; background:var(--bg); color:var(--text); display:flex; align-items:center; justify-content:center }
+    .box{ background:var(--card); padding:28px; width:380px; border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid rgba(7,18,51,0.04) }
+    h2{ text-align:center; margin:0 0 14px; font-weight:700 }
+    input{ width:100%; padding:10px 12px; margin:8px 0; border-radius:10px; border:1px solid rgba(7,18,51,0.06); background:#fbfdff }
+    button{ width:100%; padding:10px; margin-top:10px; background:var(--primary); color:#fff; border:none; border-radius:10px; cursor:pointer; font-weight:600 }
+    button:hover{ filter:brightness(.96) }
+    .links{ text-align:center; margin-top:12px; color:var(--muted) }
+    .links a{ color:var(--primary); text-decoration:none }
+    .devtool-link{ position:fixed; bottom:16px; left:16px; font-size:13px }
+    .devtool-link a{ color:var(--muted); text-decoration:none }
   </style>
 </head>
 <body>
@@ -102,12 +52,16 @@
 
         if (res.ok && !data.error) {
           localStorage.setItem("user", JSON.stringify(data));
+          // Set login cookie (expires in 7 days)
+          const expiry = new Date();
+          expiry.setTime(expiry.getTime() + (7 * 24 * 60 * 60 * 1000));
+          document.cookie = `kickhub_user=${data.id}; expires=${expiry.toUTCString()}; path=/`;
           alert("Welcome, " + data.name + " (" + data.role + ")");
 
           if (data.role === "owner") {
             window.location.href = `owner-dashboard.html?id=${data.id}`;
           } else {
-            window.location.href = `user.html?id=${data.id}`;
+            window.location.href = `home.html`;
           }
         } else {
           alert(data.error || "Login failed");

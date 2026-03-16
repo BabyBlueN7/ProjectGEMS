@@ -4,104 +4,26 @@
   <meta charset="UTF-8" />
   <title>Owner Slot Manager</title>
   <style>
-    body { font-family: Arial; background: #f0f4f8; margin: 0; padding: 0; }
-    header h1 { margin: 0; padding: 16px; background: #2563eb; color: #fff; text-align: center; }
-    nav {
-      background: #fff;
-      padding: 12px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-    }
-    nav a {
-      text-decoration: none;
-      color: #2563eb;
-      font-weight: bold;
-      margin-left: 12px;
-    }
-    main { padding: 20px; }
-    .date-selector {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-    .date-selector button {
-      padding: 6px 12px;
-      border: none;
-      border-radius: 6px;
-      background: #2563eb;
-      color: #fff;
-      cursor: pointer;
-    }
-    .date-selector button.selected {
-      background: #10b981;
-      color: #fff;
-    }
-    .slot {
-      background: #fff;
-      padding: 12px;
-      margin: 8px 0;
-      border-radius: 6px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-    .slot-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-    }
-    .slot-header .right-buttons {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-    }
-    .price {
-      font-weight: bold;
-      color: #10b981;
-      margin-bottom: 6px;
-    }
-    .book-btn {
-      background: #10b981;
-      color: #fff;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      margin-bottom: 6px;
-    }
-    button[disabled] {
-      background: #ccc;
-      cursor: not-allowed;
-    }
-    button:hover:not([disabled]) {
-      opacity: 0.9;
-    }
-    .progress {
-      background: #e5e7eb;
-      border-radius: 6px;
-      height: 12px;
-      margin-top: 6px;
-      overflow: hidden;
-    }
-    .progress-fill {
-      background: #2563eb;
-      height: 100%;
-      border-radius: 6px;
-    }
-    .status-text {
-      margin-top: 4px;
-      font-size: 0.9em;
-    }
-    .player-list {
-      background: #f1f5f9;
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 6px;
-    }
-    .player-list div {
-      padding: 6px;
-      border-bottom: 1px solid #ccc;
-    }
+    :root{ --bg:#f6f8fb; --card:#fff; --primary:#2563eb; --accent:#10b981; --muted:#6b7280; --text:#071233; --radius:12px; --shadow:0 10px 30px rgba(7,18,51,0.06) }
+    body{ margin:0; font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial; background:var(--bg); color:var(--text) }
+    header h1{ margin:0; padding:18px; background:linear-gradient(90deg,var(--primary), #1f4ed8); color:#fff; text-align:center }
+    nav{ background:transparent; padding:12px 20px; display:flex; justify-content:space-between; align-items:center; max-width:1100px; margin:0 auto }
+    nav a{ color:#fff; text-decoration:none; font-weight:600 }
+    main{ padding:20px; max-width:1100px; margin:0 auto }
+    .date-selector{ display:flex; gap:10px; margin-bottom:18px }
+    .date-selector button{ padding:8px 12px; border:none; border-radius:10px; background:rgba(7,18,51,0.06); color:var(--muted); cursor:pointer }
+    .date-selector button.selected{ background:var(--primary); color:#fff }
+    .slot{ background:var(--card); padding:14px; margin:10px 0; border-radius:12px; box-shadow:var(--shadow); border:1px solid rgba(7,18,51,0.04) }
+    .slot-header{ display:flex; justify-content:space-between; align-items:flex-start }
+    .slot-header .right-buttons{ display:flex; flex-direction:column; align-items:flex-end }
+    .price{ font-weight:700; color:var(--accent); margin-bottom:6px }
+    .book-btn{ background:var(--accent); color:#fff; border:none; padding:8px 12px; border-radius:10px; cursor:pointer; margin-bottom:6px }
+    button[disabled]{ background: #e6e9ef; color:var(--muted); cursor:not-allowed }
+    .progress{ background:#e9eef6; border-radius:10px; height:12px; margin-top:8px; overflow:hidden }
+    .progress-fill{ background:var(--primary); height:100%; border-radius:10px }
+    .status-text{ margin-top:6px; font-size:0.95em }
+    .player-list{ background:#fbfdff; padding:10px; margin-top:10px; border-radius:10px; border:1px solid rgba(7,18,51,0.03) }
+    .player-list div{ padding:8px; border-bottom:1px solid rgba(7,18,51,0.04) }
   </style>
 </head>
 <body>
@@ -110,6 +32,7 @@
     <nav>
       <span id="welcomeText">Welcome, Owner</span>
       <div>
+        <a href="home.html">Home</a>
         <a href="owner-dashboard.html">Dashboard</a>
         <a href="my-bookings.html">My Bookings</a>
         <a href="login.html">Logout</a>

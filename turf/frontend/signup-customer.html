@@ -4,14 +4,16 @@
   <meta charset="UTF-8" />
   <title>Customer Sign Up</title>
   <style>
-    body { font-family: Arial; background: #f6f7fb; display: flex; justify-content: center; align-items: center; height: 100vh; }
-    .box { background: #fff; padding: 28px; width: 340px; border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
-    h2 { text-align: center; margin: 0 0 18px; }
-    input { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #cdd4da; border-radius: 8px; }
-    button { width: 100%; padding: 10px; margin-top: 10px; background: #10b981; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
-    button:hover { background: #0f9a70; }
-    .links { text-align: center; margin-top: 12px; font-size: 14px; }
-    .links a { color: #2563eb; text-decoration: none; }
+    :root{ --bg:#f6f8fb; --card:#fff; --primary:#2563eb; --accent:#10b981; --muted:#6b7280; --text:#071233; --radius:12px; --shadow:0 10px 30px rgba(7,18,51,0.06) }
+    html,body{height:100%}
+    body{ margin:0; font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial; background:var(--bg); display:flex; align-items:center; justify-content:center }
+    .box{ background:var(--card); padding:28px; width:360px; border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid rgba(7,18,51,0.04) }
+    h2{ text-align:center; margin:0 0 16px; font-weight:700 }
+    input{ width:100%; padding:10px 12px; margin:8px 0; border-radius:10px; border:1px solid rgba(7,18,51,0.06); background:#fbfdff }
+    button{ width:100%; padding:10px; margin-top:10px; background:var(--accent); color:#fff; border:none; border-radius:10px; cursor:pointer; font-weight:600 }
+    button:hover{ filter:brightness(.96) }
+    .links{ text-align:center; margin-top:12px; color:var(--muted) }
+    .links a{ color:var(--primary); text-decoration:none }
   </style>
 </head>
 <body>
@@ -46,6 +48,10 @@
       } else {
         alert("Customer account created!");
         localStorage.setItem("user", JSON.stringify(data));
+        // Set login cookie (expires in 7 days)
+        const expiry = new Date();
+        expiry.setTime(expiry.getTime() + (7 * 24 * 60 * 60 * 1000));
+        document.cookie = `kickhub_user=${data.id}; expires=${expiry.toUTCString()}; path=/`;
         window.location.href = "customer-dashboard.html";
       }
     }

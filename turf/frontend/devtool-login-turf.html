@@ -4,45 +4,38 @@
   <meta charset="UTF-8" />
   <title>Kick-Hub Devtool Login</title>
   <style>
-    body {
-      font-family: Arial;
-      background: #f3f5f7;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
+    :root{
+      --bg:#f6f8fb;
+      --card:#ffffff;
+      --primary:#2563eb;
+      --accent:#10b981;
+      --muted:#6b7280;
+      --text:#0f1724;
+      --radius:12px;
+      --shadow:0 8px 24px rgba(16,24,40,0.06);
     }
-    .box {
-      background: #fff;
-      padding: 28px;
-      width: 340px;
-      border-radius: 12px;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    html,body{height:100%;}
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background:var(--bg);
+      color:var(--text);
+      display:flex;
+      align-items:center;
+      justify-content:center;
     }
-    h2 {
-      text-align: center;
-      margin-bottom: 18px;
+    .box{
+      background:var(--card);
+      padding:28px;
+      width:360px;
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      border:1px solid rgba(16,24,40,0.04);
     }
-    input {
-      width: 100%;
-      padding: 10px;
-      margin: 8px 0;
-      border: 1px solid #cdd4da;
-      border-radius: 8px;
-    }
-    button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-      background: #10b981;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #0f9a70;
-    }
+    h2{ text-align:center; margin-bottom:16px; font-weight:600; }
+    input{ width:100%; padding:10px 12px; margin:8px 0; border-radius:10px; border:1px solid rgba(16,24,40,0.06); background:#fbfdff }
+    button{ width:100%; padding:10px; margin-top:10px; background:var(--primary); color:#fff; border:none; border-radius:10px; cursor:pointer; font-weight:600 }
+    button:hover{ filter:brightness(.96) }
   </style>
 </head>
 <body>

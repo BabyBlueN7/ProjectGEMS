@@ -2,60 +2,61 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Turf Owner Dashboard</title>
+  <title>Manager Dashboard</title>
   <style>
-    body { font-family: Arial; background: #f9fafb; margin: 0; padding: 0; }
-    header { background: #2563eb; color: #fff; padding: 16px; text-align: center; }
-    main { padding: 20px; }
-    form, .section {
-      background: #fff;
-      padding: 16px;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      margin-bottom: 20px;
-    }
-    label { display: block; margin: 8px 0 4px; }
-    input, select, textarea {
-      width: 100%;
-      padding: 8px;
-      margin-bottom: 12px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-    }
-    button {
-      background: #10b981;
-      color: #fff;
-      border: none;
-      padding: 8px 14px;
-      border-radius: 6px;
+    :root{ --bg:#f6f8fb; --card:#ffffff; --primary:#2563eb; --accent:#10b981; --muted:#6b7280; --text:#071233; --radius:12px; --shadow:0 10px 30px rgba(7,18,51,0.06)}
+    body{ margin:0; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial; background:var(--bg); color:var(--text) }
+    header{ background:linear-gradient(90deg,var(--primary), #1f4ed8); color:#fff; padding:20px; text-align:center }
+    main{ padding:24px; max-width:1100px; margin:0 auto }
+    form, .section{ background:var(--card); padding:18px; border-radius:var(--radius); box-shadow:var(--shadow); margin-bottom:20px; border:1px solid rgba(7,18,51,0.04) }
+    label{ display:block; margin:8px 0 6px }
+    input, select, textarea{ width:100%; padding:10px 12px; margin-bottom:12px; border-radius:10px; border:1px solid rgba(7,18,51,0.06); background:#fbfdff }
+    button{ background:var(--accent); color:#fff; border:none; padding:10px 14px; border-radius:10px; cursor:pointer; margin-right:8px; font-weight:600 }
+    button:hover{ filter:brightness(.96) }
+    .turf, .booking{ border-bottom: none; padding:12px; margin:8px 0; border-radius:10px }
+    .turf{ display:flex; align-items:center; justify-content:space-between; gap:12px }
+    .turf .turf-info{ flex:1 }
+    .turf img{ width:150px; height:100px; object-fit:cover; border-radius:8px; margin-left:12px }
+    .status{ font-weight:700 }
+    .pending{ color:#f59e0b }
+    .confirmed{ color:#10b981 }
+    .canceled{ color:#ef4444 }
+    .edit-form{ background:#fbfdff; padding:12px; border-radius:10px; margin-top:10px; border:1px solid rgba(7,18,51,0.03) }
+
+
+
+     .login-btn {
+      background: var(--primary);
+      color: var(--white);
+      border: 2px solid var(--white);
+      padding: 10px 24px;
+      border-radius: 5px;
+      font-size: 14px;
+      font-weight: 600;
       cursor: pointer;
-      margin-right: 6px;
+      transition: var(--transition);
+      display: inline-block;
+      font-family: 'Poppins', sans-serif;
     }
-    button:hover { background: #0f9a70; }
-    .turf, .booking {
-      border-bottom: 1px solid #eee;
-      padding: 10px 0;
+
+    .login-btn:hover {
+      background: var(--white);
+      color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
     }
-    .status { font-weight: bold; }
-    .pending { color: orange; }
-    .confirmed { color: green; }
-    .canceled { color: red; }
-    .edit-form {
-      background:#f3f4f6;
-      padding:10px;
-      border-radius:6px;
-      margin-top:8px;
-    }
+
   </style>
 </head>
 <body>
   <header>
-  <h1>Turf Owner Dashboard</h1>
+  <h1>Manager Dashboard</h1>
   <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: #ffffff;">
     <span id="welcomeText" style="font-weight: bold; color: #ff0000">Welcome, Owner</span>
     <div>
+     
       <span id="wallet" style="font-weight: bold; color: #10b981; margin-right: 20px;">₹0</span>
-      <a href="login.html">Logout</a>
+      <a href="login.html" class="login-btn">Logout</a>
     </div>
   </div>
 </header>
@@ -98,18 +99,18 @@
     <!-- Add Turf -->
 <div class="section" id="add-turf-section">
   <h2>Add New Turf</h2>
-  <form id="turfForm">
+  <form id="turfForm" enctype="multipart/form-data">
     <label for="name">Turf Name</label>
-    <input type="text" id="name" required />
+    <input type="text" id="name" name="name" required />
 
     <label for="location">Location</label>
-    <input type="text" id="location" required />
+    <input type="text" id="location" name="location" required />
 
     <label for="district">District</label>
-    <input type="text" id="district" required />
+    <input type="text" id="district" name="district" required />
 
     <label for="sport">Sport</label>
-    <select id="sport">
+    <select id="sport" name="sport">
       <option value="Football 5s">Football 5s</option>
       <option value="Football 7s">Football 7s</option>
       <option value="Football 10s">Football 10s</option>
@@ -117,25 +118,28 @@
     </select>
 
     <label for="price">Price per Hour (₹)</label>
-    <input type="number" id="price" required />
+    <input type="number" id="price" name="price" required />
 
     <label for="start_time">Start Time</label>
-    <input type="text" id="start_time" value="05:00" required />
+    <input type="text" id="start_time" name="start_time" value="05:00" required />
 
     <label for="end_time">End Time</label>
-    <input type="text" id="end_time" value="24:00" required />
+    <input type="text" id="end_time" name="end_time" value="24:00" required />
+
+    <label for="image">Turf Image</label>
+    <input type="file" id="image" name="image" accept="image/*" />
 
     <label for="minTarget">Minimum Target Players (Stranger Play)</label>
-    <input type="number" id="minTarget" required />
+    <input type="number" id="minTarget" name="min_players" required />
 
     <label for="maxPlayers">Maximum Stranger Players Allowed</label>
-    <input type="number" id="maxPlayers" required />
+    <input type="number" id="maxPlayers" name="max_stranger_players" required />
     <p id="strangerCostMessage" style="margin: 8px 0; font-weight: bold; color: #2563eb;">
       Stranger play cost: Full price / max stranger = ₹0
     </p>
 
     <label for="contact">Contact Details (Phone, Email, etc.)</label>
-    <textarea id="contact" rows="3" placeholder="Enter phone numbers, email, WhatsApp…" required></textarea>
+    <textarea id="contact" name="contact" rows="3" placeholder="Enter phone number, email, WhatsApp…" required></textarea>
 
     <button type="submit">Add Turf</button>
   </form>
@@ -143,7 +147,7 @@
 <!-- ✅ message notify -->
 <div style="margin-top:16px; padding:12px; background:#FEF3C7; border-left:4px solid #F59E0B; border-radius:6px; color:#7C2D12;">
   ℹ️ <strong>Note:</strong> After adding a turf, please contact the <strong>Kick-Hub Team</strong> to verify your eligibility and make your turf visible to players.<br>
-  📧 <strong>mrabhisanth@gmail.com</strong><br>
+  📧 <strong>kickhubadmin@gmail.com</strong><br>
   📞 <strong>+91 97780 49379</strong><br>
   Only verified turfs will appear in the player booking system.
 </div>
@@ -162,25 +166,15 @@
 document.getElementById("turfForm").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const payload = {
-    name: document.getElementById("name").value.trim(),
-    location: document.getElementById("location").value.trim(),
-    district: document.getElementById("district").value,
-    sport: document.getElementById("sport").value,
-    price: parseInt(document.getElementById("price").value),
-    start_time: document.getElementById("start_time").value,
-    end_time: document.getElementById("end_time").value,
-    min_players: parseInt(document.getElementById("minTarget").value),
-    max_stranger_players: parseInt(document.getElementById("maxPlayers").value),
-    contact: document.getElementById("contact").value,
-    owner_id: user.id
-  };
+  const form = document.getElementById("turfForm");
+  const formData = new FormData(form);
+  // attach owner id separately
+  formData.append("owner_id", user.id);
 
   try {
     const res = await fetch("http://localhost:4001/turfs", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: formData
     });
 
     const data = await res.json();
@@ -227,12 +221,21 @@ document.getElementById("turfForm").addEventListener("submit", async (e) => {
 
         const div = document.createElement("div");
         div.className = "turf";
+        let imageTag = '';
+        if (t.image_url) {
+          const src = (typeof t.image_url === 'string' && t.image_url.startsWith('http')) ? t.image_url : 'http://localhost:4001' + t.image_url;
+          imageTag = `<img src="${src}" alt="${t.name || t.location}">`;
+        }
+
         div.innerHTML = `
-  <b>${t.location}</b> — ${t.sport} — ₹${t.price}
-  <span style="color:#f59e0b; font-weight:bold; margin-left:10px;">${ratingHTML}</span><br>
-  <a href="owner-slots.html?id=${t.id}" style="margin-left:8px; color:#2563eb;">Slots & Offline Booking Management</a><br><br>
-  <button onclick="showEditForm(${t.id}, '${t.location}', '${t.district}', '${t.sport}', ${t.price}, ${t.min_players || 0}, ${t.max_stranger_players || 0})">Edit</button>
-  <button onclick="deleteTurf(${t.id})" style="background:#ef4444;">Delete</button>
+  <div class="turf-info">
+    <b>${t.name}, ${t.district}</b> — ${t.sport} — ₹${t.price}
+    <span style="color:#f59e0b; font-weight:bold; margin-left:10px;">${ratingHTML}</span><br>
+    <a href="owner-slots.html?id=${t.id}" style="margin-left:8px; color:#2563eb;">Slots & Offline Booking Management</a><br><br>
+    <button onclick="showEditForm(${t.id}, '${t.name}', '${t.district}', '${t.sport}', ${t.price}, ${t.min_players || 0}, ${t.max_stranger_players || 0}, '${t.image_url || ''}')">Edit</button>
+    <button onclick="deleteTurf(${t.id})" style="background:#ef4444;">Delete</button>
+  </div>
+  ${imageTag}
 `;
         container.appendChild(div);
       }
@@ -246,28 +249,37 @@ document.getElementById("turfForm").addEventListener("submit", async (e) => {
 }
 
   // Show Edit Form
-  function showEditForm(id, location, district, sport, price, minTarget = 0, maxPlayers = 0) {
+  function showEditForm(id, name, district, sport, price, minTarget = 0, maxPlayers = 0, imageUrl = '') {
     const container = document.getElementById("my-turfs");
     const formId = `editForm-${id}`;
     if (document.getElementById(formId)) return;
 
+    let imageHTML = '';
+    if (imageUrl) {
+      const src = (typeof imageUrl === 'string' && imageUrl.startsWith('http')) ? imageUrl : 'http://localhost:4001' + imageUrl;
+      imageHTML = `<img src="${src}" alt="${name}" style="max-width:150px; display:block; margin-bottom:6px;">`;
+    }
+
     container.innerHTML += `
-      <form id="${formId}" class="edit-form">
-        <h4>Edit Turf: ${location}</h4>
-        <label>Location</label>
-        <input type="text" id="edit-location-${id}" value="${location}" required />
+      <form id="${formId}" class="edit-form" enctype="multipart/form-data">
+        <h4>Edit Turf: ${name}</h4>
+        ${imageHTML}
+        <label>Change Image</label>
+        <input type="file" id="edit-image-${id}" name="image" accept="image/*" />
+        <label>Turf Name</label>
+        <input type="text" id="edit-name-${id}" name="name" value="${name}" required />
         <label>District</label>
-        <input type="text" id="edit-district-${id}" value="${district}" required />
+        <input type="text" id="edit-district-${id}" name="district" value="${district}" required />
         <label>Sport</label>
-        <input type="text" id="edit-sport-${id}" value="${sport}" required />
+        <input type="text" id="edit-sport-${id}" name="sport" value="${sport}" required />
         <label>Price (₹)</label>
-        <input type="number" id="edit-price-${id}" value="${price}" required />
+        <input type="number" id="edit-price-${id}" name="price" value="${price}" required />
         <label>Minimum Target Players</label>
-        <input type="number" id="edit-minTarget-${id}" value="${minTarget}" required />
+        <input type="number" id="edit-minTarget-${id}" name="min_players" value="${minTarget}" required />
         <label>Maximum Stranger Players</label>
-        <input type="number" id="edit-maxPlayers-${id}" value="${maxPlayers}" required />
+        <input type="number" id="edit-maxPlayers-${id}" name="max_stranger_players" value="${maxPlayers}" required />
         <p style="margin: 8px 0; font-weight: bold; color: #2563eb;">
-  Stranger play cost for a player = Full price / max no. of stranger players (auto-calculated for players)</p>
+  Stsranger play cost for a player = Full price / max no. of stranger players (auto-calculated for players)</p>
         <button type="button" onclick="updateTurf(${id})">Save</button>
       </form>
     `;
@@ -278,23 +290,32 @@ document.getElementById("turfForm").addEventListener("submit", async (e) => {
     let district = document.getElementById(`edit-district-${id}`).value.trim();
     district = district.charAt(0).toUpperCase() + district.slice(1).toLowerCase();
 
-    const updated = {
-      location: document.getElementById(`edit-location-${id}`).value,
-      district,
-      sport: document.getElementById(`edit-sport-${id}`).value,
-      price: parseInt(document.getElementById(`edit-price-${id}`).value),
-      min_players: parseInt(document.getElementById(`edit-minTarget-${id}`).value),
-      max_stranger_players: parseInt(document.getElementById(`edit-maxPlayers-${id}`).value)
-    };
+    const form = document.getElementById(`editForm-${id}`);
+    const formData = new FormData(form);
+    formData.set("district", district);
+    formData.set("name", document.getElementById(`edit-name-${id}`).value);
+    formData.set("sport", document.getElementById(`edit-sport-${id}`).value);
+    formData.set("price", parseInt(document.getElementById(`edit-price-${id}`).value));
+    formData.set("min_players", parseInt(document.getElementById(`edit-minTarget-${id}`).value));
+    formData.set("max_stranger_players", parseInt(document.getElementById(`edit-maxPlayers-${id}`).value));
+
+    const fileInput = document.getElementById(`edit-image-${id}`);
+    if (fileInput && fileInput.files.length > 0) {
+      formData.set("image", fileInput.files[0]);
+    }
 
     try {
-      await fetch(`http://localhost:4001/turfs/${id}`, {
+      const res = await fetch(`http://localhost:4001/turfs/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updated)
+        body: formData
       });
-      alert("Turf updated successfully ✅");
-      loadTurfs();
+      if (res.ok) {
+        alert("Turf updated successfully ✅");
+        loadTurfs();
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert("Failed to update turf ❌ " + (errData.error || ""));
+      }
     } catch (err) {
       console.error("Error updating turf:", err);
       alert("Failed to update turf ❌");

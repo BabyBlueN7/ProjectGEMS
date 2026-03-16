@@ -7,11 +7,54 @@ const {
 } = require("./utils/helpers");
 
 const express = require("express");
+const path = require("path");
+const fs = require("fs");
+const multer = require("multer");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const sqlite3 = require("sqlite3").verbose();
 
 const app = express();
+
+// multer setup: store uploads in public/images with original extension
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, path.join(__dirname, 'public/images')),
+  filename: (req, file, cb) => {
+    const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, unique + ext);
+  }
+});
+const upload = multer({ storage });
+
+// multer setup for profile photos: store in Profile folder
+const profileStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const profileDir = path.join(__dirname, 'Profile');
+    // Create Profile directory if it doesn't exist
+    if (!fs.existsSync(profileDir)) {
+      fs.mkdirSync(profileDir, { recursive: true });
+    }
+    cb(null, profileDir);
+  },
+  filename: (req, file, cb) => {
+    const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname);
+    cb(null, unique + ext);
+  }
+});
+const uploadProfile = multer({ storage: profileStorage });
+
+// serve static assets (e.g. turf images) from public/images
+app.use('/images', express.static(path.join(__dirname, 'public/images')));
+
+// serve profile photos from Profile folder
+app.use('/profile', express.static(path.join(__dirname, 'Profile')));
+
+// serve frontend static files (home page, HTML, CSS, JS)
+const frontendPath = path.join(__dirname, '..', 'frontend');
+app.use(express.static(frontendPath));
+
 app.use(cors());
 app.use(bodyParser.json());
 
@@ -25,10 +68,17 @@ db.serialize(() => {
     name TEXT,
     email TEXT UNIQUE,
     password TEXT,
-    role TEXT CHECK(role IN ('customer', 'owner'))
+    role TEXT CHECK(role IN ('customer', 'owner')),
+    contact TEXT,
+    wallet_balance INTEGER DEFAULT 0,
+    profile_photo TEXT
   )`);
+  // ensure profile_photo column exists on older databases
+  db.run("ALTER TABLE users ADD COLUMN profile_photo TEXT", function(err) {
+    // ignore error if column already exists
+  });
 
-  // Turfs table with owner_id
+  // Turfs table with owner_id and optional image URL
   db.run(`CREATE TABLE IF NOT EXISTS turfs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
@@ -38,8 +88,13 @@ db.serialize(() => {
     price INTEGER,
     start_time TEXT DEFAULT '05:00',
     end_time TEXT DEFAULT '24:00',
-    owner_id INTEGER
+    owner_id INTEGER,
+    image_url TEXT
   )`);
+  // ensure column exists on older databases
+  db.run("ALTER TABLE turfs ADD COLUMN image_url TEXT", function(err) {
+    // ignore error if column already exists
+  });
 
   // Bookings table with mode column
   db.run(`CREATE TABLE IF NOT EXISTS bookings (
@@ -55,8 +110,10 @@ db.serialize(() => {
 
 // --- Routes ---
 
-// Root test
-app.get("/", (req, res) => res.send("Turf backend running!"));
+// Serve home page
+app.get("/", (req, res) => {
+  res.sendFile(path.join(frontendPath, 'home.html'));
+});
 
 // Signup route
 app.post("/signup", (req, res) => {
@@ -103,7 +160,7 @@ app.post("/login", (req, res) => {
 app.post("/devtool/turf-login", (req, res) => {
   const { code } = req.body;
 
-  if (code === "4815162342") {
+  if (code === "12345678") {
     return res.json({ ok: true });
   } else {
     return res.status(403).json({ error: "Invalid dev code" });
@@ -133,7 +190,8 @@ app.get("/turfs/by-district/:district", (req, res) => {
 });
 
 // ✅ Add new turf with district normalization, default player ranges, and contact info
-app.post("/turfs", (req, res) => {
+// turf creation with optional image upload (field name: image)
+app.post("/turfs", upload.single("image"), (req, res) => {
   let {
     name,
     location,
@@ -145,10 +203,21 @@ app.post("/turfs", (req, res) => {
     min_players,
     max_stranger_players,
     owner_id,
-    contact
+    contact,
+    image_url // may still be provided as text
   } = req.body;
 
+  // if file was uploaded, override image_url
+  if (req.file) {
+    image_url = `/images/${req.file.filename}`;
+  }
+
   district = normalizeDistrict(district);
+
+  // coerce numeric values (FormData gives strings)
+  price = parseInt(price) || 0;
+  min_players = parseInt(min_players) || 0;
+  max_stranger_players = parseInt(max_stranger_players) || 0;
 
   // Set default player ranges if missing
   if (!min_players || !max_stranger_players) {
@@ -174,8 +243,8 @@ app.post("/turfs", (req, res) => {
     `INSERT INTO turfs (
       name, location, district, sport, price,
       start_time, end_time, min_players, max_stranger_players,
-      owner_id, contact
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+      owner_id, contact, image_url
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
     [
       name,
       location,
@@ -187,7 +256,8 @@ app.post("/turfs", (req, res) => {
       min_players,
       max_stranger_players,
       owner_id,
-      contact
+      contact,
+      image_url || null
     ],
     function (err) {
       if (err) return res.status(500).json({ error: err.message });
@@ -252,9 +322,28 @@ app.post("/admin/turfs/:id/verify", (req, res) => {
 
 //- Add turf reject route
 app.delete("/admin/turfs/:id/remove", (req, res) => {
-  db.run("DELETE FROM turfs WHERE id = ?", [req.params.id], function(err) {
+  const id = req.params.id;
+  db.get("SELECT image_url FROM turfs WHERE id = ?", [id], (err, row) => {
     if (err) return res.status(500).json({ error: err.message });
-    res.json({ ok: true });
+
+    const deleteFromDb = () => {
+      db.run("DELETE FROM turfs WHERE id = ?", [id], function(dbErr) {
+        if (dbErr) return res.status(500).json({ error: dbErr.message });
+        res.json({ ok: true });
+      });
+    };
+
+    if (row && row.image_url) {
+      const filename = path.basename(row.image_url);
+      const filepath = path.join(__dirname, 'public', 'images', filename);
+      fs.unlink(filepath, (unlinkErr) => {
+        // ignore missing file errors, but log others
+        if (unlinkErr && unlinkErr.code !== 'ENOENT') console.warn('Failed to remove image file:', unlinkErr.message);
+        deleteFromDb();
+      });
+    } else {
+      deleteFromDb();
+    }
   });
 });
 
@@ -635,23 +724,72 @@ app.put("/bookings/:id/status", (req, res) => {
   );
 });
 // Update turf details
-app.put("/turfs/:id", (req, res) => {
-  const { location, district, sport, price, min_players, max_stranger_players } = req.body;
-  db.run(
-    "UPDATE turfs SET location=?, district=?, sport=?, price=?, min_players=?, max_stranger_players=? WHERE id=?",
-    [location, district, sport, price, min_players, max_stranger_players, req.params.id],
-    function (err) {
-      if (err) return res.status(500).json({ error: err.message });
-      res.json({ updated: this.changes });
+// turf update now supports optional image upload
+app.put("/turfs/:id", upload.single("image"), (req, res) => {
+  const id = req.params.id;
+  const { location, district, sport, price, min_players, max_stranger_players, image_url } = req.body;
+
+  // find existing image (if any) so we can remove it when replaced
+  db.get("SELECT image_url FROM turfs WHERE id = ?", [id], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+
+    let finalUrl = image_url || null;
+    if (req.file) {
+      finalUrl = `/images/${req.file.filename}`;
     }
-  );
+
+    // coerce numeric values if present as strings
+    const parsedPrice = parseInt(price) || 0;
+    const parsedMin = parseInt(min_players) || 0;
+    const parsedMax = parseInt(max_stranger_players) || 0;
+
+    db.run(
+      "UPDATE turfs SET location=?, district=?, sport=?, price=?, min_players=?, max_stranger_players=?, image_url=? WHERE id= ?",
+      [location, district, sport, parsedPrice, parsedMin, parsedMax, finalUrl, id],
+      function (updateErr) {
+        if (updateErr) return res.status(500).json({ error: updateErr.message });
+
+        // if a new file was uploaded and there was an old image, remove the old file
+        if (req.file && row && row.image_url) {
+          const oldFilename = path.basename(row.image_url);
+          const oldPath = path.join(__dirname, 'public', 'images', oldFilename);
+          fs.unlink(oldPath, (unlinkErr) => {
+            if (unlinkErr && unlinkErr.code !== 'ENOENT') {
+              console.warn('Failed to remove old turf image:', unlinkErr.message);
+            }
+            return res.json({ updated: this.changes, image_url: finalUrl });
+          });
+        } else {
+          return res.json({ updated: this.changes, image_url: finalUrl });
+        }
+      }
+    );
+  });
 });
 
 // Delete a turf
 app.delete("/turfs/:id", (req, res) => {
-  db.run("DELETE FROM turfs WHERE id=?", [req.params.id], function (err) {
+  const id = req.params.id;
+  db.get("SELECT image_url FROM turfs WHERE id = ?", [id], (err, row) => {
     if (err) return res.status(500).json({ error: err.message });
-    res.json({ deleted: this.changes });
+
+    const deleteFromDb = () => {
+      db.run("DELETE FROM turfs WHERE id=?", [id], function (dbErr) {
+        if (dbErr) return res.status(500).json({ error: dbErr.message });
+        res.json({ deleted: this.changes });
+      });
+    };
+
+    if (row && row.image_url) {
+      const filename = path.basename(row.image_url);
+      const filepath = path.join(__dirname, 'public', 'images', filename);
+      fs.unlink(filepath, (unlinkErr) => {
+        if (unlinkErr && unlinkErr.code !== 'ENOENT') console.warn('Failed to remove image file:', unlinkErr.message);
+        deleteFromDb();
+      });
+    } else {
+      deleteFromDb();
+    }
   });
 });
 
@@ -677,6 +815,99 @@ app.get("/wallet/:user_id", (req, res) => {
   db.get("SELECT wallet_balance FROM users WHERE id=?", [user_id], (err, row) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json({ balance: row.wallet_balance });
+  });
+});
+
+// Get user profile
+app.get("/user/:id", (req, res) => {
+  const { id } = req.params;
+  db.get("SELECT id, name, email, contact, role, profile_photo FROM users WHERE id=?", [id], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!row) return res.status(404).json({ error: "User not found" });
+    res.json(row);
+  });
+});
+
+// Update user profile
+app.put("/user/:id", (req, res) => {
+  const { id } = req.params;
+  const { name, email, contact, profile_photo } = req.body;
+
+  db.run(
+    "UPDATE users SET name=?, email=?, contact=?, profile_photo=? WHERE id=?",
+    [name, email, contact, profile_photo, id],
+    function (err) {
+      if (err) return res.status(500).json({ error: err.message });
+      if (this.changes === 0) return res.status(404).json({ error: "User not found" });
+      res.json({ message: "Profile updated successfully" });
+    }
+  );
+});
+
+// Upload profile photo
+app.post("/user/:id/profile-photo", uploadProfile.single('profilePhoto'), (req, res) => {
+  const { id } = req.params;
+
+  if (!req.file) {
+    return res.status(400).json({ error: "No file uploaded" });
+  }
+
+  // Get current profile photo to delete old one
+  db.get("SELECT profile_photo FROM users WHERE id=?", [id], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!row) return res.status(404).json({ error: "User not found" });
+
+    // Delete old profile photo if it exists
+    if (row.profile_photo) {
+      const oldPhotoPath = path.join(__dirname, 'Profile', row.profile_photo);
+      if (fs.existsSync(oldPhotoPath)) {
+        fs.unlinkSync(oldPhotoPath);
+      }
+    }
+
+    // Update database with new photo filename
+    const photoFilename = req.file.filename;
+    db.run(
+      "UPDATE users SET profile_photo=? WHERE id=?",
+      [photoFilename, id],
+      function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ 
+          message: "Profile photo uploaded successfully",
+          photoUrl: `/profile/${photoFilename}`
+        });
+      }
+    );
+  });
+});
+
+// Delete profile photo
+app.delete("/user/:id/profile-photo", (req, res) => {
+  const { id } = req.params;
+
+  db.get("SELECT profile_photo FROM users WHERE id=?", [id], (err, row) => {
+    if (err) return res.status(500).json({ error: err.message });
+    if (!row) return res.status(404).json({ error: "User not found" });
+
+    if (!row.profile_photo) {
+      return res.status(400).json({ error: "No profile photo to delete" });
+    }
+
+    // Delete photo file
+    const photoPath = path.join(__dirname, 'Profile', row.profile_photo);
+    if (fs.existsSync(photoPath)) {
+      fs.unlinkSync(photoPath);
+    }
+
+    // Update database
+    db.run(
+      "UPDATE users SET profile_photo=NULL WHERE id=?",
+      [id],
+      function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: "Profile photo deleted successfully" });
+      }
+    );
   });
 });
 

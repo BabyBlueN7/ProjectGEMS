@@ -4,62 +4,27 @@
   <meta charset="UTF-8" />
   <title>Kick-Hub Devtool</title>
   <style>
-    body {
-      font-family: Arial;
-      background: #f9fafb;
-      margin: 0;
-      padding: 0;
-    }
-    header h1 {
-      margin: 0;
-      padding: 16px;
-      background: #2563eb;
-      color: #fff;
-      text-align: center;
-    }
-    section {
-      padding: 20px;
-    }
-    .turf {
-      background: #fff;
-      padding: 16px;
-      margin: 12px 0;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-    .turf p {
-      margin: 4px 0;
-    }
-    .contact {
-      font-size: 14px;
-      color: #374151;
-      margin-top: 6px;
-    }
-    .rating {
-      color: #f59e0b;
-      font-weight: bold;
-      margin-top: 6px;
-    }
-    .actions button {
-      margin-right: 8px;
-      padding: 6px 12px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .verify {
-      background: #10b981;
-      color: white;
-    }
-    .reject, .remove {
-      background: #ef4444;
-      color: white;
-    }
+    :root{ --bg:hsl(180, 11%, 96%); --card:#ffffff; --primary:#2563eb; --accent:#10b981; --muted:#6b7280; --text:#071233; --radius:12px; --shadow:0 8px 24px rgba(7,18,51,0.06); }
+    body{ font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial; margin:0; padding:0; background:var(--bg); color:var(--text) }
+    header h1,h3  { margin:0; padding:18px 16px; background:linear-gradient(90deg,var(--primary), #311265); color:#fff; text-align:center; font-weight:700 }
+    section{ padding:20px; max-width:1100px; margin:0 auto }
+    .turf{ background:var(--card); padding:16px; margin:12px 0; border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid rgba(7,18,51,0.04) }
+    .turf{ display:flex; align-items:center; justify-content:space-between; gap:12px }
+    .turf .turf-info{ flex:1 }
+    .turf img{ width:150px; height:100px; object-fit:cover; border-radius:8px; margin-left:12px }
+    .turf p{ margin:6px 0 }
+    .contact{ color:var(--muted); font-size:14px; margin-top:6px }
+    .rating{ color:#f59e0b; font-weight:700; margin-top:6px }
+    .actions button{ margin-right:8px; padding:8px 12px; border-radius:10px; border:none; cursor:pointer; font-weight:600 }
+    .verify{ background:var(--accent); color:#fff }
+    .reject, .remove{ background:#ef4444; color:#fff }
+    .actions{ margin-top:10px }
   </style>
 </head>
 <body>
   <header>
-    <h1>Kick-Hub Devtool</h1>
+    <h1>KICK-HUB</h1>
+    <h3>Admin Panel</h3>
   </header>
 
   <section>
@@ -122,15 +87,24 @@
 
             const div = document.createElement("div");
             div.className = "turf";
+            let imageTag = '';
+            if (t.image_url) {
+              const src = (typeof t.image_url === 'string' && t.image_url.startsWith('http')) ? t.image_url : 'http://localhost:4001' + t.image_url;
+              imageTag = `<img src="${src}" alt="${t.name}">`;
+            }
+
             div.innerHTML = `
-              <h3>${t.name}</h3>
-              <p>${t.sport} - ${t.location}, ${t.district}</p>
-              <p>₹${t.price}/hr</p>
-              <p class="rating">${ratingHTML}</p>
-              ${t.contact ? `<p class="contact"><strong>Contact:</strong> ${t.contact}</p>` : ""}
-              <div class="actions">
-                <button class="remove" onclick="removeTurf(${t.id})">❌ Remove</button>
+              <div class="turf-info">
+                <h3>${t.name}</h3>
+                <p>${t.sport} - ${t.location}, ${t.district}</p>
+                <p>₹${t.price}/hr</p>
+                <p class="rating">${ratingHTML}</p>
+                ${t.contact ? `<p class="contact"><strong>Contact:</strong> ${t.contact}</p>` : ""}
+                <div class="actions">
+                  <button class="remove" onclick="removeTurf(${t.id})">❌ Remove</button>
+                </div>
               </div>
+              ${imageTag}
             `;
             verifiedDiv.appendChild(div);
           }

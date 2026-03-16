@@ -1,0 +1,1743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>KICKHUB - Lace Up,Connect, Play</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #6226D9;
+      --secondary: #1736CF;
+      --light: #F1F0F5;
+      --text: #1a1a1a;
+      --text-light: #666666;
+      --white: #FFFFFF;
+      --shadow: 0 8px 32px rgba(98, 38, 217, 0.15);
+      --shadow-sm: 0 4px 12px rgba(98, 38, 217, 0.08);
+      --radius: 16px;
+      --transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--white);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ===== HEADER ===== */
+    header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: var(--white);
+      padding: 16px 32px;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      animation: slideDown 0.6s ease-out;
+    }
+
+    @keyframes slideDown {
+      from {
+        transform: translateY(-100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 28px;
+      font-weight: 800;
+      text-decoration: none;
+      color: var(--white);
+      transition: var(--transition);
+    }
+
+    .logo:hover {
+      transform: scale(1.05);
+    }
+
+    .logo-icon {
+      width: 50px;
+      height: 50px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(10px);
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .logo-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      padding: 0;
+      border-radius: 50%;
+    }
+
+    .tagline {
+      font-size: 13px;
+      font-weight: 600;
+      opacity: 0.9;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      display: none;
+    }
+
+    @media (min-width: 768px) {
+      .tagline {
+        display: block;
+      }
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .profile-section {
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+    }
+
+    .profile-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .wallet-display {
+      display: none;
+      background: rgba(255, 255, 255, 0.15);
+      padding: 8px 16px;
+      border-radius: 6px;
+      color: white;
+      font-weight: 600;
+      font-size: 14px;
+      margin-left: 16px;
+    }
+
+    .filter-section {
+      display: none;
+      padding: 20px 32px;
+      background: linear-gradient(135deg, var(--light) 0%, rgba(98, 38, 217, 0.05) 100%);
+      text-align: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .filter-section.show {
+      display: flex;
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .filter-group label {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .filter-group select {
+      padding: 10px 16px;
+      border: 2px solid var(--primary);
+      border-radius: 8px;
+      font-size: 14px;
+      background: white;
+      cursor: pointer;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .rating-popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+      display: none;
+      z-index: 2001;
+    }
+
+    .rating-popup.show {
+      display: block;
+    }
+
+    .rating-popup h3 {
+      margin: 0 0 16px;
+      color: var(--primary);
+    }
+
+    .stars {
+      display: flex;
+      gap: 12px;
+      margin: 16px 0;
+      justify-content: center;
+    }
+
+    .stars span {
+      font-size: 32px;
+      cursor: pointer;
+      color: #d1d5db;
+      transition: color 0.2s ease;
+    }
+
+    .stars span.selected {
+      color: #f59e0b;
+    }
+
+    .rating-popup button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 12px 6px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .rating-popup button:hover {
+      background: var(--secondary);
+    }
+
+    .profile-dropdown {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      min-width: 200px;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: all 0.3s ease;
+      z-index: 1000;
+    }
+
+    .profile-dropdown.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+
+    .profile-dropdown-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid #f0f0f0;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .profile-dropdown-item:hover {
+      background: #f8f9fa;
+    }
+
+    .profile-dropdown-item:last-child {
+      border-bottom: none;
+    }
+
+    /* ===== MODAL STYLES ===== */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 2000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .modal.show {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal-content {
+      background: white;
+      border-radius: 16px;
+      padding: 32px;
+      width: 90%;
+      max-width: 500px;
+      position: relative;
+      animation: slideUp 0.3s ease-out;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(30px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      color: var(--primary);
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .profile-photo-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 24px;
+      padding: 20px;
+      background: var(--light);
+      border-radius: 12px;
+    }
+
+    .current-photo {
+      margin-bottom: 16px;
+    }
+
+    .photo-controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e1e5e9;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.3s ease;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 32px;
+    }
+
+    .btn-secondary-modal {
+      background: #f1f0f5;
+      color: var(--text);
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-secondary-modal:hover {
+      background: #e1e5e9;
+    }
+
+    .btn-primary-modal {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary-modal:hover {
+      background: var(--secondary);
+    }
+
+    .close-modal {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      font-size: 24px;
+      cursor: pointer;
+      color: #666;
+      transition: color 0.3s ease;
+    }
+
+    .close-modal:hover {
+      color: var(--text);
+    }
+
+    .login-btn {
+      background: rgba(255, 255, 255, 0.2);
+      color: var(--white);
+      border: 2px solid var(--white);
+      padding: 10px 24px;
+      border-radius: 50px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      text-decoration: none;
+      display: inline-block;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .login-btn:hover {
+      background: var(--white);
+      color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    /* ===== HERO SECTION ===== */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      padding: 60px 32px;
+    }
+
+    .hero-video {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(98, 38, 217, 0.4);
+      z-index: 1;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, rgba(98, 38, 217, 0.3) 0%, rgba(23, 54, 207, 0.3) 100%);
+      z-index: 1;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(30px); }
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      max-width: 800px;
+      color: var(--white);
+      animation: fadeInUp 0.8s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(40px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .hero h1 {
+      font-size: clamp(36px, 8vw, 72px);
+      font-weight: 800;
+      margin-bottom: 16px;
+      line-height: 1.2;
+      letter-spacing: -2px;
+    }
+
+    .hero-tagline {
+      font-size: clamp(16px, 3vw, 24px);
+      font-weight: 300;
+      margin-bottom: 8px;
+      opacity: 0.95;
+      letter-spacing: 1px;
+    }
+
+    .hero p {
+      font-size: 16px;
+      margin-bottom: 40px;
+      opacity: 0.9;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+      line-height: 1.8;
+      animation: fadeInUp 0.8s ease-out 0.2s both;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      animation: fadeInUp 0.8s ease-out 0.3s both;
+    }
+
+    .btn-primary {
+      background: var(--white);
+      color: var(--primary);
+      border: none;
+      padding: 16px 40px;
+      font-size: 16px;
+      font-weight: 700;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      font-family: 'Poppins', sans-serif;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--white);
+      border: 2px solid var(--white);
+      padding: 14px 38px;
+      font-size: 16px;
+      font-weight: 700;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: var(--transition);
+      font-family: 'Poppins', sans-serif;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-secondary:hover {
+      background: var(--white);
+      color: var(--primary);
+      transform: translateY(-4px);
+    }
+
+    /* ===== QUOTE SECTION ===== */
+    .quote-section {
+      background: linear-gradient(135deg, var(--light) 0%, rgba(98, 38, 217, 0.05) 100%);
+      padding: 60px 32px;
+      text-align: center;
+    }
+
+    .quote-container {
+      max-width: 800px;
+      margin: 0 auto;
+      animation: fadeInUp 0.8s ease-out;
+    }
+
+    .quote-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      animation: bounce 2s ease-in-out infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .quote-text {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 16px;
+      line-height: 1.6;
+      min-height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .quote-author {
+      font-size: 14px;
+      color: var(--text-light);
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+
+    .quote-btn {
+      background: var(--primary);
+      color: var(--white);
+      border: none;
+      padding: 12px 28px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-top: 24px;
+      font-family: 'Poppins', sans-serif;
+    }
+
+    .quote-btn:hover {
+      background: var(--secondary);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    /* ===== FEATURED TURFS SECTION ===== */
+    .turfs-section {
+      padding: 80px 32px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 60px;
+      animation: fadeInUp 0.8s ease-out;
+    }
+
+    .section-title {
+      font-size: clamp(28px, 5vw, 48px);
+      font-weight: 800;
+      margin-bottom: 16px;
+      color: var(--text);
+    }
+
+    .section-subtitle {
+      font-size: 16px;
+      color: var(--text-light);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .turfs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 32px;
+      margin-bottom: 40px;
+    }
+
+    .turf-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+      transition: var(--transition);
+      animation: scaleIn 0.6s ease-out backwards;
+    }
+
+    .turfs-grid .turf-card:nth-child(1) { animation-delay: 0.1s; }
+    .turfs-grid .turf-card:nth-child(2) { animation-delay: 0.2s; }
+    .turfs-grid .turf-card:nth-child(3) { animation-delay: 0.3s; }
+    .turfs-grid .turf-card:nth-child(4) { animation-delay: 0.4s; }
+    .turfs-grid .turf-card:nth-child(5) { animation-delay: 0.5s; }
+    .turfs-grid .turf-card:nth-child(6) { animation-delay: 0.6s; }
+
+    @keyframes scaleIn {
+      from {
+        opacity: 0;
+        transform: scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .turf-card:hover {
+      transform: translateY(-8px);
+      box-shadow: var(--shadow);
+    }
+
+    .turf-card-image {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      display: block;
+      transition: var(--transition);
+    }
+
+    .turf-card:hover .turf-card-image {
+      transform: scale(1.05);
+    }
+
+    .turf-card-content {
+      padding: 24px;
+    }
+
+    .turf-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 12px;
+    }
+
+    .turf-card-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0;
+    }
+
+    .turf-card-place {
+      font-size: 13px;
+      color: var(--text-light);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 6px;
+    }
+
+    .turf-card-badge {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: var(--white);
+      padding: 4px 12px;
+      border-radius: 50px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .turf-card-description {
+      font-size: 14px;
+      color: var(--text-light);
+      line-height: 1.6;
+      margin: 12px 0;
+      opacity: 0;
+      transition: var(--transition);
+      max-height: 0;
+      overflow: hidden;
+    }
+
+    .turf-card.expanded .turf-card-description {
+      opacity: 1;
+      max-height: 200px;
+      margin: 12px 0;
+    }
+
+    .explore-btn {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: var(--white);
+      border: none;
+      padding: 10px 20px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: var(--transition);
+      font-family: 'Poppins', sans-serif;
+      width: 100%;
+      margin-top: 12px;
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    .turf-card.expanded .explore-btn {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .explore-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    /* ===== CTA SECTION ===== */
+    .cta-section {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      padding: 80px 32px;
+      text-align: center;
+      color: var(--white);
+      animation: fadeInUp 0.8s ease-out;
+    }
+
+    .cta-title {
+      font-size: clamp(32px, 5vw, 48px);
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+
+    .cta-subtitle {
+      font-size: 18px;
+      margin-bottom: 40px;
+      opacity: 0.95;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .cta-button {
+      background: var(--white);
+      color: var(--primary);
+      border: none;
+      padding: 16px 48px;
+      font-size: 16px;
+      font-weight: 700;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: var(--transition);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      font-family: 'Poppins', sans-serif;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .cta-button:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    /* ===== FOOTER ===== */
+    footer {
+      background: #1a1a1a;
+      color: #ccc;
+      padding: 40px 32px;
+      text-align: center;
+    }
+
+    footer p {
+      margin: 8px 0;
+      font-size: 14px;
+    }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .footer-links a {
+      color: #ccc;
+      text-decoration: none;
+      font-size: 14px;
+      transition: var(--transition);
+    }
+
+    .footer-links a:hover {
+      color: var(--primary);
+    }
+
+    .footer-social {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .footer-social a {
+      width: 40px;
+      height: 40px;
+      background: rgba(98, 38, 217, 0.1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      text-decoration: none;
+      transition: var(--transition);
+      font-size: 18px;
+    }
+
+    .footer-social a:hover {
+      background: var(--primary);
+      color: var(--white);
+      transform: translateY(-4px);
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      header {
+        padding: 12px 16px;
+      }
+
+      .logo {
+        font-size: 20px;
+      }
+
+      .logo-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 18px;
+      }
+
+      .login-btn {
+        padding: 8px 16px;
+        font-size: 12px;
+      }
+
+      .hero {
+        padding: 40px 16px;
+        min-height: 90vh;
+      }
+
+      .hero h1 {
+        font-size: 36px;
+      }
+
+      .hero p {
+        font-size: 14px;
+        margin-bottom: 24px;
+      }
+
+      .hero-buttons {
+        gap: 8px;
+      }
+
+      .btn-primary, .btn-secondary {
+        padding: 12px 24px;
+        font-size: 14px;
+      }
+
+      .turfs-grid {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+
+      .turfs-section {
+        padding: 60px 16px;
+      }
+
+      .section-title {
+        font-size: 28px;
+      }
+
+      .cta-section {
+        padding: 60px 16px;
+      }
+
+      .cta-title {
+        font-size: 28px;
+      }
+    }
+
+    /* ===== LOADING & ERROR STATES ===== */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-light);
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--light);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <!-- ===== HEADER ===== -->
+  <header>
+    <div class="header-left">
+      <a href="#" class="logo">
+        <div class="logo-icon"><img src="../backend/public/images/logo.png" alt="KICKHUB Logo" /></div>
+        <div>
+          <div>KICKHUB</div>
+          <div class="tagline">Lace Up-Connect-Play</div>
+        </div>
+      </a>
+    </div>
+    <div class="header-right">
+      <div class="wallet-display" id="walletDisplay">💰 Wallet: ₹<span id="walletBalance">0</span></div>
+      <div id="loginSection">
+        <a href="login.html" class="login-btn">LOGIN</a>
+      </div>
+      <div id="profileSection" class="profile-section" style="display: none;">
+        <div class="profile-avatar" id="profileAvatar">U</div>
+        <div class="profile-dropdown" id="profileDropdown">
+          <div class="profile-dropdown-item" onclick="viewProfile()">View Profile</div>
+          <div class="profile-dropdown-item" onclick="window.open('wallet.html', '_blank')">💰 Wallet</div>
+          <div class="profile-dropdown-item" onclick="window.open('my-bookings.html', '_blank')">📅 My Bookings</div>
+          <div class="profile-dropdown-item" onclick="logout()">Logout</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Profile Modal -->
+  <div id="profileModal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="closeProfileModal()">&times;</span>
+      <div class="modal-header">
+        <h2>Edit Profile</h2>
+      </div>
+      <div class="profile-photo-section">
+        <div class="current-photo">
+          <img id="currentProfilePhoto" src="" alt="Current Profile Photo" style="display: none; width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary);">
+          <div id="noPhotoText" style="width: 100px; height: 100px; border-radius: 50%; background: var(--light); display: flex; align-items: center; justify-content: center; color: var(--text-light); font-size: 24px; border: 2px solid var(--primary);">
+            👤
+          </div>
+        </div>
+        <div class="photo-controls">
+          <input type="file" id="profilePhotoInput" accept="image/*" style="display: none;">
+          <button type="button" class="btn-secondary-modal" onclick="document.getElementById('profilePhotoInput').click()">Upload Photo</button>
+          <button type="button" class="btn-secondary-modal" id="deletePhotoBtn" onclick="deleteProfilePhoto()" style="display: none;">Delete Photo</button>
+        </div>
+      </div>
+      <form id="profileForm">
+        <div class="form-group">
+          <label for="profileName">Name</label>
+          <input type="text" id="profileName" required>
+        </div>
+        <div class="form-group">
+          <label for="profileEmail">Email</label>
+          <input type="email" id="profileEmail" required>
+        </div>
+        <div class="form-group" id="contactGroup">
+          <label for="profileContact">Contact</label>
+          <input type="text" id="profileContact">
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary-modal" onclick="closeProfileModal()">Cancel</button>
+          <button type="submit" class="btn-primary-modal">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== HERO SECTION ===== -->
+  <section class="hero">
+    <video class="hero-video" autoplay muted loop playsinline>
+      <source src="../backend/public/videos/hero-bg.mp4" type="video/mp4">
+      <source src="../backend/public/videos/hero-bg.webm" type="video/webm">
+      Your browser does not support the video tag.
+    </video>
+    <div class="hero-content">
+      <h1>Lace Up, <span style="background: linear-gradient(135deg, #fff, rgba(255,255,255,0.7)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">Play</span></h1>
+      <p class="hero-tagline">Find Your Perfect Play Grounds</p>
+      <p>Book premium sports turfs in your city with ease. Connect with fellow players, manage your favorite sports venues, and elevate your game.</p>
+      <div class="hero-buttons">
+        <button class="btn-primary" onclick="document.querySelector('.turfs-section').scrollIntoView({behavior:'smooth'})">Find Your Turf</button>
+        <a href="signup-customer.html" class="btn-secondary">Get Started</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== MOTIVATIONAL QUOTE SECTION ===== -->
+  <section class="quote-section">
+    <div class="quote-container">
+      <div class="quote-icon">💡</div>
+      <h2 style="font-size: 20px; margin-bottom: 12px; color: var(--text);">Daily Motivation</h2>
+      <div class="quote-text" id="quoteText">"The only way to achieve the impossible is to believe it is possible."</div>
+      <p class="quote-author" id="quoteAuthor">— Muhammad Ali</p>
+      <button class="quote-btn" onclick="generateQuote()">Get New Quote</button>
+    </div>
+  </section>
+
+  <!-- ===== FILTER SECTION ===== -->
+  <section class="filter-section" id="filterSection">
+    <div class="filter-group">
+      <label for="districtFilter">🔍 Search by District:</label>
+      <select id="districtFilter" onchange="loadTurfsByDistrict()">
+        <option value="">-- All Districts --</option>
+        <option value="Malappuram">Malappuram</option>
+        <option value="Kozhikode">Kozhikode</option>
+        <option value="Kannur">Kannur</option>
+        <option value="Alappuzha">Alappuzha</option>
+        <option value="Thrissur">Thrissur</option>
+        <option value="Ernakulam">Ernakulam</option>
+        <option value="Kottayam">Kottayam</option>
+        <option value="Idukki">Idukki</option>
+        <option value="Pathanamthitta">Pathanamthitta</option>
+        <option value="Kollam">Kollam</option>
+        <option value="Thiruvananthapuram">Thiruvananthapuram</option>
+        <option value="Wayanad">Wayanad</option>
+        <option value="Palakkad">Palakkad</option>
+      </select>
+    </div>
+    <a href="my-bookings.html" target="_blank" class="filter-link">📅 My Bookings</a>
+  </section>
+
+  <!-- ===== FEATURED TURFS SECTION ===== -->
+  <section class="turfs-section" id="turfSection">
+    <div class="section-header">
+      <h2 class="section-title">Featured Turfs</h2>
+      <p class="section-subtitle">Discover the finest sports facilities in your area. Click any card to learn more!</p>
+    </div>
+    <div class="turfs-grid" id="turfGrid">
+      <div class="loading">
+        <div class="spinner"></div>
+        <p>Loading amazing turfs...</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CTA SECTION ===== -->
+  <section class="cta-section">
+    <h2 class="cta-title">Ready to Book Your Next Game?</h2>
+    <p class="cta-subtitle">Join thousands of players who trust KICKHUB for seamless turf booking. Start playing today!</p>
+    <a href="login.html" class="cta-button">Book Now</a>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer>
+    <div class="footer-social">
+      <a href="#" title="Facebook">f</a>
+      <a href="#" title="Twitter">𝕏</a>
+      <a href="#" title="Instagram">📷</a>
+    </div>
+    <div class="footer-links">
+      <a href="#">About</a>
+      <a href="#">Contact</a>
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+    </div>
+    <p>📞 +91 12345 67890 &nbsp; | &nbsp; ✉️ info@kickhub.com</p>
+    <p>&copy; 2026 KICKHUB. All rights reserved.</p>
+  </footer>
+
+  <!-- Rating Popup -->
+  <div class="rating-popup" id="ratingPopup">
+    <h3>Rate this turf</h3>
+    <div class="stars" id="starContainer"></div>
+    <button onclick="submitRating()">Submit</button>
+    <button onclick="closeRatingPopup()">Cancel</button>
+  </div>
+
+  <script>
+    // ===== LOGIN CHECK AND PROFILE MANAGEMENT =====
+    let currentUser = null;
+
+    // ===== IMMEDIATE LOGIN STATUS CHECK (before DOM loads fully) =====
+    function checkLoginStatus() {
+      const userData = localStorage.getItem('user');
+      console.log('Checking login status, userData:', userData);
+      if (userData) {
+        try {
+          currentUser = JSON.parse(userData);
+          console.log('User logged in:', currentUser);
+          console.log('User name:', currentUser.name);
+          showProfileSection();
+        } catch (e) {
+          console.error('Error parsing user data:', e);
+          localStorage.removeItem('user'); // Clear corrupted data
+          showLoginSection();
+        }
+      } else {
+        console.log('No user data found, showing login section');
+        showLoginSection();
+      }
+    }
+
+    // Check login status immediately
+    checkLoginStatus();
+
+    function showProfileSection() {
+      console.log('Showing profile section for user:', currentUser);
+      document.getElementById('loginSection').style.display = 'none';
+      document.getElementById('profileSection').style.display = 'flex';
+      document.getElementById('walletDisplay').style.display = 'flex';
+      document.getElementById('filterSection').classList.add('show');
+
+      // Update profile avatar
+      if (currentUser.profile_photo) {
+        document.getElementById('profileAvatar').innerHTML = `<img src="http://localhost:4001/profile/${currentUser.profile_photo}" alt="Profile" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+      } else {
+        document.getElementById('profileAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
+      }
+
+      // Load wallet balance
+      loadWalletBalance();
+
+      console.log('Profile section should now be visible');
+    }
+
+    function showLoginSection() {
+      document.getElementById('loginSection').style.display = 'block';
+      document.getElementById('profileSection').style.display = 'none';
+      document.getElementById('walletDisplay').style.display = 'none';
+      document.getElementById('filterSection').classList.remove('show');
+      currentUser = null;
+    }
+
+    function toggleProfileDropdown() {
+      const dropdown = document.getElementById('profileDropdown');
+      dropdown.classList.toggle('show');
+    }
+
+    function viewProfile() {
+      document.getElementById('profileDropdown').classList.remove('show');
+      openProfileModal();
+    }
+
+    function logout() {
+      localStorage.removeItem('user');
+      document.cookie = 'kickhub_user=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      showLoginSection();
+      alert('Logged out successfully');
+    }
+
+    // ===== WALLET FUNCTIONS =====
+    function loadWalletBalance() {
+      if (!currentUser || !currentUser.id) return;
+
+      fetch(`http://localhost:4001/wallet/${currentUser.id}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.balance !== undefined) {
+            document.getElementById('walletBalance').textContent = data.balance;
+          }
+        })
+        .catch(error => console.error('Error loading wallet:', error));
+    }
+
+    // ===== DISTRICT FILTER FUNCTIONS =====
+    let selectedTurfId = null;
+
+    async function loadTurfsByDistrict() {
+      const district = document.getElementById('districtFilter').value;
+      const grid = document.getElementById('turfGrid');
+
+      if (!district) {
+        // Load all turfs if no district selected
+        loadTurfs();
+        return;
+      }
+
+      try {
+        const response = await fetch(`http://localhost:4001/turfs/by-district/${encodeURIComponent(district)}`);
+        if (!response.ok) throw new Error('Failed to fetch turfs');
+
+        const turfs = await response.json();
+
+        if (!turfs || turfs.length === 0) {
+          grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color: var(--text-light); padding: 40px;">No turfs found in this district.</p>';
+          return;
+        }
+
+        grid.innerHTML = '';
+
+        for (const turf of turfs) {
+          try {
+            const ratingRes = await fetch(`http://localhost:4001/ratings/turf/${turf.id}`);
+            const ratingData = await ratingRes.json();
+            const avgRating = ratingData.average ? `★ ${ratingData.average}` : "★ No ratings";
+            const ratingCount = ratingData.count || 0;
+
+            const card = document.createElement('div');
+            card.className = 'turf-card';
+
+            let imageUrl = 'https://via.placeholder.com/400x220?text=Turf+Image';
+            if (turf.image_url) {
+              imageUrl = turf.image_url.startsWith('http') 
+                ? turf.image_url 
+                : `http://localhost:4001${turf.image_url}`;
+            }
+
+            const description = turf.description || `Premium sports facility with world-class amenities.`;
+
+            card.innerHTML = `
+              <img src="${imageUrl}" alt="${turf.name || 'Turf'}" class="turf-card-image" onerror="this.src='https://via.placeholder.com/400x220?text=Turf'">
+              <div class="turf-card-content">
+                <div class="turf-card-header">
+                  <div>
+                    <h3 class="turf-card-name">${turf.name || 'Untitled Turf'}</h3>
+                    <p class="turf-card-place">📍 ${turf.district || turf.location || 'Location'}</p>
+                  </div>
+                  <span class="turf-card-badge">Popular</span>
+                </div>
+                <p class="turf-card-description">${description}</p>
+                <p style="margin: 8px 0; font-size: 13px; color: #f59e0b; font-weight: 600;">${avgRating} (${ratingCount}) 
+                  <button style="background: var(--primary); color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 8px;" onclick="event.stopPropagation(); openRating(${turf.id})">Rate</button>
+                </p>
+                <button class="explore-btn" onclick="handleExploreClick(${turf.id || 0})">Explore & Book</button>
+              </div>
+            `;
+
+            card.addEventListener('click', function(e) {
+              if (e.target.classList.contains('explore-btn')) return;
+              this.classList.toggle('expanded');
+            });
+
+            grid.appendChild(card);
+          } catch (err) {
+            console.error('Error processing turf:', err);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading turfs by district:', error);
+        grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color: var(--text-light); padding: 40px;">Unable to load turfs. Please try again later.</p>';
+      }
+    }
+
+    // ===== RATING FUNCTIONS =====
+    function openRating(turfId) {
+      selectedTurfId = turfId;
+      const container = document.getElementById('starContainer');
+      container.innerHTML = '';
+      for (let i = 1; i <= 5; i++) {
+        const star = document.createElement('span');
+        star.textContent = '★';
+        star.onclick = () => selectStars(i);
+        container.appendChild(star);
+      }
+      document.getElementById('ratingPopup').classList.add('show');
+    }
+
+    function selectStars(count) {
+      const stars = document.querySelectorAll('#starContainer span');
+      stars.forEach((s, i) => {
+        s.classList.toggle('selected', i < count);
+      });
+    }
+
+    async function submitRating() {
+      const selected = document.querySelectorAll('#starContainer span.selected').length;
+      if (!selectedTurfId || !selected || !currentUser?.id) {
+        alert('Please select a rating');
+        return;
+      }
+
+      try {
+        const response = await fetch('http://localhost:4001/ratings/turf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            turf_id: selectedTurfId,
+            user_id: currentUser.id,
+            rating: selected
+          })
+        });
+
+        if (response.ok) {
+          alert(`Thanks for rating! You gave ${selected} star${selected > 1 ? 's' : ''}.`);
+          closeRatingPopup();
+          // Reload current district filter
+          loadTurfsByDistrict();
+        } else {
+          alert('Failed to submit rating');
+        }
+      } catch (err) {
+        console.error('Rating failed:', err);
+        alert('Failed to submit rating. Try again.');
+      }
+    }
+
+    function closeRatingPopup() {
+      document.getElementById('ratingPopup').classList.remove('show');
+      selectedTurfId = null;
+    }
+
+    function openProfileModal() {
+      if (!currentUser) {
+        console.error('No current user found');
+        alert('Please log in first');
+        return;
+      }
+
+      console.log('Opening profile modal for user:', currentUser);
+      console.log('User ID:', currentUser.id);
+      console.log('Fetching from URL:', `http://localhost:4001/user/${currentUser.id}`);
+
+      // Fetch current user data
+      fetch(`http://localhost:4001/user/${currentUser.id}`)
+        .then(response => {
+          console.log('Response status:', response.status);
+          if (!response.ok) {
+            if (response.status === 404) {
+              throw new Error('User not found in database. Please try logging out and logging back in.');
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          console.log('Profile data received:', data);
+          document.getElementById('profileName').value = data.name;
+          document.getElementById('profileEmail').value = data.email;
+          document.getElementById('profileContact').value = data.contact || '';
+          document.getElementById('contactGroup').style.display = data.role === 'customer' ? 'block' : 'none';
+
+          // Handle profile photo display
+          const currentPhoto = document.getElementById('currentProfilePhoto');
+          const noPhotoText = document.getElementById('noPhotoText');
+          const deleteBtn = document.getElementById('deletePhotoBtn');
+
+          if (data.profile_photo) {
+            currentPhoto.src = `http://localhost:4001/profile/${data.profile_photo}`;
+            currentPhoto.style.display = 'block';
+            noPhotoText.style.display = 'none';
+            deleteBtn.style.display = 'inline-block';
+          } else {
+            currentPhoto.style.display = 'none';
+            noPhotoText.style.display = 'flex';
+            deleteBtn.style.display = 'none';
+          }
+
+          document.getElementById('profileModal').classList.add('show');
+        })
+        .catch(error => {
+          console.error('Error fetching profile:', error);
+          // Fallback: use data from localStorage if API fails
+          console.log('Using fallback data from localStorage');
+          document.getElementById('profileName').value = currentUser.name || '';
+          document.getElementById('profileEmail').value = ''; // Email not stored in localStorage
+          document.getElementById('profileContact').value = '';
+          document.getElementById('contactGroup').style.display = currentUser.role === 'customer' ? 'block' : 'none';
+          document.getElementById('profileModal').classList.add('show');
+          alert('Could not load current profile data from server. You can still edit and save your profile.');
+        });
+    }
+
+    function closeProfileModal() {
+      document.getElementById('profileModal').classList.remove('show');
+    }
+
+    // Handle profile photo upload
+    document.getElementById('profilePhotoInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        alert('Please select a valid image file.');
+        return;
+      }
+
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('File size must be less than 5MB.');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('profilePhoto', file);
+
+      fetch(`http://localhost:4001/user/${currentUser.id}/profile-photo`, {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.photoUrl) {
+          // Update the display
+          document.getElementById('currentProfilePhoto').src = `http://localhost:4001${data.photoUrl}`;
+          document.getElementById('currentProfilePhoto').style.display = 'block';
+          document.getElementById('noPhotoText').style.display = 'none';
+          document.getElementById('deletePhotoBtn').style.display = 'inline-block';
+
+          // Update currentUser and localStorage
+          currentUser.profile_photo = data.photoUrl.split('/').pop();
+          localStorage.setItem('user', JSON.stringify(currentUser));
+
+          // Update profile avatar
+          showProfileSection();
+
+          alert('Profile photo uploaded successfully!');
+        } else {
+          alert('Error uploading photo: ' + (data.error || 'Unknown error'));
+        }
+      })
+      .catch(error => {
+        console.error('Error uploading photo:', error);
+        alert('Error uploading photo');
+      });
+    });
+
+    // Handle profile photo deletion
+    function deleteProfilePhoto() {
+      if (!confirm('Are you sure you want to delete your profile photo?')) return;
+
+      fetch(`http://localhost:4001/user/${currentUser.id}/profile-photo`, {
+        method: 'DELETE'
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.message) {
+          // Update the display
+          document.getElementById('currentProfilePhoto').style.display = 'none';
+          document.getElementById('noPhotoText').style.display = 'flex';
+          document.getElementById('deletePhotoBtn').style.display = 'none';
+
+          // Update currentUser and localStorage
+          currentUser.profile_photo = null;
+          localStorage.setItem('user', JSON.stringify(currentUser));
+
+          // Update profile avatar
+          showProfileSection();
+
+          alert('Profile photo deleted successfully!');
+        } else {
+          alert('Error deleting photo: ' + (data.error || 'Unknown error'));
+        }
+      })
+      .catch(error => {
+        console.error('Error deleting photo:', error);
+        alert('Error deleting photo');
+      });
+    }
+
+    // Handle profile form submission
+    document.getElementById('profileForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const name = document.getElementById('profileName').value;
+      const email = document.getElementById('profileEmail').value;
+      const contact = document.getElementById('profileContact').value;
+
+      fetch(`http://localhost:4001/user/${currentUser.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, contact, profile_photo: currentUser.profile_photo })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.message) {
+          alert('Profile updated successfully!');
+          // Update localStorage
+          currentUser.name = name;
+          localStorage.setItem('user', JSON.stringify(currentUser));
+          // Update profile avatar display
+          showProfileSection();
+          closeProfileModal();
+        } else {
+          alert('Error updating profile: ' + (data.error || 'Unknown error'));
+        }
+      })
+      .catch(error => {
+        console.error('Error updating profile:', error);
+        alert('Error updating profile');
+      });
+    });
+
+    // Close modal when clicking outside
+    document.getElementById('profileModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeProfileModal();
+      }
+    });
+
+    // Toggle profile dropdown
+    document.getElementById('profileSection').addEventListener('click', function(e) {
+      console.log('Profile section clicked');
+      if (!e.target.closest('.profile-dropdown')) {
+        toggleProfileDropdown();
+      }
+    });
+
+    // Close dropdown when clicking elsewhere
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.profile-section')) {
+        document.getElementById('profileDropdown').classList.remove('show');
+      }
+    });
+    // ===== SPORTS QUOTES DATABASE =====
+    const sportsQuotes = [
+      { text: "The only way to achieve the impossible is to believe it is possible.", author: "Muhammad Ali" },
+      { text: "Success is not an accident. It is hard work, perseverance, learning, studying, sacrifice and most of all, love.", author: "Pelé" },
+      { text: "Your limitation—it's only your imagination. Push past it.", author: "Unknown" },
+      { text: "Do you know what my favorite part of the game is? The opportunity to play.", author: "Mike Singletary" },
+      { text: "Champions aren't made in gymnasiums. Champions are made from something they have deep inside them.", author: "Muhammad Ali" },
+      { text: "Excellence is not a skill, it's an attitude.", author: "Ralph Marston" },
+      { text: "The harder you work, the harder it is to surrender.", author: "Vince Lombardi" },
+      { text: "You miss 100% of the shots you don't take.", author: "Wayne Gretzky" },
+      { text: "Don't watch the clock; do what it does. Keep going.", author: "Sam Levenson" },
+      { text: "It's not whether you get knocked down, it's whether you get up.", author: "Vince Lombardi" },
+      { text: "Champions keep playing until they get it right.", author: "Billie Jean King" },
+      { text: "The only impossible journey is the one you never begin.", author: "Tony Robbins" }
+    ];
+
+    // ===== QUOTE GENERATOR =====
+    function generateQuote() {
+      const randomIndex = Math.floor(Math.random() * sportsQuotes.length);
+      const quote = sportsQuotes[randomIndex];
+      const quoteText = document.getElementById('quoteText');
+      const quoteAuthor = document.getElementById('quoteAuthor');
+      
+      quoteText.style.animation = 'none';
+      setTimeout(() => {
+        quoteText.textContent = `"${quote.text}"`;
+        quoteAuthor.textContent = `— ${quote.author}`;
+        quoteText.style.animation = 'fadeInUp 0.6s ease-out';
+      }, 100);
+    }
+
+    // ===== LOAD TURFS =====
+    async function loadTurfs() {
+      const grid = document.getElementById('turfGrid');
+      
+      try {
+        const response = await fetch('http://localhost:4001/turfs');
+        if (!response.ok) throw new Error('Failed to fetch turfs');
+        
+        const turfs = await response.json();
+        
+        if (!turfs || turfs.length === 0) {
+          grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color: var(--text-light); padding: 40px;">No turfs available at the moment.</p>';
+          return;
+        }
+
+        grid.innerHTML = '';
+        
+        turfs.forEach((turf, index) => {
+          const card = document.createElement('div');
+          card.className = 'turf-card';
+          
+          let imageUrl = 'https://via.placeholder.com/400x220?text=Turf+Image';
+          if (turf.image_url) {
+            imageUrl = turf.image_url.startsWith('http') 
+              ? turf.image_url 
+              : `http://localhost:4001${turf.image_url}`;
+          }
+
+          const description = turf.description || `Premium sports facility with world-class amenities. Perfect for football, cricket, badminton and more.`;
+
+          card.innerHTML = `
+            <img src="${imageUrl}" alt="${turf.name || 'Turf'}" class="turf-card-image" onerror="this.src='https://via.placeholder.com/400x220?text=Turf'">
+            <div class="turf-card-content">
+              <div class="turf-card-header">
+                <div>
+                  <h3 class="turf-card-name">${turf.name || 'Untitled Turf'}</h3>
+                  <p class="turf-card-place">📍 ${turf.district || turf.location || 'Location'}</p>
+                </div>
+                <span class="turf-card-badge">Popular</span>
+              </div>
+              <p class="turf-card-description">${description}</p>
+              <button class="explore-btn" onclick="handleExploreClick(${turf.id || index})">Explore & Book</button>
+            </div>
+          `;
+
+          // Toggle expand on card click
+          card.addEventListener('click', function(e) {
+            if (e.target.classList.contains('explore-btn')) return;
+            this.classList.toggle('expanded');
+          });
+
+          grid.appendChild(card);
+        });
+      } catch (error) {
+        console.error('Error loading turfs:', error);
+        grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color: var(--text-light); padding: 40px;">Unable to load turfs. Please try again later.</p>';
+      }
+    }
+
+    // ===== HANDLE EXPLORE CLICK =====
+    function handleExploreClick(turfId) {
+      if (!currentUser) {
+        alert('Please login to book a turf slot.');
+        window.location.href = 'login.html';
+        return;
+      }
+      window.location.href = `turf-slots.html?id=${turfId}`;
+    }
+
+    // ===== INITIALIZE =====
+    document.addEventListener('DOMContentLoaded', () => {
+      // checkLoginStatus already called above, just load content
+      loadTurfs();
+      generateQuote();
+
+      // Add scroll animations
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -100px 0px'
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.style.opacity = '1';
+            entry.target.style.transform = 'translateY(0)';
+          }
+        });
+      }, observerOptions);
+
+      document.querySelectorAll('.turfs-grid').forEach(el => observer.observe(el));
+    });
+  </script>
+</body>
+</html>

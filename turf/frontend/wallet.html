@@ -1,35 +1,139 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>My Wallet</title>
+  <meta charset="utf-8" />
+  <title>Wallet — Kick-Hub</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root{ --bg:#f6f8fb; --card:#ffffff; --primary:#2563eb; --accent:#10b981; --muted:#6b7280; --text:#071233; --radius:12px; --shadow:0 12px 36px rgba(7,18,51,0.08) }
+    *{box-sizing:border-box}
+    body{ margin:0; font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial; background:var(--bg); color:var(--text) }
+    header{ padding:18px; background:linear-gradient(90deg,var(--primary), #1f4ed8); color:#fff }
+    header h1{ margin:0; font-size:18px }
+    .container{ max-width:980px; margin:24px auto; padding:0 16px }
+    .wallet-wrap{ display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap }
+    .wallet-card{ background:var(--card); padding:22px; border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid rgba(7,18,51,0.04); width:320px }
+    .wallet-balance{ font-size:28px; font-weight:800; color:var(--primary); margin:6px 0 }
+    .wallet-sub{ color:var(--muted); margin-bottom:12px }
+    .quick-add{ display:flex; gap:8px; margin:12px 0 }
+    .quick-add button{ flex:1; padding:10px; border-radius:10px; border:none; cursor:pointer; background:#eef6ff; color:var(--primary); font-weight:700 }
+    .add-form{ display:flex; gap:8px; margin-top:8px }
+    .add-form input{ flex:1; padding:10px; border-radius:10px; border:1px solid rgba(7,18,51,0.06) }
+    .add-form button{ padding:10px 14px; background:var(--primary); color:#fff; border:none; border-radius:10px; cursor:pointer }
+    .transactions{ flex:1; min-width:320px }
+    .tx-card{ background:var(--card); padding:16px; border-radius:var(--radius); box-shadow:var(--shadow); border:1px solid rgba(7,18,51,0.04) }
+    .tx-item{ display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid rgba(7,18,51,0.04) }
+    .tx-item:last-child{ border-bottom:none }
+    .tx-type{ font-weight:700 }
+    .empty{ color:var(--muted); text-align:center; padding:20px }
+    @media (max-width:760px){ .wallet-wrap{ flex-direction:column } }
+  </style>
 </head>
 <body>
-  <h1>Wallet</h1>
-  <p>Balance: ₹<span id="balance">0</span></p>
-  <input type="number" id="amount" placeholder="Enter amount" />
-  <button onclick="addMoney()">Add Money</button>
+  <header>
+    <h1>Kick-Hub Wallet</h1>
+  </header>
+
+  <div class="container">
+    <div class="wallet-wrap">
+      <div class="wallet-card">
+        <div class="wallet-sub">Available Balance</div>
+        <div class="wallet-balance">₹<span id="balance">0</span></div>
+        <div class="wallet-sub">Quick add</div>
+        <div class="quick-add">
+          <button onclick="quickAdd(50)">+₹50</button>
+          <button onclick="quickAdd(100)">+₹100</button>
+          <button onclick="quickAdd(200)">+₹200</button>
+        </div>
+
+        <div class="wallet-sub">Add custom amount</div>
+        <div class="add-form">
+          <input id="amount" type="number" placeholder="Enter amount" min="1" />
+          <button id="addBtn">Add</button>
+        </div>
+        <p class="wallet-sub" style="margin-top:12px; font-size:13px;">Note: This demo calls the backend `/wallet/add` endpoint to increase the balance.</p>
+      </div>
+
+      <div class="transactions">
+        <div class="tx-card">
+          <h3 style="margin-top:0">Recent Activity</h3>
+          <div id="txList" class="tx-list">
+            <div class="empty">No transactions yet</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script>
-    const user = JSON.parse(localStorage.getItem("user"));
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!user?.id) {
+      alert('Please log in first.');
+      window.location.href = 'login.html';
+    }
+
+    const balanceEl = document.getElementById('balance');
+    const txListEl = document.getElementById('txList');
+    const amountInput = document.getElementById('amount');
+
+    let transactions = [];
 
     async function loadBalance() {
-      const res = await fetch(`http://localhost:4001/wallet/${user.id}`);
-      const data = await res.json();
-      document.getElementById("balance").innerText = data.balance;
+      try {
+        const res = await fetch(`http://localhost:4001/wallet/${user.id}`);
+        const data = await res.json();
+        balanceEl.textContent = data.balance ?? 0;
+      } catch (err) {
+        console.error('Failed to load balance', err);
+      }
     }
 
-    async function addMoney() {
-      const amount = parseInt(document.getElementById("amount").value);
-      const res = await fetch("http://localhost:4001/wallet/add", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_id: user.id, amount })
-      });
-      const data = await res.json();
-      document.getElementById("balance").innerText = data.balance;
+    function renderTx() {
+      if (!transactions.length) {
+        txListEl.innerHTML = '<div class="empty">No transactions yet</div>';
+        return;
+      }
+      txListEl.innerHTML = transactions.map(t => `
+        <div class="tx-item">
+          <div>
+            <div class="tx-type">${t.type}</div>
+            <div style="font-size:12px;color:var(--muted)">${t.note}</div>
+          </div>
+          <div style="font-weight:700; color:${t.amount>0?"var(--accent)":"#ef4444"}">₹${t.amount}</div>
+        </div>
+      `).join('');
     }
 
+    async function addMoney(amount) {
+      try {
+        const res = await fetch('http://localhost:4001/wallet/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: user.id, amount })
+        });
+        const data = await res.json();
+        balanceEl.textContent = data.balance ?? balanceEl.textContent;
+        transactions.unshift({ type: 'Top-up', amount, note: 'Added via Wallet page' });
+        renderTx();
+      } catch (err) {
+        console.error('Add money failed', err);
+        alert('Failed to add money. Check console.');
+      }
+    }
+
+    function quickAdd(a) { amountInput.value = a; addBtn.click(); }
+
+    const addBtn = document.getElementById('addBtn');
+    addBtn.addEventListener('click', () => {
+      const amt = parseInt(amountInput.value);
+      if (!amt || amt <= 0) { alert('Enter a valid amount'); return; }
+      addMoney(amt);
+      amountInput.value = '';
+    });
+
+    // initial load
     loadBalance();
+    renderTx();
   </script>
 </body>
 </html>
